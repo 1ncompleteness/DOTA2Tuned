@@ -126,6 +126,16 @@ SCOPE_OPTIONS = [
     ("Public matches", "public"),
 ]
 
+NAV_OPTIONS = [
+    "Draft Coach",
+    "Hero Meta",
+    "Tuned Model",
+    "Match Predictor",
+    "Builds",
+    "Draft Lab",
+    "Data Freshness",
+]
+
 ROLE_DROPDOWN_ICONS = {
     "carry": ROLE_ICON_URLS["Carry"],
     "mid": ROLE_ICON_URLS["Nuker"],
@@ -202,7 +212,7 @@ COMMON_HERO_ALIASES = {
     "Outworld Devourer": ["OD"],
     "Phantom Assassin": ["PA"],
     "Phantom Lancer": ["PL"],
-    "Queen of Pain": ["QOP"],
+    "Queen of Pain": ["QoP"],
     "Sand King": ["SK"],
     "Shadow Demon": ["SD"],
     "Shadow Fiend": ["SF"],
@@ -219,8 +229,9 @@ COMMON_HERO_ALIASES = {
     "Winter Wyvern": ["WW"],
     "Witch Doctor": ["WD"],
     "Wraith King": ["WK", "SK"],
-    "Zeus": ["Z"],
 }
+
+AMBIGUOUS_GENERATED_ALIASES = {"NS", "VS"}
 
 APP_CSS = """
 .gradio-container {
@@ -256,6 +267,40 @@ APP_CSS = """
   color: rgba(245, 245, 235, 0.62);
   font-size: 12px;
   line-height: 15px;
+}
+.app-sidebar {
+  border-right: 1px solid rgba(220, 190, 120, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(20, 24, 23, 0.96), rgba(13, 15, 14, 0.98)) !important;
+}
+.app-sidebar .app-nav {
+  margin-top: 4px;
+}
+.app-sidebar .app-nav label {
+  min-height: 42px !important;
+  padding: 8px 10px !important;
+  border: 1px solid rgba(220, 190, 120, 0.15) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  color: rgba(245, 245, 235, 0.80) !important;
+  font-size: 13px !important;
+  line-height: 16px !important;
+}
+.app-sidebar .app-nav label:has(input:checked) {
+  border-color: rgba(224, 155, 88, 0.46) !important;
+  background: rgba(224, 155, 88, 0.13) !important;
+  color: rgba(255, 246, 225, 0.96) !important;
+}
+.app-main {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.app-view {
+  gap: 10px;
+}
+.app-view > .form,
+.app-view > .block {
+  width: 100%;
 }
 .dota-dropdown {
   position: relative;
@@ -420,20 +465,35 @@ def _normalize_hero_ref(value: str) -> str:
 
 def _initial_aliases(value: str) -> set[str]:
     words = [word for word in re.split(r"[^A-Za-z0-9]+", value) if word]
-    if not words:
+    if len(words) < 2:
         return set()
     aliases = {"".join(word[0] for word in words)}
-    non_stopwords = [word for word in words if word.lower() not in {"of", "the", "and"}]
-    if non_stopwords:
+    non_stopwords = [
+        word for word in words if word.lower() not in {"of", "the", "and", "s"}
+    ]
+    if len(non_stopwords) > 1:
         aliases.add("".join(word[0] for word in non_stopwords))
-    return {alias.upper() for alias in aliases if len(alias) <= 5}
+    return {alias.upper() for alias in aliases if 1 < len(alias) <= 5}
 
 
 def _hero_aliases(hero_name: str) -> list[str]:
-    aliases = set(COMMON_HERO_ALIASES.get(hero_name, []))
-    aliases.update(_initial_aliases(hero_name))
-    aliases.discard(hero_name)
-    return sorted(aliases, key=lambda item: (len(item), item))
+    aliases: list[str] = []
+    seen: set[str] = set()
+    common_aliases = COMMON_HERO_ALIASES.get(hero_name, [])
+    generated_aliases = (
+        []
+        if common_aliases
+        else _initial_aliases(hero_name) - AMBIGUOUS_GENERATED_ALIASES
+    )
+    for alias in [*common_aliases, *generated_aliases]:
+        if len(alias) < 2 or alias == hero_name:
+            continue
+        key = _normalize_hero_ref(alias)
+        if key in seen:
+            continue
+        aliases.append(alias)
+        seen.add(key)
+    return sorted(aliases, key=lambda item: (len(item), item.lower()))
 
 
 def _split_hero_refs(value: str) -> list[str]:
@@ -874,10 +934,21 @@ def build_app() -> gr.Blocks:
             "- Rule: if the evidence is thin, say so before giving the pick."
         )
 
+    def switch_view(selected: str):
+        return tuple(gr.update(visible=label == selected) for label in NAV_OPTIONS)
+
     with gr.Blocks(title="DOTA2Tuned") as demo:
         gr.HTML(f"<style>{APP_CSS}</style>{_topbar_html()}")
-        with gr.Tabs():
-            with gr.Tab("Draft Coach"):
+        with gr.Sidebar(open=True, width=238, position="left", elem_classes=["app-sidebar"]):
+            nav = gr.Radio(
+                choices=NAV_OPTIONS,
+                value="Draft Coach",
+                show_label=False,
+                container=False,
+                elem_classes=["app-nav"],
+            )
+        with gr.Column(elem_classes=["app-main"]):
+            with gr.Column(visible=True, elem_classes=["app-view"]) as draft_view:
                 with gr.Row():
                     allies = gr.Dropdown(
                         choices=hero_choices,
@@ -932,7 +1003,7 @@ def build_app() -> gr.Blocks:
                     outputs=[rec_output, evidence_output],
                 )
 
-            with gr.Tab("Hero Meta"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as hero_meta_view:
                 with gr.Row():
                     meta_hero = gr.Dropdown(
                         choices=hero_choices,
@@ -964,7 +1035,7 @@ def build_app() -> gr.Blocks:
                     outputs=[meta_output],
                 )
 
-            with gr.Tab("Tuned Model"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as tuned_model_view:
                 tuned_question = gr.Textbox(
                     label="Question",
                     value=(
@@ -993,7 +1064,7 @@ def build_app() -> gr.Blocks:
                     outputs=[tuned_output, tuned_evidence],
                 )
 
-            with gr.Tab("Match Predictor"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as match_predictor_view:
                 with gr.Row():
                     radiant = gr.Dropdown(
                         choices=hero_choices,
@@ -1026,7 +1097,7 @@ def build_app() -> gr.Blocks:
                     outputs=[predict_output],
                 )
 
-            with gr.Tab("Builds"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as builds_view:
                 with gr.Row():
                     hero = gr.Dropdown(
                         choices=hero_choices,
@@ -1054,7 +1125,7 @@ def build_app() -> gr.Blocks:
                 build_item.change(item_preview, inputs=[build_item], outputs=[build_item_preview])
                 builds_button.click(hero_builds, inputs=[hero, build_item], outputs=[builds_output])
 
-            with gr.Tab("Draft Lab"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as draft_lab_view:
                 lab_enemies = gr.Dropdown(
                     choices=hero_choices,
                     label="Enemy heroes",
@@ -1086,10 +1157,24 @@ def build_app() -> gr.Blocks:
                     outputs=[lab_output],
                 )
 
-            with gr.Tab("Data Freshness"):
+            with gr.Column(visible=False, elem_classes=["app-view"]) as data_freshness_view:
                 status_button = gr.Button("Refresh")
                 status_output = gr.Markdown()
                 status_button.click(data_status, outputs=[status_output])
+        nav.change(
+            switch_view,
+            inputs=[nav],
+            outputs=[
+                draft_view,
+                hero_meta_view,
+                tuned_model_view,
+                match_predictor_view,
+                builds_view,
+                draft_lab_view,
+                data_freshness_view,
+            ],
+            api_visibility="private",
+        )
 
     demo.dota2tuned_js = _dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata))
     return demo
