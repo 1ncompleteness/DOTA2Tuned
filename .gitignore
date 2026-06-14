@@ -8,6 +8,7 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .cache/
+.hf_home/
 .coverage
 htmlcov/
 
@@ -15,9 +16,19 @@ htmlcov/
 venv/
 
 data/raw/
-data/parquet/
-data/rag/
-data/models/
+data/raw_probe_api_smoke/
+data/parquet_probe_api_smoke/
+data/raw_runs/
+data/parquet_runs/
+data/rag_runs/
+data/model_runs/
+data/parquet/*
+!data/parquet/*.parquet
+data/rag/*
+!data/rag/tfidf.joblib
+data/models/*
+!data/models/draft_predictor.joblib
+!data/models/sft_examples.jsonl
 data/*.duckdb
 data/*.duckdb.wal
 data/*.duckdb.tmp

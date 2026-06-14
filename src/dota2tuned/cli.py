@@ -9,7 +9,12 @@ import typer
 from dota2tuned.config import get_settings
 from dota2tuned.evaluate import load_predictor_metrics
 from dota2tuned.features import build_feature_summary
-from dota2tuned.finetune import launch_hf_job, upload_sft_dataset, write_train_script
+from dota2tuned.finetune import (
+    launch_hf_job,
+    upload_sft_dataset,
+    validate_hf_jobs_access,
+    write_train_script,
+)
 from dota2tuned.ingest import IngestCoordinator
 from dota2tuned.normalize import normalize_all
 from dota2tuned.rag import build_index
@@ -125,6 +130,12 @@ def finetune(
 ) -> None:
     settings = get_settings()
     if launch_job:
+        try:
+            preflight = validate_hf_jobs_access(settings)
+        except RuntimeError as exc:
+            typer.echo(f"Preflight failed: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        typer.echo({"preflight": preflight})
         dataset_source = upload_sft_dataset(settings, dataset_path)
         script = write_train_script(settings, dataset_source)
         typer.echo(launch_hf_job(settings, script))

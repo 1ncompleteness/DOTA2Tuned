@@ -54,7 +54,7 @@ class Settings:
     fallback_base_model_id: str = field(
         default_factory=lambda: os.getenv("FALLBACK_BASE_MODEL_ID", "HuggingFaceTB/SmolLM3-3B")
     )
-    training_flavor: str = field(default_factory=lambda: os.getenv("TRAINING_FLAVOR", "a10g-large"))
+    training_flavor: str = field(default_factory=lambda: os.getenv("TRAINING_FLAVOR", "a100-large"))
     hf_job_timeout: str = field(default_factory=lambda: os.getenv("HF_JOB_TIMEOUT", "6h"))
     space_hardware: str = field(default_factory=lambda: os.getenv("SPACE_HARDWARE", "a10g-large"))
     sft_max_length: int = field(default_factory=lambda: int(os.getenv("SFT_MAX_LENGTH", "4096")))

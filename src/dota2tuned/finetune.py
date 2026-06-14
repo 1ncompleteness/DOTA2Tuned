@@ -1,8 +1,28 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from dota2tuned.config import Settings
+
+JOB_DEPENDENCIES = [
+    "datasets",
+    "transformers",
+    "trl",
+    "peft",
+    "bitsandbytes",
+    "accelerate",
+    "huggingface_hub",
+    "hf-transfer",
+]
+
+JOB_ENV = {
+    "HF_HUB_DISABLE_PROGRESS_BARS": "1",
+    "HF_HUB_ENABLE_HF_TRANSFER": "1",
+    "TQDM_DISABLE": "1",
+    "TRANSFORMERS_VERBOSITY": "warning",
+    "UV_NO_PROGRESS": "1",
+}
 
 TRAIN_SCRIPT = """# /// script
 # dependencies = [
@@ -85,6 +105,57 @@ trainer.push_to_hub(output_repo)
 """
 
 
+def _token_permissions(whoami: dict[str, Any], namespace: str) -> set[str] | None:
+    token = ((whoami.get("auth") or {}).get("accessToken") or {})
+    role = token.get("role")
+    if role and role != "fineGrained":
+        return None
+
+    fine_grained = token.get("fineGrained")
+    if not isinstance(fine_grained, dict):
+        return None
+
+    permissions = set(fine_grained.get("global") or [])
+    for scope in fine_grained.get("scoped") or []:
+        entity = scope.get("entity") or {}
+        if entity.get("name") == namespace:
+            permissions.update(scope.get("permissions") or [])
+    return permissions
+
+
+def validate_hf_jobs_access(settings: Settings) -> dict[str, str]:
+    if not settings.hf_token:
+        raise RuntimeError("HF_TOKEN is required to launch a Hugging Face Job.")
+    try:
+        from huggingface_hub import HfApi
+    except ImportError as exc:
+        raise RuntimeError("huggingface_hub with Jobs support is required.") from exc
+
+    api = HfApi(token=settings.hf_token)
+    whoami = api.whoami()
+    permissions = _token_permissions(whoami, settings.hf_org)
+    if permissions is not None and "job.write" not in permissions:
+        raise RuntimeError(
+            "HF_TOKEN is authenticated but cannot launch Hugging Face Jobs. "
+            f"Add `job.write` to the token scope for namespace `{settings.hf_org}` "
+            "or use a token that can start/manage Jobs for that organization. "
+            f"Current parsed permissions: {sorted(permissions)}"
+        )
+
+    hardware_names = {hardware.name for hardware in api.list_jobs_hardware()}
+    if settings.training_flavor not in hardware_names:
+        raise RuntimeError(
+            f"TRAINING_FLAVOR={settings.training_flavor!r} is not available for Jobs. "
+            f"Available flavors include: {', '.join(sorted(hardware_names))}"
+        )
+
+    return {
+        "namespace": settings.hf_org,
+        "flavor": settings.training_flavor,
+        "user": str(whoami.get("name") or "unknown"),
+    }
+
+
 def write_train_script(settings: Settings, dataset_source: str | Path) -> Path:
     script_path = settings.model_dir / "train_sft_job.py"
     script_path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,14 +199,25 @@ def launch_hf_job(settings: Settings, script_path: Path) -> str:
     if not settings.hf_token:
         raise RuntimeError("HF_TOKEN is required to launch a Hugging Face Job.")
     try:
-        from huggingface_hub import run_uv_job
+        from huggingface_hub import HfApi, run_uv_job
     except ImportError as exc:
         raise RuntimeError("huggingface_hub with Jobs support is required for run_uv_job.") from exc
+    HfApi(token=settings.hf_token).create_repo(
+        repo_id=settings.hf_model_repo_id,
+        repo_type="model",
+        exist_ok=True,
+    )
     job = run_uv_job(
         str(script_path),
-        dependencies=["datasets", "transformers", "trl", "peft", "bitsandbytes", "accelerate"],
-        secrets={"HF_TOKEN": settings.hf_token},
+        dependencies=JOB_DEPENDENCIES,
+        env=JOB_ENV,
+        secrets={
+            "HF_TOKEN": settings.hf_token,
+            "HUGGINGFACE_HUB_TOKEN": settings.hf_token,
+        },
         flavor=settings.training_flavor,
         timeout=settings.hf_job_timeout,
+        namespace=settings.hf_org,
+        token=settings.hf_token,
     )
     return str(job)

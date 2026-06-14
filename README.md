@@ -26,6 +26,9 @@ uv run dota2tuned serve
 ```
 
 Update `.env` with your Hugging Face, STRATZ, OpenDota, and Steam tokens before running large ingestion or Hub operations.
+Fine-tuning uses Hugging Face Jobs on `a100-large` by default; the `HF_TOKEN` must include `job.write` for the configured `HF_ORG` namespace.
+
+The submitted Space includes compact serving artifacts under `data/parquet`, `data/rag`, and `data/models`. Raw API responses remain local-only and ignored by git.
 
 ## Main Commands
 

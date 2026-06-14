@@ -32,7 +32,9 @@ query Match($id: Long!) {
       isPick
       order
       bannedHeroId
-      team
+      isRadiant
+      playerIndex
+      wasBannedSuccessfully
     }
   }
 }
