@@ -55,5 +55,6 @@ The Gradio app includes a **Tuned Model** tab. It calls the Modal `generate_answ
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.
 See [MODEL_SELECTION.md](MODEL_SELECTION.md) for the current LLM decision and eval protocol.
+See [MODEL_CARD.md](MODEL_CARD.md) for the model card mirrored to the Hub adapter repo.
 See [DATASET_CARD.md](DATASET_CARD.md) for the dataset card mirrored to the Hub dataset.
 See [SUBMISSION.md](SUBMISSION.md) for the final hackathon handoff, demo script, social post draft, and verification checklist.
