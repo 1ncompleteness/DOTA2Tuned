@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -13,6 +14,7 @@ from dota2tuned.ingest import IngestCoordinator
 from dota2tuned.normalize import normalize_all
 from dota2tuned.rag import build_index
 from dota2tuned.sft import create_sft_examples
+from dota2tuned.smoke import has_failures, run_smoke_checks
 from dota2tuned.storage import refresh_views
 from dota2tuned.train_predictor import train_predictor
 from dota2tuned.ui.gradio_app import build_app
@@ -29,6 +31,20 @@ def health() -> None:
     typer.echo(f"hf_space_id={settings.hf_space_id}")
     typer.echo(f"base_model_id={settings.base_model_id}")
     typer.echo(f"modal_enabled={settings.modal_enabled}")
+
+
+@app.command()
+def smoke(
+    live: Annotated[
+        bool,
+        typer.Option(help="Run minimal live checks against HF, OpenDota, STRATZ, Steam, Valve."),
+    ] = False,
+) -> None:
+    settings = get_settings()
+    results = run_smoke_checks(settings, live=live)
+    typer.echo(json.dumps(results, indent=2))
+    if has_failures(results):
+        raise typer.Exit(1)
 
 
 @app.command()
