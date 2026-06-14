@@ -31,3 +31,4 @@ Update `.env` with your Hugging Face, STRATZ, OpenDota, and Steam tokens before 
 - `dota2tuned serve` launches the Gradio app.
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.
+See [MODEL_SELECTION.md](MODEL_SELECTION.md) for the current LLM decision and eval protocol.

@@ -15,18 +15,41 @@ TRAIN_SCRIPT = """# /// script
 #   "huggingface_hub",
 # ]
 # ///
+import torch
 from datasets import load_dataset
-from peft import LoraConfig
+from peft import LoraConfig, prepare_model_for_kbit_training
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
 
 model_id = "{model_id}"
 dataset_source = "{dataset_source}"
 output_repo = "{output_repo}"
+max_length = {max_length}
 
 if dataset_source.endswith(".jsonl"):
     dataset = load_dataset("json", data_files=dataset_source, split="train")
 else:
     dataset = load_dataset(dataset_source, split="train")
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
+)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    quantization_config=quantization_config,
+    device_map="auto",
+    torch_dtype=torch.bfloat16,
+    trust_remote_code=True,
+)
+model = prepare_model_for_kbit_training(model)
+
 peft_config = LoraConfig(
     r=32,
     lora_alpha=16,
@@ -40,15 +63,22 @@ args = SFTConfig(
     learning_rate=2e-4,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=8,
+    max_length=max_length,
     packing=True,
+    optim="paged_adamw_8bit",
+    gradient_checkpointing=True,
+    bf16=True,
+    logging_steps=5,
+    save_strategy="epoch",
     push_to_hub=True,
     hub_model_id=output_repo,
 )
 trainer = SFTTrainer(
-    model=model_id,
+    model=model,
     args=args,
     train_dataset=dataset,
     peft_config=peft_config,
+    processing_class=tokenizer,
 )
 trainer.train()
 trainer.push_to_hub(output_repo)
@@ -63,6 +93,7 @@ def write_train_script(settings: Settings, dataset_source: str | Path) -> Path:
             model_id=settings.base_model_id,
             dataset_source=str(dataset_source),
             output_repo=settings.hf_model_repo_id,
+            max_length=settings.sft_max_length,
         )
     )
     return script_path
@@ -105,5 +136,6 @@ def launch_hf_job(settings: Settings, script_path: Path) -> str:
         dependencies=["datasets", "transformers", "trl", "peft", "bitsandbytes", "accelerate"],
         secrets={"HF_TOKEN": settings.hf_token},
         flavor=settings.training_flavor,
+        timeout=settings.hf_job_timeout,
     )
     return str(job)

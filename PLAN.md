@@ -38,7 +38,7 @@
 - Prediction: train calibrated logistic baseline and LightGBM draft predictor; choose by temporal patch validation.
 - Recommendations: rank heroes by predicted win-probability delta plus empirical counter/synergy lift; builds come from observed item/skill/talent timing stats, not LLM invention.
 - RAG: index patch-change docs and stat cards with patch/scope filters before retrieval.
-- Fine-tuning: default `Qwen/Qwen3-4B-Instruct`; fallback `HuggingFaceTB/SmolLM3-3B`. Use QLoRA with TRL SFT on HF Jobs, 1-2 epochs, structured answer examples, then push to Hub.
+- Fine-tuning: default `Qwen/Qwen3-4B-Instruct-2507`; fallback `HuggingFaceTB/SmolLM3-3B`. Use explicit 4-bit QLoRA with TRL SFT on HF Jobs, 1-2 epochs, structured answer examples, then push to Hub.
 - Serving: GPU-backed HF Gradio Space loads predictor, DuckDB/RAG artifacts, and fine-tuned model; Modal is an optional backend for expensive jobs only.
 
 ## Test Plan
