@@ -70,6 +70,18 @@ class Settings:
     modal_token_secret: str | None = field(
         default_factory=lambda: _secret_env("MODAL_TOKEN_SECRET")
     )
+    modal_train_gpu: str = field(
+        default_factory=lambda: os.getenv("MODAL_TRAIN_GPU", "A100-80GB")
+    )
+    modal_train_timeout: int = field(
+        default_factory=lambda: int(os.getenv("MODAL_TRAIN_TIMEOUT", str(6 * 60 * 60)))
+    )
+    modal_cache_volume: str = field(
+        default_factory=lambda: os.getenv("MODAL_CACHE_VOLUME", "dota2tuned-hf-cache")
+    )
+    modal_output_volume: str = field(
+        default_factory=lambda: os.getenv("MODAL_OUTPUT_VOLUME", "dota2tuned-outputs")
+    )
 
     duckdb_path: Path = field(
         default_factory=lambda: Path(os.getenv("DUCKDB_PATH", "data/dota2tuned.duckdb"))

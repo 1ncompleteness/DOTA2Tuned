@@ -26,7 +26,7 @@ uv run dota2tuned serve
 ```
 
 Update `.env` with your Hugging Face, STRATZ, OpenDota, and Steam tokens before running large ingestion or Hub operations.
-Fine-tuning uses Hugging Face Jobs on `a100-large` by default. `HF_TOKEN` must include `repo.write` for the configured `HF_ORG` namespace, and `HF_JOBS_TOKEN` or `HF_UPLOAD_TOKEN` may be set to a separate token that includes `job.write`.
+Fine-tuning now runs on Modal by default for this project. Set `MODAL_ENABLED=1`, `MODAL_TOKEN_ID`, and `MODAL_TOKEN_SECRET`, then use `uv sync --extra modal` before deploying Modal functions. `HF_TOKEN` must still include `repo.write` so the training run can push the adapter to the configured Hub model repo.
 
 The submitted Space includes compact serving artifacts under `data/parquet`, `data/rag`, and `data/models`. Raw API responses remain local-only and ignored by git.
 
@@ -39,7 +39,10 @@ The submitted Space includes compact serving artifacts under `data/parquet`, `da
 - `dota2tuned train-predictor` trains the draft win predictor from normalized matches.
 - `dota2tuned build-rag` creates patch/stat cards and a local retrieval index.
 - `dota2tuned make-sft` creates JSONL examples for SFT.
-- `dota2tuned finetune --launch-job` launches a Hugging Face Jobs QLoRA run.
+- `dota2tuned modal-deploy` deploys the Modal Gradio app and GPU training function.
+- `dota2tuned modal-smoke` validates the deployed Modal app can load artifacts.
+- `dota2tuned modal-train` submits the Modal GPU QLoRA run.
+- `dota2tuned finetune --launch-job` remains available for Hugging Face Jobs if a token has `job.write`.
 - `dota2tuned serve` launches the Gradio app.
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.

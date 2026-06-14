@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -25,6 +28,25 @@ from dota2tuned.train_predictor import train_predictor
 from dota2tuned.ui.gradio_app import build_app
 
 app = typer.Typer(no_args_is_help=True)
+
+
+def _modal_env(settings) -> dict[str, str]:
+    env = os.environ.copy()
+    if settings.modal_token_id:
+        env["MODAL_TOKEN_ID"] = settings.modal_token_id
+    if settings.modal_token_secret:
+        env["MODAL_TOKEN_SECRET"] = settings.modal_token_secret
+    return env
+
+
+def _require_modal(settings) -> None:
+    if not settings.modal_enabled:
+        typer.echo("Set MODAL_ENABLED=1 before using Modal commands.", err=True)
+        raise typer.Exit(1)
+    if not settings.modal_token_id or not settings.modal_token_secret:
+        typer.echo("MODAL_TOKEN_ID and MODAL_TOKEN_SECRET are required.", err=True)
+        raise typer.Exit(1)
+    os.environ.update(_modal_env(settings))
 
 
 @app.command()
@@ -159,7 +181,70 @@ def serve() -> None:
 @app.command("modal-deploy")
 def modal_deploy() -> None:
     settings = get_settings()
-    if not settings.modal_enabled:
-        typer.echo("Set MODAL_ENABLED=1 before deploying Modal backend functions.")
+    _require_modal(settings)
+    command = [
+        sys.executable,
+        "-m",
+        "modal",
+        "deploy",
+        "-m",
+        "dota2tuned.modal_backend",
+        "--name",
+        settings.modal_app_name,
+    ]
+    result = subprocess.run(command, env=_modal_env(settings), check=False)
+    raise typer.Exit(result.returncode)
+
+
+@app.command("modal-smoke")
+def modal_smoke() -> None:
+    settings = get_settings()
+    _require_modal(settings)
+    try:
+        import modal
+    except ImportError as exc:
+        typer.echo("Install Modal dependencies with `uv sync --extra modal`.", err=True)
+        raise typer.Exit(1) from exc
+
+    smoke_fn = modal.Function.from_name(settings.modal_app_name, "remote_smoke")
+    typer.echo(json.dumps(smoke_fn.remote(), indent=2))
+
+
+@app.command("modal-train")
+def modal_train(
+    dataset_source: Annotated[
+        str,
+        typer.Option(help="Local-in-Modal JSONL path or Hub dataset id for SFT data."),
+    ] = "data/models/sft_examples.jsonl",
+    wait: Annotated[bool, typer.Option(help="Wait for training to finish.")] = False,
+) -> None:
+    settings = get_settings()
+    _require_modal(settings)
+    if not settings.hf_token:
+        typer.echo("HF_TOKEN is required so Modal training can push the adapter.", err=True)
         raise typer.Exit(1)
-    typer.echo("Run: modal deploy src/dota2tuned/modal_backend.py")
+    try:
+        import modal
+    except ImportError as exc:
+        typer.echo("Install Modal dependencies with `uv sync --extra modal`.", err=True)
+        raise typer.Exit(1) from exc
+
+    if dataset_source == "data/models/sft_examples.jsonl":
+        dataset_source = "/app/data/models/sft_examples.jsonl"
+    train_fn = modal.Function.from_name(settings.modal_app_name, "train_sft")
+    if wait:
+        typer.echo(json.dumps(train_fn.remote(dataset_source), indent=2))
+        return
+
+    call = train_fn.spawn(dataset_source)
+    typer.echo(
+        json.dumps(
+            {
+                "status": "submitted",
+                "app": settings.modal_app_name,
+                "function": "train_sft",
+                "function_call_id": getattr(call, "object_id", str(call)),
+            },
+            indent=2,
+        )
+    )

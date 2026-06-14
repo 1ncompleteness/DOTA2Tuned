@@ -16,7 +16,7 @@ answers.
 ## Selection Criteria
 
 - Fits the Hugging Face Build Small Hackathon `<=32B` total parameter cap.
-- Can be fine-tuned with LoRA/QLoRA using TRL, PEFT, bitsandbytes, and HF Jobs.
+- Can be fine-tuned with LoRA/QLoRA using TRL, PEFT, bitsandbytes, and Modal GPUs.
 - Can serve in a Gradio Space on practical GPU hardware.
 - Strong instruction following, number preservation, JSON/schema obedience, and
   evidence discipline.
@@ -67,8 +67,10 @@ answers.
   https://huggingface.co/docs/peft/en/developer_guides/quantization
 - Transformers bitsandbytes guidance:
   https://huggingface.co/docs/transformers/en/quantization/bitsandbytes
-- HF Jobs docs:
-  https://huggingface.co/docs/huggingface_hub/en/guides/jobs
+- Modal GPU and ASGI app docs:
+  https://modal.com/docs/guide/gpu
+  https://modal.com/docs/guide/webhooks
+  https://modal.com/docs/guide/secrets
 
 ## Evaluation Protocol
 
