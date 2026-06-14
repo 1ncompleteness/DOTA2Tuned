@@ -42,6 +42,7 @@ The submitted Space includes compact serving artifacts under `data/parquet`, `da
 - `dota2tuned modal-deploy` deploys the Modal Gradio app and GPU training function.
 - `dota2tuned modal-smoke` validates the deployed Modal app can load artifacts.
 - `dota2tuned modal-train` submits the Modal GPU QLoRA run.
+- `dota2tuned modal-ask` calls the fine-tuned adapter through Modal GPU inference.
 - `dota2tuned finetune --launch-job` remains available for Hugging Face Jobs if a token has `job.write`.
 - `dota2tuned serve` launches the Gradio app.
 

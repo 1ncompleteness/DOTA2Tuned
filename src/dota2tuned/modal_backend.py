@@ -63,7 +63,7 @@ REMOTE_ENV = {
     "SFT_MAX_LENGTH": str(settings.sft_max_length),
     "HF_HOME": str(REMOTE_CACHE / "huggingface"),
     "HF_HUB_CACHE": str(REMOTE_CACHE / "huggingface" / "hub"),
-    "HF_HUB_ENABLE_HF_TRANSFER": "1",
+    "HF_XET_HIGH_PERFORMANCE": "1",
     "HF_HUB_DISABLE_PROGRESS_BARS": "1",
     "TQDM_DISABLE": "1",
     "TRANSFORMERS_VERBOSITY": "warning",
@@ -110,6 +110,7 @@ if modal is not None and settings.modal_enabled:
     train_image = _add_project_files(
         modal.Image.debian_slim(python_version="3.12").uv_pip_install(*TRAIN_DEPS).env(REMOTE_ENV)
     )
+    _MODEL_CACHE: dict[str, object] = {}
 
     @app.function(image=web_image, secrets=[runtime_secret], timeout=900)
     def remote_smoke() -> dict[str, object]:
@@ -177,6 +178,87 @@ if modal is not None and settings.modal_enabled:
             "output_repo": train_settings.hf_model_repo_id,
             "dataset_source": dataset_source,
             "script": str(script_path),
+        }
+
+    @app.function(
+        image=train_image,
+        gpu=settings.modal_infer_gpu,
+        secrets=[runtime_secret],
+        volumes={REMOTE_CACHE: cache_volume},
+        timeout=settings.modal_infer_timeout,
+        max_containers=1,
+    )
+    def generate_answer(
+        question: str,
+        context: str = "",
+        max_new_tokens: int = 384,
+    ) -> dict[str, object]:
+        import torch
+        from peft import AutoPeftModelForCausalLM
+        from transformers import AutoTokenizer, BitsAndBytesConfig
+
+        if not question.strip():
+            raise RuntimeError("question is required.")
+
+        model_id = os.environ["HF_MODEL_REPO_ID"]
+        if "model" not in _MODEL_CACHE:
+            tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+            )
+            model = AutoPeftModelForCausalLM.from_pretrained(
+                model_id,
+                quantization_config=quantization_config,
+                device_map="auto",
+                torch_dtype=torch.bfloat16,
+                trust_remote_code=True,
+            )
+            model.eval()
+            _MODEL_CACHE["tokenizer"] = tokenizer
+            _MODEL_CACHE["model"] = model
+
+        tokenizer = _MODEL_CACHE["tokenizer"]
+        model = _MODEL_CACHE["model"]
+        system = (
+            "You are DOTA2Tuned, a Dota 2 draft and meta assistant. "
+            "Use the supplied evidence when present. Be concise, grounded, and caveat weak data."
+        )
+        user = question.strip()
+        if context.strip():
+            user = f"{user}\n\nEvidence:\n{context.strip()}"
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        try:
+            prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+        except Exception:
+            prompt = f"{system}\n\nUser: {user}\nAssistant:"
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max(32, min(max_new_tokens, 768)),
+                do_sample=False,
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+            )
+        generated = outputs[0][inputs["input_ids"].shape[-1] :]
+        answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        return {
+            "status": "ok",
+            "model": model_id,
+            "answer": answer,
+            "tokens": int(generated.numel()),
         }
 else:
     app = None

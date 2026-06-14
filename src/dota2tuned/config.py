@@ -76,6 +76,10 @@ class Settings:
     modal_train_timeout: int = field(
         default_factory=lambda: int(os.getenv("MODAL_TRAIN_TIMEOUT", str(6 * 60 * 60)))
     )
+    modal_infer_gpu: str = field(default_factory=lambda: os.getenv("MODAL_INFER_GPU", "A10G"))
+    modal_infer_timeout: int = field(
+        default_factory=lambda: int(os.getenv("MODAL_INFER_TIMEOUT", "900"))
+    )
     modal_cache_volume: str = field(
         default_factory=lambda: os.getenv("MODAL_CACHE_VOLUME", "dota2tuned-hf-cache")
     )

@@ -248,3 +248,24 @@ def modal_train(
             indent=2,
         )
     )
+
+
+@app.command("modal-ask")
+def modal_ask(
+    question: Annotated[str, typer.Argument(help="Question for the fine-tuned adapter.")],
+    context: Annotated[
+        str,
+        typer.Option(help="Optional evidence/context to pass to the adapter."),
+    ] = "",
+    max_new_tokens: Annotated[int, typer.Option(help="Maximum new tokens.")] = 384,
+) -> None:
+    settings = get_settings()
+    _require_modal(settings)
+    try:
+        import modal
+    except ImportError as exc:
+        typer.echo("Install Modal dependencies with `uv sync --extra modal`.", err=True)
+        raise typer.Exit(1) from exc
+
+    generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
+    typer.echo(json.dumps(generate_fn.remote(question, context, max_new_tokens), indent=2))
