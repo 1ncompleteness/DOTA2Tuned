@@ -115,6 +115,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 02:41: replaced the generic generated adapter README with a DOTA2Tuned-specific model card covering intended behavior, evidence discipline, usage, evaluation notes, limitations, and public links.
 - 2026-06-14 02:57: added a final submission-readiness checker that verifies public URLs, Space runtime, Hub model/dataset cards, git cleanliness, and all public Gradio API endpoints while listing the human-only video/social/submission steps separately.
 - 2026-06-14 03:29: started a durable tmux background data expansion toward 1,600 OpenDota match details, added checkpointed detail ingestion, moved recommendation confidence to normalized player-match samples, and upgraded the Gradio UI with searchable hero/item dropdowns, alias search, and icon previews.
+- 2026-06-14 03:49: completed the background data expansion with 1,604 enriched OpenDota match details, 16,040 player-match rows, 38,347 draft pick/ban rows, 728,416 item-purchase rows, 23,080 hero-pair rows, 32,517 build-stat rows, 1,604 draft predictor samples, and 279 SFT examples. Medium-confidence recommendations now appear where normalized sample sizes exceed 100.
+- 2026-06-14 03:50: started the next durable tmux expansion `dota2tuned_data_expand` toward 7,000 OpenDota match details with `--pro-matches 8000 --public-matches 500 --enrich-limit 7000 --patch-count 4 --league-limit 50`; the run continues in the background and checkpoints existing details every 25 new match fetches.
 
 ## Adapter Eval Notes
 

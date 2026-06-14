@@ -103,8 +103,20 @@ APP_CSS = """
   font-size: 13px;
   line-height: 16px;
 }
-.entity-chip span {
-  display: block;
+.entity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.entity-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(218, 178, 88, 0.13);
+  border: 1px solid rgba(218, 178, 88, 0.22);
   color: rgba(245, 245, 235, 0.68);
   font-size: 11px;
   line-height: 14px;
@@ -231,6 +243,17 @@ def _html_escape(value: object) -> str:
     )
 
 
+def _role_tags_html(roles: object) -> str:
+    tags = [part.strip() for part in str(roles or "").split(",") if part.strip()]
+    if not tags:
+        return ""
+    return (
+        "<div class='entity-tags'>"
+        + "".join(f"<span class='entity-tag'>{_html_escape(tag)}</span>" for tag in tags)
+        + "</div>"
+    )
+
+
 def _format_item_time(seconds: object) -> str:
     value = float(seconds or 0)
     if value < 0:
@@ -287,12 +310,12 @@ def _selected_hero_html(hero_ids: object, metadata: dict[int, dict[str, str]]) -
         hero_id = int(raw_id)
         row = metadata.get(hero_id, {})
         name = _html_escape(row.get("name") or f"Hero {hero_id}")
-        roles = _html_escape(row.get("roles") or "")
         icon = _html_escape(row.get("icon") or "")
         img = f"<img src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+        role_tags = _role_tags_html(row.get("roles"))
         chips.append(
             f"<div class='entity-chip'>{img}<div><strong>{name}</strong>"
-            f"<span>{roles}</span></div></div>"
+            f"{role_tags}</div></div>"
         )
     return "<div class='hero-strip'>" + "".join(chips) + "</div>"
 
