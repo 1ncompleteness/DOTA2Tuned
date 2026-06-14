@@ -1,11 +1,13 @@
 import polars as pl
 
 from dota2tuned.ui.gradio_app import (
+    _dropdown_js,
     _format_item_time,
     _hero_aliases,
     _hero_choices,
     _hero_lookup,
     _parse_heroes,
+    _selected_hero_html,
 )
 
 
@@ -66,6 +68,25 @@ def test_hero_choice_labels_do_not_show_single_letter_aliases():
         "Mirana · Carry, Support",
         "Queen of Pain (QoP) · Carry, Nuker, Escape",
     ]
+
+
+def test_selected_hero_preview_is_image_only_card():
+    html = _selected_hero_html(
+        [1],
+        {1: {"name": "Anti-Mage", "icon": "https://example.test/am.png", "roles": "Carry"}},
+    )
+
+    assert "hero-card" in html
+    assert "<img" in html
+    assert "<strong>" not in html
+    assert "entity-tag" not in html
+
+
+def test_dropdown_js_does_not_reinject_topbar():
+    js = _dropdown_js({"Anti-Mage · Carry": {"src": "https://example.test/am.png", "kind": "hero"}})
+
+    assert "choiceIcons" in js
+    assert "ensureTopbar" not in js
 
 
 def test_parse_heroes_accepts_dropdown_values():

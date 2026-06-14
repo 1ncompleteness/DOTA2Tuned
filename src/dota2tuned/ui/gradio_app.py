@@ -136,6 +136,79 @@ NAV_OPTIONS = [
     "Data Freshness",
 ]
 
+NAV_ICON_BODIES = {
+    "Draft Coach": (
+        "#d9b166",
+        (
+            "<path d='M8 8h16v16H8z'/>",
+            "<path d='M8 13h16'/>",
+            "<path d='M13 8v16'/>",
+            "<path d='M18 8v16'/>",
+        ),
+    ),
+    "Hero Meta": (
+        "#e08a62",
+        (
+            "<path d='M16 5l3.2 6.5 7.2 1-5.2 5 1.2 7.1L16 21.2l-6.4 3.4 1.2-7.1-5.2-5 7.2-1z'/>",
+        ),
+    ),
+    "Tuned Model": (
+        "#9fc7ff",
+        (
+            "<path d='M10 12a6 6 0 0112 0v8a4 4 0 01-4 4h-4a4 4 0 01-4-4z'/>",
+            "<path d='M13 10v14'/>",
+            "<path d='M19 10v14'/>",
+            "<path d='M8 16h16'/>",
+        ),
+    ),
+    "Match Predictor": (
+        "#8fd19e",
+        (
+            "<path d='M7 23V9'/>",
+            "<path d='M13 23V13'/>",
+            "<path d='M19 23V6'/>",
+            "<path d='M25 23H5'/>",
+        ),
+    ),
+    "Builds": (
+        "#d7a36f",
+        (
+            "<path d='M10 22l12-12'/>",
+            "<path d='M18 6l6 6'/>",
+            "<path d='M8 24l-2 2'/>",
+            "<path d='M12 20l-4 4'/>",
+        ),
+    ),
+    "Draft Lab": (
+        "#c09cff",
+        (
+            "<path d='M12 6h8'/>",
+            "<path d='M14 6v7l-5 9a4 4 0 003.5 6h7a4 4 0 003.5-6l-5-9V6'/>",
+            "<path d='M11 22h10'/>",
+        ),
+    ),
+    "Data Freshness": (
+        "#86d8d0",
+        (
+            "<path d='M24 12a8 8 0 00-14-4l-2 2'/>",
+            "<path d='M8 5v5h5'/>",
+            "<path d='M8 20a8 8 0 0014 4l2-2'/>",
+            "<path d='M24 27v-5h-5'/>",
+        ),
+    ),
+}
+
+NAV_ICON_URLS = {
+    label: _badge_icon("".join(paths), accent)
+    for label, (accent, paths) in NAV_ICON_BODIES.items()
+}
+
+NAV_ICON_CSS = "\n".join(
+    f".app-sidebar .app-nav label:nth-of-type({index})::before "
+    f"{{ background-image: url('{NAV_ICON_URLS[label]}'); }}"
+    for index, label in enumerate(NAV_OPTIONS, start=1)
+)
+
 ROLE_DROPDOWN_ICONS = {
     "carry": ROLE_ICON_URLS["Carry"],
     "mid": ROLE_ICON_URLS["Nuker"],
@@ -234,23 +307,80 @@ COMMON_HERO_ALIASES = {
 AMBIGUOUS_GENERATED_ALIASES = {"NS", "VS"}
 
 APP_CSS = """
+@font-face {
+  font-family: "Radiance";
+  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Radiance";
+  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance-semibold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+}
 .gradio-container {
+  max-width: none !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  color: #dcdedf;
+  font-family: "Radiance", "Noto Sans", sans-serif !important;
   background:
-    radial-gradient(circle at top left, rgba(128, 32, 32, 0.10), transparent 34rem),
-    linear-gradient(180deg, #101414 0%, #151716 100%);
+    radial-gradient(circle at 18% -8%, rgba(255, 96, 70, 0.18), transparent 32rem),
+    radial-gradient(circle at 92% 3%, rgba(171, 140, 59, 0.13), transparent 28rem),
+    linear-gradient(180deg, #05060a 0%, #111318 46%, #090a0d 100%);
 }
-.app-topbar {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-height: 54px;
-  padding: 8px 2px 13px;
+.gradio-container .contain,
+.gradio-container main,
+.gradio-container .main {
+  max-width: none !important;
+  width: 100% !important;
 }
-.app-topbar img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(220, 72, 42, 0.35));
+.gradio-container * {
+  font-family: "Radiance", "Noto Sans", sans-serif !important;
+  letter-spacing: 0 !important;
+}
+.gradio-container label,
+.gradio-container .prose,
+.gradio-container .markdown,
+.gradio-container input,
+.gradio-container textarea,
+.gradio-container select {
+  color: #dcdedf !important;
+}
+.gradio-container .form,
+.gradio-container .block,
+.gradio-container .panel,
+.gradio-container .input-container,
+.gradio-container textarea,
+.gradio-container input,
+.gradio-container .wrap-inner {
+  border-color: rgba(103, 112, 123, 0.42) !important;
+  background: rgba(22, 22, 24, 0.70) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035) !important;
+}
+.gradio-container textarea,
+.gradio-container input {
+  color: #efe5bb !important;
+}
+.gradio-container button {
+  border: 1px solid rgba(255, 96, 70, 0.42) !important;
+  border-radius: 3px !important;
+  background:
+    linear-gradient(180deg, rgba(149, 46, 70, 0.92), rgba(83, 31, 28, 0.94)) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34) !important;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease !important;
+}
+.gradio-container button:hover {
+  border-color: rgba(255, 96, 70, 0.74) !important;
+  background:
+    linear-gradient(180deg, rgba(234, 105, 83, 0.98), rgba(126, 43, 34, 0.98)) !important;
+  transform: translateY(-1px);
+}
+.gradio-container button:active {
+  transform: translateY(0);
 }
 .app-title {
   display: flex;
@@ -269,34 +399,108 @@ APP_CSS = """
   line-height: 15px;
 }
 .app-sidebar {
-  border-right: 1px solid rgba(220, 190, 120, 0.16) !important;
+  border-right: 1px solid rgba(103, 112, 123, 0.36) !important;
   background:
-    linear-gradient(180deg, rgba(20, 24, 23, 0.96), rgba(13, 15, 14, 0.98)) !important;
+    linear-gradient(180deg, rgba(35, 38, 46, 0.98), rgba(5, 6, 10, 0.99)) !important;
+  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.28);
+}
+.app-sidebar .block,
+.app-sidebar .form,
+.app-sidebar .panel,
+.app-sidebar .wrap-inner {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 62px;
+  padding: 8px 4px 16px;
+  margin: 0 0 10px;
+  border-bottom: 1px solid rgba(235, 207, 135, 0.18);
+}
+.app-sidebar-brand img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(255, 96, 70, 0.36));
+}
+.app-sidebar-brand strong {
+  display: block;
+  color: #efe5bb;
+  font-size: 17px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+.app-sidebar-brand span {
+  display: block;
+  color: #8b929a;
+  font-size: 12px;
+  line-height: 15px;
+}
+.app-sidebar-nav-section {
+  padding-top: 3px;
 }
 .app-sidebar .app-nav {
-  margin-top: 4px;
+  margin-top: 0;
+}
+.app-sidebar .app-nav .wrap,
+.app-sidebar .app-nav .options,
+.app-sidebar .app-nav .radio-group {
+  gap: 2px !important;
+}
+.app-sidebar .app-nav input[type="radio"] {
+  display: none !important;
 }
 .app-sidebar .app-nav label {
-  min-height: 42px !important;
-  padding: 8px 10px !important;
-  border: 1px solid rgba(220, 190, 120, 0.15) !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.035) !important;
-  color: rgba(245, 245, 235, 0.80) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 38px !important;
+  width: 100% !important;
+  padding: 7px 4px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #dcdedf !important;
   font-size: 13px !important;
   line-height: 16px !important;
+  cursor: pointer !important;
+}
+.app-sidebar .app-nav label::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.72;
 }
 .app-sidebar .app-nav label:has(input:checked) {
-  border-color: rgba(224, 155, 88, 0.46) !important;
-  background: rgba(224, 155, 88, 0.13) !important;
-  color: rgba(255, 246, 225, 0.96) !important;
+  background: transparent !important;
+  color: #ff6046 !important;
 }
+.app-sidebar .app-nav label:has(input:checked)::before {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 96, 70, 0.45));
+}
+__NAV_ICON_CSS__
 .app-main {
-  max-width: 1240px;
-  margin: 0 auto;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 0 0 0 !important;
+  box-sizing: border-box;
 }
 .app-view {
   gap: 10px;
+  width: 100% !important;
+  padding: 0 !important;
+  box-sizing: border-box;
 }
 .app-view > .form,
 .app-view > .block {
@@ -315,6 +519,22 @@ APP_CSS = """
 .svelte-select-list {
   z-index: 4000 !important;
   pointer-events: auto !important;
+  border: 1px solid rgba(103, 112, 123, 0.55) !important;
+  background: linear-gradient(180deg, #36363e 0%, #23262e 100%) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.58) !important;
+}
+[role="option"],
+.option,
+.dropdown-option,
+.svelte-select-list div {
+  color: #dcdedf !important;
+}
+[role="option"]:hover,
+.option:hover,
+.dropdown-option:hover,
+.svelte-select-list div:hover {
+  background: rgba(255, 96, 70, 0.16) !important;
+  color: #fff !important;
 }
 .dota-choice-option {
   display: flex !important;
@@ -322,21 +542,25 @@ APP_CSS = """
   gap: 8px !important;
 }
 .dota-choice-option .dota-choice-icon {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
-  border-radius: 4px;
-  flex: 0 0 24px;
+  border-radius: 2px;
+  flex: 0 0 28px;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.22);
 }
 .dota-choice-option.dota-hero-option .dota-choice-icon {
   object-fit: cover;
 }
 .hero-strip, .item-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(72px, 82px));
   gap: 8px;
   margin-top: 6px;
   pointer-events: none;
+}
+.item-strip {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 .entity-chip {
   display: flex;
@@ -344,15 +568,26 @@ APP_CSS = """
   gap: 8px;
   min-height: 42px;
   padding: 7px 8px;
-  border: 1px solid rgba(220, 190, 120, 0.24);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(103, 112, 123, 0.42);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(45, 45, 51, 0.78), rgba(22, 22, 24, 0.78));
 }
 .entity-chip img {
   width: 32px;
   height: 32px;
   object-fit: contain;
   border-radius: 5px;
+}
+.hero-card {
+  min-height: 50px;
+  padding: 4px;
+  justify-content: center;
+}
+.hero-card img {
+  width: 100%;
+  height: 46px;
+  object-fit: cover;
+  border-radius: 2px;
 }
 .entity-chip strong {
   display: block;
@@ -370,10 +605,10 @@ APP_CSS = """
   align-items: center;
   min-height: 18px;
   padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(218, 178, 88, 0.13);
-  border: 1px solid rgba(218, 178, 88, 0.22);
-  color: rgba(245, 245, 235, 0.68);
+  border-radius: 2px;
+  background: rgba(171, 140, 59, 0.14);
+  border: 1px solid rgba(235, 207, 135, 0.22);
+  color: #d2bd6f;
   font-size: 11px;
   line-height: 14px;
 }
@@ -392,32 +627,22 @@ APP_CSS = """
   border-radius: 50%;
 }
 .empty-strip {
-  color: rgba(245, 245, 235, 0.60);
+  color: #8b929a;
   font-size: 13px;
   padding: 7px 0;
 }
-"""
+""".replace("__NAV_ICON_CSS__", NAV_ICON_CSS)
 
 
 def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
-    topbar = _topbar_html()
     return f"""
 () => {{
   const choiceIcons = {json.dumps(choice_icon_by_label)};
-  const topbarHtml = {json.dumps(topbar)};
-  const ensureTopbar = () => {{
-    if (document.querySelector(".app-topbar")) return;
-    const container = document.querySelector(".gradio-container");
-    if (!container) return;
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = topbarHtml;
-    container.prepend(wrapper.firstElementChild);
-  }};
   const decorate = () => {{
-    ensureTopbar();
     const optionSelector = [
       '[role="option"]',
       '.option',
+      '.dropdown-option',
       'li',
       '.svelte-select-list div'
     ].join(', ');
@@ -443,7 +668,6 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   observer.observe(document.body, {{ childList: true, subtree: true }});
   document.addEventListener("click", () => setTimeout(decorate, 0), true);
   document.addEventListener("keyup", () => setTimeout(decorate, 0), true);
-  ensureTopbar();
   decorate();
 }}
 """
@@ -665,10 +889,10 @@ def _dropdown_icon_by_label(
     return icons
 
 
-def _topbar_html() -> str:
+def _sidebar_brand_html() -> str:
     logo = _html_escape(DOTA_LOGO_URL)
     return (
-        "<div class='app-topbar'>"
+        "<div class='app-sidebar-brand'>"
         f"<img src='{logo}' alt='Dota 2' loading='eager'>"
         "<div class='app-title'><strong>DOTA2Tuned</strong>"
         "<span>Draft, meta, counters, builds, and match prediction</span></div>"
@@ -693,19 +917,18 @@ def _item_choices(items: pl.DataFrame) -> list[tuple[str, str]]:
 
 def _selected_hero_html(hero_ids: object, metadata: dict[int, dict[str, str]]) -> str:
     if not isinstance(hero_ids, list) or not hero_ids:
-        return "<div class='empty-strip'>No heroes selected.</div>"
+        return "<div class='hero-strip'></div>"
     chips = []
     for raw_id in hero_ids:
         hero_id = int(raw_id)
         row = metadata.get(hero_id, {})
         name = _html_escape(row.get("name") or f"Hero {hero_id}")
         icon = _html_escape(row.get("icon") or "")
-        img = f"<img src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
-        role_tags = _role_tags_html(row.get("roles"))
-        chips.append(
-            f"<div class='entity-chip'>{img}<div><strong>{name}</strong>"
-            f"{role_tags}</div></div>"
-        )
+        if icon:
+            chips.append(
+                f"<div class='entity-chip hero-card' title='{name}'>"
+                f"<img src='{icon}' alt='{name}' loading='lazy'></div>"
+            )
     return "<div class='hero-strip'>" + "".join(chips) + "</div>"
 
 
@@ -938,15 +1161,17 @@ def build_app() -> gr.Blocks:
         return tuple(gr.update(visible=label == selected) for label in NAV_OPTIONS)
 
     with gr.Blocks(title="DOTA2Tuned") as demo:
-        gr.HTML(f"<style>{APP_CSS}</style>{_topbar_html()}")
+        gr.HTML(f"<style>{APP_CSS}</style>")
         with gr.Sidebar(open=True, width=238, position="left", elem_classes=["app-sidebar"]):
-            nav = gr.Radio(
-                choices=NAV_OPTIONS,
-                value="Draft Coach",
-                show_label=False,
-                container=False,
-                elem_classes=["app-nav"],
-            )
+            gr.HTML(_sidebar_brand_html())
+            with gr.Column(elem_classes=["app-sidebar-nav-section"]):
+                nav = gr.Radio(
+                    choices=NAV_OPTIONS,
+                    value="Draft Coach",
+                    show_label=False,
+                    container=False,
+                    elem_classes=["app-nav"],
+                )
         with gr.Column(elem_classes=["app-main"]):
             with gr.Column(visible=True, elem_classes=["app-view"]) as draft_view:
                 with gr.Row():

@@ -28,7 +28,7 @@
 - CLI: `dota2tuned ingest`, `normalize`, `features`, `train-predictor`, `build-rag`, `make-sft`, `finetune`, `eval`, `serve`, `modal-deploy`, `modal-smoke`, `modal-train`, `modal-ask`.
 - `.env` keys: `HF_TOKEN`, `HF_ORG`, `HF_SPACE_ID`, `HF_MODEL_REPO_ID`, `HF_DATASET_REPO_ID`, `STRATZ_TOKEN`, `OPENDOTA_API_KEY`, `STEAM_API_KEY`, `BASE_MODEL_ID`, `TRAINING_FLAVOR`, `SPACE_HARDWARE`, `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `MODAL_APP_NAME`, `MODAL_ENABLED`, `MODAL_TRAIN_GPU`, `MODAL_TRAIN_TIMEOUT`, `MODAL_INFER_GPU`, `MODAL_INFER_TIMEOUT`, `MODAL_CACHE_VOLUME`, `MODAL_OUTPUT_VOLUME`, `DUCKDB_PATH`, `RAW_DATA_DIR`, `PARQUET_DIR`.
 - Recommendation schema: `hero_id`, `hero_name`, `role`, `score`, `win_prob_delta`, `counter_lift`, `synergy_lift`, `sample_size`, `patch`, `scope`, `sources`, `confidence`, `caveats`.
-- Gradio tabs: Draft Coach, Hero Meta, Tuned Model, Match Predictor, Builds, Draft Lab, Data Freshness.
+- Gradio left-sidebar views: Draft Coach, Hero Meta, Tuned Model, Match Predictor, Builds, Draft Lab, Data Freshness.
 
 ## Pipeline
 
@@ -133,6 +133,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 15:13: added targeted rare-hero backfill based on OpenDota Explorer `public_matches` hero arrays. A capped smoke run targeted Elder Titan, discovered `10` candidate rows, fetched `5` new details, and raised raw OpenDota match details from `8,562` to `8,567` before launching the durable targeted loop.
 - 2026-06-14 16:18: polished Gradio dropdown UX by replacing packed role text symbols with image-backed role badges, adding role/scope dropdown icon decoration, keeping hero dropdown icon decoration, and preserving the Steam CDN Dota logo in the topbar. The targeted tmux loop was still running separately at `11,946` raw OpenDota match details and `3,380` targeted candidate rows.
 - 2026-06-14 16:36: removed all one-letter generated hero aliases from dropdown/search labels, kept curated conventional aliases such as `AM` and `QoP`, and replaced the top tab bar with a native left `gr.Sidebar` navigation so all former tab views share one consistent content layout.
+- 2026-06-14 16:54: refined the Gradio UI to match current Dota 2 web styling from the official Dota React bundle: Radiance font, black/blue-gray panels, ember red actions, muted gold accents, and plain icon+text sidebar navigation. Moved the DOTA2Tuned logo/text into the sidebar brand section, removed topbar reinjection, made view content full-width, kept hero dropdown rows icon-decorated, and changed selected hero previews to image-only cards.
 
 ## Adapter Eval Notes
 
