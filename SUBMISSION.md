@@ -80,6 +80,7 @@ uv run python -c "from app import demo; print(type(demo).__name__, len(demo.bloc
 uv run dota2tuned modal-smoke
 uv run dota2tuned modal-ask "Suggest one mid hero against Phantom Assassin and Witch Doctor. Include one caveat." --context "Use only grounded advice. Mention that sample sizes and patch context matter." --max-new-tokens 160
 uv run python scripts/check_public_space.py
+uv run python scripts/check_submission_ready.py
 curl -L -sS -o /dev/null -w '%{http_code}\n' https://build-small-hackathon-dota2tuned.hf.space
 curl -sS -o /dev/null -w '%{http_code}\n' https://dracufeuer--dota2tuned-ui.modal.run
 git status --short --branch

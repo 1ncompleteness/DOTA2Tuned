@@ -113,6 +113,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 01:27: addressed the submission-readiness review by adding hero-name parsing, making Draft Lab demoable, adding tests, preparing a dataset card, declaring Apache-2.0 licensing, and aligning the Modal dependency version.
 - 2026-06-14 02:36: continued demo-readiness hardening by adding role-aware recommendation filtering, Bayesian win-rate shrinkage for low samples, pre-game item timing labels, and a repeatable public Space API check script.
 - 2026-06-14 02:41: replaced the generic generated adapter README with a DOTA2Tuned-specific model card covering intended behavior, evidence discipline, usage, evaluation notes, limitations, and public links.
+- 2026-06-14 02:57: added a final submission-readiness checker that verifies public URLs, Space runtime, Hub model/dataset cards, git cleanliness, and all public Gradio API endpoints while listing the human-only video/social/submission steps separately.
 
 ## Adapter Eval Notes
 
