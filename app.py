@@ -11,4 +11,4 @@ demo = build_app()
 
 
 if __name__ == "__main__":
-    demo.launch(css=APP_CSS, theme=gr.themes.Soft())
+    demo.launch(css=APP_CSS, js=getattr(demo, "dota2tuned_js", None), theme=gr.themes.Soft())

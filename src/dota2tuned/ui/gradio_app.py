@@ -15,6 +15,33 @@ from dota2tuned.storage import read_parquet
 from dota2tuned.train_predictor import predict_draft_win
 
 ASSET_BASE_URL = "https://cdn.cloudflare.steamstatic.com"
+DOTA_LOGO_URL = f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/global/dota2_logo_symbol.png"
+
+ROLE_ICONS = {
+    "Carry": "⚔",
+    "Support": "✚",
+    "Nuker": "✦",
+    "Disabler": "⛓",
+    "Jungler": "♣",
+    "Durable": "◆",
+    "Escape": "↗",
+    "Pusher": "▰",
+    "Initiator": "⚑",
+}
+
+ROLE_OPTIONS = [
+    ("⚔ Carry", "carry"),
+    ("✦ Mid", "mid"),
+    ("⚑ Offlane", "offlane"),
+    ("✚ Soft support", "soft support"),
+    ("✚ Hard support", "hard support"),
+]
+
+SCOPE_OPTIONS = [
+    ("◆ Pro", "pro"),
+    ("↗ High-rank", "high-rank"),
+    ("▰ Public", "public"),
+]
 
 COMMON_HERO_ALIASES = {
     "Anti-Mage": ["AM"],
@@ -76,11 +103,67 @@ APP_CSS = """
     radial-gradient(circle at top left, rgba(128, 32, 32, 0.10), transparent 34rem),
     linear-gradient(180deg, #101414 0%, #151716 100%);
 }
+.app-topbar {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 54px;
+  padding: 8px 2px 13px;
+}
+.app-topbar img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(220, 72, 42, 0.35));
+}
+.app-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.app-title strong {
+  color: rgba(252, 245, 230, 0.94);
+  font-size: 18px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+.app-title span {
+  color: rgba(245, 245, 235, 0.62);
+  font-size: 12px;
+  line-height: 15px;
+}
+.dota-dropdown {
+  position: relative;
+  z-index: 20;
+}
+.dota-dropdown:focus-within {
+  z-index: 2500;
+}
+[role="listbox"],
+.options,
+.dropdown-options,
+.svelte-select-list {
+  z-index: 4000 !important;
+  pointer-events: auto !important;
+}
+.dota-hero-option {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.dota-hero-option img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex: 0 0 24px;
+}
 .hero-strip, .item-strip {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
   margin-top: 6px;
+  pointer-events: none;
 }
 .entity-chip {
   display: flex;
@@ -121,11 +204,72 @@ APP_CSS = """
   font-size: 11px;
   line-height: 14px;
 }
+.role-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: rgba(245, 245, 235, 0.10);
+  color: rgba(252, 225, 160, 0.90);
+  font-size: 10px;
+  line-height: 15px;
+}
 .empty-strip {
   color: rgba(245, 245, 235, 0.60);
   font-size: 13px;
   padding: 7px 0;
 }
+"""
+
+
+def _dropdown_js(hero_icon_by_label: dict[str, str]) -> str:
+    topbar = _topbar_html()
+    return f"""
+() => {{
+  const heroIcons = {json.dumps(hero_icon_by_label)};
+  const topbarHtml = {json.dumps(topbar)};
+  const ensureTopbar = () => {{
+    if (document.querySelector(".app-topbar")) return;
+    const container = document.querySelector(".gradio-container");
+    if (!container) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = topbarHtml;
+    container.prepend(wrapper.firstElementChild);
+  }};
+  const decorate = () => {{
+    ensureTopbar();
+    const optionSelector = [
+      '[role="option"]',
+      '.option',
+      'li',
+      '.svelte-select-list div'
+    ].join(', ');
+    const options = document.querySelectorAll(optionSelector);
+    options.forEach((option) => {{
+      if (option.dataset && option.dataset.dotaHeroIconDecorated === "1") return;
+      const label = (option.textContent || "").trim().replace(/\\s+/g, " ");
+      const icon = heroIcons[label];
+      if (!icon) return;
+      option.classList.add("dota-hero-option");
+      const img = document.createElement("img");
+      img.src = icon;
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      option.prepend(img);
+      if (option.dataset) option.dataset.dotaHeroIconDecorated = "1";
+    }});
+  }};
+  const observer = new MutationObserver(decorate);
+  observer.observe(document.body, {{ childList: true, subtree: true }});
+  document.addEventListener("click", () => setTimeout(decorate, 0), true);
+  document.addEventListener("keyup", () => setTimeout(decorate, 0), true);
+  ensureTopbar();
+  decorate();
+}}
 """
 
 
@@ -249,9 +393,18 @@ def _role_tags_html(roles: object) -> str:
         return ""
     return (
         "<div class='entity-tags'>"
-        + "".join(f"<span class='entity-tag'>{_html_escape(tag)}</span>" for tag in tags)
+        + "".join(
+            "<span class='entity-tag'>"
+            f"<span class='role-icon'>{_html_escape(ROLE_ICONS.get(tag, '•'))}</span>"
+            f"{_html_escape(tag)}</span>"
+            for tag in tags
+        )
         + "</div>"
     )
+
+
+def _format_roles_text(roles: object) -> str:
+    return ", ".join(part.strip() for part in str(roles or "").split(",") if part.strip())
 
 
 def _format_item_time(seconds: object) -> str:
@@ -270,7 +423,7 @@ def _hero_metadata(heroes: pl.DataFrame) -> dict[int, dict[str, str]]:
         hero_name = str(row.get("hero_name") or f"Hero {hero_id}")
         metadata[hero_id] = {
             "name": hero_name,
-            "roles": str(row.get("roles") or ""),
+            "roles": _format_roles_text(row.get("roles")),
             "icon": _asset_url(row.get("icon") or row.get("img")),
             "aliases": ", ".join(_hero_aliases(hero_name)),
         }
@@ -282,9 +435,30 @@ def _hero_choices(heroes: pl.DataFrame) -> list[tuple[str, int]]:
     choices = []
     for hero_id, row in sorted(metadata.items(), key=lambda item: item[1]["name"]):
         aliases = f" ({row['aliases']})" if row["aliases"] else ""
-        role_text = f" - {row['roles']}" if row["roles"] else ""
+        role_text = f" · {row['roles']}" if row["roles"] else ""
         choices.append((f"{row['name']}{aliases}{role_text}", hero_id))
     return choices
+
+
+def _hero_icon_by_label(
+    hero_choices: list[tuple[str, int]], metadata: dict[int, dict[str, str]]
+) -> dict[str, str]:
+    return {
+        label: metadata.get(int(hero_id), {}).get("icon", "")
+        for label, hero_id in hero_choices
+        if metadata.get(int(hero_id), {}).get("icon")
+    }
+
+
+def _topbar_html() -> str:
+    logo = _html_escape(DOTA_LOGO_URL)
+    return (
+        "<div class='app-topbar'>"
+        f"<img src='{logo}' alt='Dota 2' loading='eager'>"
+        "<div class='app-title'><strong>DOTA2Tuned</strong>"
+        "<span>Draft, meta, counters, builds, and match prediction</span></div>"
+        "</div>"
+    )
 
 
 def _item_choices(items: pl.DataFrame) -> list[tuple[str, str]]:
@@ -545,197 +719,222 @@ def build_app() -> gr.Blocks:
             "- Rule: if the evidence is thin, say so before giving the pick."
         )
 
-    with gr.Blocks(title="DOTA2Tuned") as demo, gr.Tabs():
-        with gr.Tab("Draft Coach"):
-            with gr.Row():
-                allies = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Allied heroes",
-                    multiselect=True,
-                    filterable=True,
-                    max_choices=5,
+    with gr.Blocks(title="DOTA2Tuned") as demo:
+        gr.HTML(f"<style>{APP_CSS}</style>{_topbar_html()}")
+        with gr.Tabs():
+            with gr.Tab("Draft Coach"):
+                with gr.Row():
+                    allies = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Allied heroes",
+                        multiselect=True,
+                        filterable=True,
+                        max_choices=5,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    enemies = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Enemy heroes",
+                        value=[44, 30],
+                        multiselect=True,
+                        filterable=True,
+                        max_choices=5,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    bans = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Banned heroes",
+                        multiselect=True,
+                        filterable=True,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                with gr.Row():
+                    ally_preview = gr.HTML(hero_preview([]))
+                    enemy_preview = gr.HTML(hero_preview([44, 30]))
+                    ban_preview = gr.HTML(hero_preview([]))
+                with gr.Row():
+                    role = gr.Dropdown(
+                        choices=ROLE_OPTIONS,
+                        label="Role",
+                        value="mid",
+                        elem_classes=["dota-dropdown", "role-dropdown"],
+                    )
+                    scope = gr.Dropdown(
+                        choices=SCOPE_OPTIONS,
+                        label="Scope",
+                        value="pro",
+                        elem_classes=["dota-dropdown", "scope-dropdown"],
+                    )
+                run = gr.Button("Recommend")
+                rec_output = gr.Markdown()
+                evidence_output = gr.Code(label="Evidence", language="json")
+                allies.change(hero_preview, inputs=[allies], outputs=[ally_preview])
+                enemies.change(hero_preview, inputs=[enemies], outputs=[enemy_preview])
+                bans.change(hero_preview, inputs=[bans], outputs=[ban_preview])
+                run.click(
+                    draft_coach,
+                    inputs=[allies, enemies, bans, role, scope],
+                    outputs=[rec_output, evidence_output],
                 )
-                enemies = gr.Dropdown(
+
+            with gr.Tab("Hero Meta"):
+                with gr.Row():
+                    meta_hero = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Hero",
+                        filterable=True,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    meta_item = gr.Dropdown(
+                        choices=item_choices,
+                        label="Item",
+                        filterable=True,
+                        elem_classes=["dota-dropdown", "item-dropdown"],
+                    )
+                with gr.Row():
+                    meta_hero_preview = gr.HTML(hero_preview([]))
+                    meta_item_preview = gr.HTML(item_preview(None))
+                query = gr.Textbox(label="Patch or meta query", value="current pro meta")
+                meta_button = gr.Button("Search")
+                meta_output = gr.Markdown()
+                meta_hero.change(
+                    hero_single_preview,
+                    inputs=[meta_hero],
+                    outputs=[meta_hero_preview],
+                )
+                meta_item.change(item_preview, inputs=[meta_item], outputs=[meta_item_preview])
+                meta_button.click(
+                    hero_meta,
+                    inputs=[query, meta_hero, meta_item],
+                    outputs=[meta_output],
+                )
+
+            with gr.Tab("Tuned Model"):
+                tuned_question = gr.Textbox(
+                    label="Question",
+                    value=(
+                        "Suggest one mid hero against Phantom Assassin and Witch Doctor, "
+                        "and include one caveat."
+                    ),
+                )
+                tuned_context = gr.Textbox(
+                    label="Optional evidence",
+                    lines=5,
+                    placeholder="Leave blank to retrieve local patch/stat evidence automatically.",
+                )
+                tuned_tokens = gr.Slider(
+                    minimum=64,
+                    maximum=768,
+                    value=256,
+                    step=32,
+                    label="Max response tokens",
+                )
+                tuned_button = gr.Button("Ask Tuned Model")
+                tuned_output = gr.Markdown()
+                tuned_evidence = gr.Code(label="Retrieved Evidence", language="json")
+                tuned_button.click(
+                    tuned_model,
+                    inputs=[tuned_question, tuned_context, tuned_tokens],
+                    outputs=[tuned_output, tuned_evidence],
+                )
+
+            with gr.Tab("Match Predictor"):
+                with gr.Row():
+                    radiant = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Radiant heroes",
+                        value=[1, 2, 3, 25, 5],
+                        multiselect=True,
+                        filterable=True,
+                        max_choices=5,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    dire = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Dire heroes",
+                        value=[14, 74, 6, 26, 18],
+                        multiselect=True,
+                        filterable=True,
+                        max_choices=5,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                with gr.Row():
+                    radiant_preview = gr.HTML(hero_preview([1, 2, 3, 25, 5]))
+                    dire_preview = gr.HTML(hero_preview([14, 74, 6, 26, 18]))
+                predict_button = gr.Button("Predict")
+                predict_output = gr.Code(label="Prediction", language="json")
+                radiant.change(hero_preview, inputs=[radiant], outputs=[radiant_preview])
+                dire.change(hero_preview, inputs=[dire], outputs=[dire_preview])
+                predict_button.click(
+                    match_predictor,
+                    inputs=[radiant, dire],
+                    outputs=[predict_output],
+                )
+
+            with gr.Tab("Builds"):
+                with gr.Row():
+                    hero = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Hero",
+                        value=1,
+                        filterable=True,
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    build_item = gr.Dropdown(
+                        choices=item_choices,
+                        label="Optional item filter",
+                        filterable=True,
+                        elem_classes=["dota-dropdown", "item-dropdown"],
+                    )
+                with gr.Row():
+                    build_hero_preview = gr.HTML(hero_preview([1]))
+                    build_item_preview = gr.HTML(item_preview(None))
+                builds_button = gr.Button("Show Builds")
+                builds_output = gr.Markdown()
+                hero.change(
+                    hero_single_preview,
+                    inputs=[hero],
+                    outputs=[build_hero_preview],
+                )
+                build_item.change(item_preview, inputs=[build_item], outputs=[build_item_preview])
+                builds_button.click(hero_builds, inputs=[hero, build_item], outputs=[builds_output])
+
+            with gr.Tab("Draft Lab"):
+                lab_enemies = gr.Dropdown(
                     choices=hero_choices,
                     label="Enemy heroes",
                     value=[44, 30],
                     multiselect=True,
                     filterable=True,
                     max_choices=5,
+                    elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
-                bans = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Banned heroes",
-                    multiselect=True,
-                    filterable=True,
-                )
-            with gr.Row():
-                ally_preview = gr.HTML(hero_preview([]))
-                enemy_preview = gr.HTML(hero_preview([44, 30]))
-                ban_preview = gr.HTML(hero_preview([]))
-            with gr.Row():
-                role = gr.Dropdown(
-                    ["carry", "mid", "offlane", "soft support", "hard support"],
+                lab_enemy_preview = gr.HTML(hero_preview([44, 30]))
+                lab_role = gr.Dropdown(
+                    choices=ROLE_OPTIONS,
                     label="Role",
                     value="mid",
+                    elem_classes=["dota-dropdown", "role-dropdown"],
                 )
-                scope = gr.Dropdown(["pro", "high-rank", "public"], label="Scope", value="pro")
-            run = gr.Button("Recommend")
-            rec_output = gr.Markdown()
-            evidence_output = gr.Code(label="Evidence", language="json")
-            allies.change(hero_preview, inputs=[allies], outputs=[ally_preview])
-            enemies.change(hero_preview, inputs=[enemies], outputs=[enemy_preview])
-            bans.change(hero_preview, inputs=[bans], outputs=[ban_preview])
-            run.click(
-                draft_coach,
-                inputs=[allies, enemies, bans, role, scope],
-                outputs=[rec_output, evidence_output],
-            )
-
-        with gr.Tab("Hero Meta"):
-            with gr.Row():
-                meta_hero = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Hero",
-                    filterable=True,
+                lab_twist = gr.Dropdown(
+                    ["Tiny scout card", "One-minute coach", "Chaos constraint"],
+                    label="Mode",
+                    value="Tiny scout card",
+                    elem_classes=["dota-dropdown"],
                 )
-                meta_item = gr.Dropdown(
-                    choices=item_choices,
-                    label="Item",
-                    filterable=True,
+                lab_button = gr.Button("Generate Draft Lab Card")
+                lab_output = gr.Markdown()
+                lab_enemies.change(hero_preview, inputs=[lab_enemies], outputs=[lab_enemy_preview])
+                lab_button.click(
+                    draft_lab,
+                    inputs=[lab_enemies, lab_role, lab_twist],
+                    outputs=[lab_output],
                 )
-            with gr.Row():
-                meta_hero_preview = gr.HTML(hero_preview([]))
-                meta_item_preview = gr.HTML(item_preview(None))
-            query = gr.Textbox(label="Patch or meta query", value="current pro meta")
-            meta_button = gr.Button("Search")
-            meta_output = gr.Markdown()
-            meta_hero.change(
-                hero_single_preview,
-                inputs=[meta_hero],
-                outputs=[meta_hero_preview],
-            )
-            meta_item.change(item_preview, inputs=[meta_item], outputs=[meta_item_preview])
-            meta_button.click(
-                hero_meta,
-                inputs=[query, meta_hero, meta_item],
-                outputs=[meta_output],
-            )
 
-        with gr.Tab("Tuned Model"):
-            tuned_question = gr.Textbox(
-                label="Question",
-                value=(
-                    "Suggest one mid hero against Phantom Assassin and Witch Doctor, "
-                    "and include one caveat."
-                ),
-            )
-            tuned_context = gr.Textbox(
-                label="Optional evidence",
-                lines=5,
-                placeholder="Leave blank to retrieve local patch/stat evidence automatically.",
-            )
-            tuned_tokens = gr.Slider(
-                minimum=64,
-                maximum=768,
-                value=256,
-                step=32,
-                label="Max response tokens",
-            )
-            tuned_button = gr.Button("Ask Tuned Model")
-            tuned_output = gr.Markdown()
-            tuned_evidence = gr.Code(label="Retrieved Evidence", language="json")
-            tuned_button.click(
-                tuned_model,
-                inputs=[tuned_question, tuned_context, tuned_tokens],
-                outputs=[tuned_output, tuned_evidence],
-            )
+            with gr.Tab("Data Freshness"):
+                status_button = gr.Button("Refresh")
+                status_output = gr.Markdown()
+                status_button.click(data_status, outputs=[status_output])
 
-        with gr.Tab("Match Predictor"):
-            with gr.Row():
-                radiant = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Radiant heroes",
-                    value=[1, 2, 3, 25, 5],
-                    multiselect=True,
-                    filterable=True,
-                    max_choices=5,
-                )
-                dire = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Dire heroes",
-                    value=[14, 74, 6, 26, 18],
-                    multiselect=True,
-                    filterable=True,
-                    max_choices=5,
-                )
-            with gr.Row():
-                radiant_preview = gr.HTML(hero_preview([1, 2, 3, 25, 5]))
-                dire_preview = gr.HTML(hero_preview([14, 74, 6, 26, 18]))
-            predict_button = gr.Button("Predict")
-            predict_output = gr.Code(label="Prediction", language="json")
-            radiant.change(hero_preview, inputs=[radiant], outputs=[radiant_preview])
-            dire.change(hero_preview, inputs=[dire], outputs=[dire_preview])
-            predict_button.click(match_predictor, inputs=[radiant, dire], outputs=[predict_output])
-
-        with gr.Tab("Builds"):
-            with gr.Row():
-                hero = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Hero",
-                    value=1,
-                    filterable=True,
-                )
-                build_item = gr.Dropdown(
-                    choices=item_choices,
-                    label="Optional item filter",
-                    filterable=True,
-                )
-            with gr.Row():
-                build_hero_preview = gr.HTML(hero_preview([1]))
-                build_item_preview = gr.HTML(item_preview(None))
-            builds_button = gr.Button("Show Builds")
-            builds_output = gr.Markdown()
-            hero.change(
-                hero_single_preview,
-                inputs=[hero],
-                outputs=[build_hero_preview],
-            )
-            build_item.change(item_preview, inputs=[build_item], outputs=[build_item_preview])
-            builds_button.click(hero_builds, inputs=[hero, build_item], outputs=[builds_output])
-
-        with gr.Tab("Draft Lab"):
-            lab_enemies = gr.Dropdown(
-                choices=hero_choices,
-                label="Enemy heroes",
-                value=[44, 30],
-                multiselect=True,
-                filterable=True,
-                max_choices=5,
-            )
-            lab_enemy_preview = gr.HTML(hero_preview([44, 30]))
-            lab_role = gr.Dropdown(
-                ["carry", "mid", "offlane", "soft support", "hard support"],
-                label="Role",
-                value="mid",
-            )
-            lab_twist = gr.Dropdown(
-                ["Tiny scout card", "One-minute coach", "Chaos constraint"],
-                label="Mode",
-                value="Tiny scout card",
-            )
-            lab_button = gr.Button("Generate Draft Lab Card")
-            lab_output = gr.Markdown()
-            lab_enemies.change(hero_preview, inputs=[lab_enemies], outputs=[lab_enemy_preview])
-            lab_button.click(
-                draft_lab,
-                inputs=[lab_enemies, lab_role, lab_twist],
-                outputs=[lab_output],
-            )
-
-        with gr.Tab("Data Freshness"):
-            status_button = gr.Button("Refresh")
-            status_output = gr.Markdown()
-            status_button.click(data_status, outputs=[status_output])
-
+    demo.dota2tuned_js = _dropdown_js(_hero_icon_by_label(hero_choices, hero_metadata))
     return demo
