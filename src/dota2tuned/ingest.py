@@ -6,7 +6,7 @@ from typing import Any
 from dota2tuned.clients import OpenDotaClient, StratzClient, ValvePatchClient
 from dota2tuned.clients.valve import flatten_patch_notes
 from dota2tuned.config import Settings
-from dota2tuned.storage import write_jsonl
+from dota2tuned.storage import read_jsonl, write_jsonl
 
 
 def _take_unique_matches(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
@@ -38,6 +38,16 @@ def _recent_league_ids(rows: list[dict[str, Any]], limit: int) -> list[int]:
         if len(league_ids) >= limit:
             break
     return league_ids
+
+
+def _indexed_match_details(path: Path, id_key: str = "match_id") -> dict[int, dict[str, Any]]:
+    details = {}
+    for row in read_jsonl(path):
+        match_id = row.get(id_key) or row.get("id")
+        if not match_id:
+            continue
+        details[int(match_id)] = row
+    return details
 
 
 class IngestCoordinator:
@@ -136,21 +146,38 @@ class IngestCoordinator:
                 if row.get("duration", 0) >= 600 and row.get("radiant_win") is not None
             ][:public_matches]
             selected = _take_unique_matches(pro + public, enrich_limit)
-            details = []
-            stratz_details = []
+            details_path = self.raw_dir / "matches" / "opendota_match_details.jsonl"
+            stratz_path = self.raw_dir / "matches" / "stratz_match_details.jsonl"
+            detail_by_match = _indexed_match_details(details_path)
+            stratz_by_match = _indexed_match_details(stratz_path, id_key="id")
             for row in selected:
                 match_id = int(row["match_id"])
-                try:
-                    details.append(od.match(match_id))
-                except Exception as exc:
-                    details.append({"match_id": match_id, "error": str(exc), "source": "opendota"})
-                if stratz and len(stratz_details) < stratz_limit:
+                if match_id not in detail_by_match:
                     try:
-                        stratz_details.append(stratz.match(match_id))
+                        detail_by_match[match_id] = od.match(match_id)
                     except Exception as exc:
-                        stratz_details.append(
-                            {"id": match_id, "error": str(exc), "source": "stratz"}
-                        )
+                        detail_by_match[match_id] = {
+                            "match_id": match_id,
+                            "error": str(exc),
+                            "source": "opendota",
+                        }
+                    if len(detail_by_match) % 25 == 0:
+                        write_jsonl(details_path, detail_by_match.values())
+                if (
+                    stratz
+                    and len(stratz_by_match) < stratz_limit
+                    and match_id not in stratz_by_match
+                ):
+                    try:
+                        stratz_by_match[match_id] = stratz.match(match_id)
+                    except Exception as exc:
+                        stratz_by_match[match_id] = {
+                            "id": match_id,
+                            "error": str(exc),
+                            "source": "stratz",
+                        }
+                    if len(stratz_by_match) % 25 == 0:
+                        write_jsonl(stratz_path, stratz_by_match.values())
 
             counts = {
                 "opendota_pro_matches": write_jsonl(
@@ -164,13 +191,12 @@ class IngestCoordinator:
                     [row for row in league_rows if row.get("match_id")],
                 ),
                 "opendota_match_details": write_jsonl(
-                    self.raw_dir / "matches" / "opendota_match_details.jsonl", details
+                    details_path,
+                    detail_by_match.values(),
                 ),
             }
-            if stratz_details:
-                counts["stratz_match_details"] = write_jsonl(
-                    self.raw_dir / "matches" / "stratz_match_details.jsonl", stratz_details
-                )
+            if stratz_by_match:
+                counts["stratz_match_details"] = write_jsonl(stratz_path, stratz_by_match.values())
             return counts
         finally:
             od.close()

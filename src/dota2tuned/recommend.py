@@ -56,6 +56,8 @@ class DraftRecommender:
         self.parquet_dir = parquet_dir
         self.heroes = read_parquet(parquet_dir / "dim_hero.parquet")
         self.pairs = read_parquet(parquet_dir / "fact_hero_pair_stats.parquet")
+        self.players = read_parquet(parquet_dir / "fact_player_match.parquet")
+        self.hero_samples = self._load_hero_samples()
 
     def ready(self) -> bool:
         return not self.heroes.is_empty()
@@ -76,12 +78,18 @@ class DraftRecommender:
             hero_id = int(row["hero_id"])
             pro_pick = int(row.get("pro_pick") or 0)
             pro_win = int(row.get("pro_win") or 0)
-            base_score = _shrunk_win_rate(pro_win, pro_pick)
-            synergy_lift = self._pair_lift(hero_id, draft.allied_heroes, "ally")
-            counter_lift = self._pair_lift(hero_id, draft.enemy_heroes, "enemy")
+            sample = self.hero_samples.get(hero_id, {"games": pro_pick, "wins": pro_win})
+            hero_games = int(sample["games"])
+            hero_wins = int(sample["wins"])
+            sample_size = max(hero_games, pro_pick)
+            base_score = _shrunk_win_rate(hero_wins, hero_games)
+            synergy_lift, synergy_games = self._pair_lift(hero_id, draft.allied_heroes, "ally")
+            counter_lift, counter_games = self._pair_lift(hero_id, draft.enemy_heroes, "enemy")
+            if draft.allied_heroes or draft.enemy_heroes:
+                sample_size = max(sample_size, synergy_games + counter_games)
             score = base_score + synergy_lift + counter_lift
             caveats = []
-            if pro_pick < 100:
+            if sample_size < 100:
                 caveats.append("low sample size")
             rows.append(
                 Recommendation(
@@ -92,26 +100,44 @@ class DraftRecommender:
                     win_prob_delta=round(score - 0.5, 4),
                     counter_lift=round(counter_lift, 4),
                     synergy_lift=round(synergy_lift, 4),
-                    sample_size=pro_pick,
+                    sample_size=sample_size,
                     patch=draft.patch,
                     scope=draft.scope,
-                    sources=["OpenDota heroStats", "normalized pair stats"],
-                    confidence=_confidence(pro_pick),
+                    sources=[
+                        "normalized player matches",
+                        "normalized pair stats",
+                        "OpenDota heroStats fallback",
+                    ],
+                    confidence=_confidence(sample_size),
                     caveats=caveats,
                 )
             )
         rows.sort(key=lambda item: item.score, reverse=True)
         return rows[:limit]
 
-    def _pair_lift(self, hero_id: int, others: list[int], relation: str) -> float:
+    def _load_hero_samples(self) -> dict[int, dict[str, int]]:
+        if self.players.is_empty():
+            return {}
+        grouped = self.players.group_by("hero_id").agg(
+            pl.len().alias("games"),
+            pl.col("win").fill_null(0).sum().alias("wins"),
+        )
+        return {
+            int(row["hero_id"]): {"games": int(row["games"]), "wins": int(row["wins"])}
+            for row in grouped.iter_rows(named=True)
+        }
+
+    def _pair_lift(self, hero_id: int, others: list[int], relation: str) -> tuple[float, int]:
         if self.pairs.is_empty() or not others:
-            return 0.0
+            return 0.0, 0
         subset = self.pairs.filter(
             (pl.col("hero_id") == hero_id)
             & (pl.col("other_hero_id").is_in(others))
             & (pl.col("relation") == relation)
         )
         if subset.is_empty():
-            return 0.0
+            return 0.0, 0
         avg = subset.select(pl.col("win_rate").mean()).item()
-        return float(avg - 0.5) * 0.25 if avg is not None else 0.0
+        games = subset.select(pl.col("games").sum()).item()
+        lift = float(avg - 0.5) * 0.25 if avg is not None else 0.0
+        return lift, int(games or 0)

@@ -12,14 +12,14 @@ DEFAULT_SPACE = "https://build-small-hackathon-dota2tuned.hf.space"
 
 
 CHECKS: list[tuple[str, tuple[Any, ...]]] = [
-    ("/draft_coach", ("", "Phantom Assassin, Witch Doctor", "", "mid", "pro")),
-    ("/hero_meta", ("current pro meta",)),
+    ("/draft_coach", ([], [44, 30], [], "mid", "pro")),
+    ("/hero_meta", ("current pro meta", 44, "bfury")),
     (
         "/match_predictor",
-        ("Anti-Mage, Axe, Bane, Lina, Crystal Maiden", "Pudge, Invoker, Drow Ranger, Lion, Sven"),
+        ([1, 2, 3, 25, 5], [14, 74, 6, 26, 18]),
     ),
-    ("/hero_builds", ("Anti-Mage",)),
-    ("/draft_lab", ("Phantom Assassin, Witch Doctor", "mid", "Tiny scout card")),
+    ("/hero_builds", (1, None)),
+    ("/draft_lab", ([44, 30], "mid", "Tiny scout card")),
     ("/data_status", ()),
     (
         "/tuned_model",

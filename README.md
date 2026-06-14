@@ -51,7 +51,7 @@ The submitted Space includes compact serving artifacts under `data/parquet`, `da
 - `dota2tuned finetune --launch-job` remains available for Hugging Face Jobs if a token has `job.write`.
 - `dota2tuned serve` launches the Gradio app.
 
-The Gradio app includes a **Tuned Model** tab. It calls the Modal `generate_answer` function when Modal credentials are configured in the runtime environment; otherwise the tab degrades with a clear unavailable message.
+The Gradio app includes searchable hero and item dropdowns, alias-aware hero lookup (`PA`, `CM`, `AM`, `QOP`, `KOTL`, and generated initials), selected hero/item icon previews, and a **Tuned Model** tab. The tuned tab calls the Modal `generate_answer` function when Modal credentials are configured in the runtime environment; otherwise the tab degrades with a clear unavailable message.
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.
 See [MODEL_SELECTION.md](MODEL_SELECTION.md) for the current LLM decision and eval protocol.

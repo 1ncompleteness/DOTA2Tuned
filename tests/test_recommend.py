@@ -91,3 +91,38 @@ def test_low_sample_win_rates_are_shrunk(tmp_path: Path):
     recs = DraftRecommender(tmp_path).recommend(DraftInput(role="carry"), limit=2)
 
     assert recs[0].hero_name == "Large Sample"
+
+
+def test_recommendations_use_player_match_samples_for_confidence(tmp_path: Path):
+    write_parquet(
+        tmp_path / "dim_hero.parquet",
+        [
+            {
+                "hero_id": 1,
+                "hero_name": "Bigger Sample Hero",
+                "roles": "Carry",
+                "pro_pick": 3,
+                "pro_win": 3,
+                "pro_win_rate": 1.0,
+            }
+        ],
+    )
+    write_parquet(tmp_path / "fact_hero_pair_stats.parquet", [])
+    write_parquet(
+        tmp_path / "fact_player_match.parquet",
+        [
+            {
+                "match_id": match_id,
+                "hero_id": 1,
+                "is_radiant": True,
+                "win": 1 if match_id <= 120 else 0,
+            }
+            for match_id in range(1, 151)
+        ],
+    )
+
+    recs = DraftRecommender(tmp_path).recommend(DraftInput(role="carry"), limit=1)
+
+    assert recs[0].sample_size == 150
+    assert recs[0].confidence == "medium"
+    assert "normalized player matches" in recs[0].sources

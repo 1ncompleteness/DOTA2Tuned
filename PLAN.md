@@ -114,6 +114,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 02:36: continued demo-readiness hardening by adding role-aware recommendation filtering, Bayesian win-rate shrinkage for low samples, pre-game item timing labels, and a repeatable public Space API check script.
 - 2026-06-14 02:41: replaced the generic generated adapter README with a DOTA2Tuned-specific model card covering intended behavior, evidence discipline, usage, evaluation notes, limitations, and public links.
 - 2026-06-14 02:57: added a final submission-readiness checker that verifies public URLs, Space runtime, Hub model/dataset cards, git cleanliness, and all public Gradio API endpoints while listing the human-only video/social/submission steps separately.
+- 2026-06-14 03:29: started a durable tmux background data expansion toward 1,600 OpenDota match details, added checkpointed detail ingestion, moved recommendation confidence to normalized player-match samples, and upgraded the Gradio UI with searchable hero/item dropdowns, alias search, and icon previews.
 
 ## Adapter Eval Notes
 

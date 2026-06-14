@@ -45,16 +45,17 @@ Target length: 60-90 seconds.
 1. Open the Space and state the app:
    - "DOTA2Tuned is a small-model Dota 2 draft coach. Stats and predictors choose recommendations; the fine-tuned model explains them with evidence."
 2. Draft Coach tab:
-   - Enter a realistic enemy draft such as `Phantom Assassin, Witch Doctor`.
-   - Show that the app accepts hero names or numeric IDs.
+   - Select a realistic enemy draft such as `Phantom Assassin, Witch Doctor`.
+   - Search by names or aliases such as `PA`, `CM`, or `AM`.
+   - Show selected hero icon previews.
    - Show recommendations with scores, sample sizes, confidence, and caveats.
 3. Tuned Model tab:
    - Ask: "Suggest one mid hero against Phantom Assassin and Witch Doctor, and include one caveat."
    - Show that the answer uses retrieved evidence and caveats weak context.
 4. Hero Meta or Builds tab:
-   - Search one hero and show patch/stat cards or observed build timing.
+   - Select one hero or item and show patch/stat cards or observed build timing.
 5. Match Predictor tab:
-   - Enter two five-hero drafts and show predicted Radiant win probability.
+   - Select two five-hero drafts and show predicted Radiant win probability.
 6. Draft Lab tab:
    - Generate a `Tiny scout card` or `Chaos constraint` from the same enemy draft.
    - Emphasize that the playful mode still uses the local stat-backed recommender.
