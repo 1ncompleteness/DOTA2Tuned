@@ -58,6 +58,12 @@ def check_env(settings: Settings, *, live: bool = False) -> list[SmokeResult]:
         ("STEAM_API_KEY", settings.steam_api_key),
     ]:
         results.append(_ok(name, "configured") if _has_secret(value) else _missing(name, live=live))
+    if _has_secret(settings.hf_jobs_token) and settings.hf_jobs_token != settings.hf_token:
+        results.append(_ok("HF_JOBS_TOKEN", "configured separately"))
+    elif _has_secret(settings.hf_jobs_token):
+        results.append(_warn("HF_JOBS_TOKEN", "not set separately; falling back to HF_TOKEN"))
+    else:
+        results.append(_warn("HF_JOBS_TOKEN", "not configured"))
     return results
 
 

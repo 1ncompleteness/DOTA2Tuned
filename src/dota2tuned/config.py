@@ -29,6 +29,11 @@ def _secret_env(name: str) -> str | None:
 @dataclass(frozen=True)
 class Settings:
     hf_token: str | None = field(default_factory=lambda: _secret_env("HF_TOKEN"))
+    hf_jobs_token: str | None = field(
+        default_factory=lambda: _secret_env("HF_JOBS_TOKEN")
+        or _secret_env("HF_UPLOAD_TOKEN")
+        or _secret_env("HF_TOKEN")
+    )
     hf_org: str = field(default_factory=lambda: os.getenv("HF_ORG", "build-small-hackathon"))
     hf_space_id: str = field(
         default_factory=lambda: os.getenv("HF_SPACE_ID", "build-small-hackathon/dota2tuned")

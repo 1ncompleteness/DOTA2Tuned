@@ -125,21 +125,38 @@ def _token_permissions(whoami: dict[str, Any], namespace: str) -> set[str] | Non
 
 def validate_hf_jobs_access(settings: Settings) -> dict[str, str]:
     if not settings.hf_token:
-        raise RuntimeError("HF_TOKEN is required to launch a Hugging Face Job.")
+        raise RuntimeError("HF_TOKEN is required to upload training data and model artifacts.")
+    if not settings.hf_jobs_token:
+        raise RuntimeError(
+            "HF_JOBS_TOKEN, HF_UPLOAD_TOKEN, or HF_TOKEN is required to launch a Hugging Face Job."
+        )
     try:
         from huggingface_hub import HfApi
     except ImportError as exc:
         raise RuntimeError("huggingface_hub with Jobs support is required.") from exc
 
-    api = HfApi(token=settings.hf_token)
+    api = HfApi(token=settings.hf_jobs_token)
     whoami = api.whoami()
     permissions = _token_permissions(whoami, settings.hf_org)
     if permissions is not None and "job.write" not in permissions:
         raise RuntimeError(
-            "HF_TOKEN is authenticated but cannot launch Hugging Face Jobs. "
+            "The configured Hugging Face Jobs token is authenticated but cannot launch Jobs. "
             f"Add `job.write` to the token scope for namespace `{settings.hf_org}` "
-            "or use a token that can start/manage Jobs for that organization. "
+            "or set HF_JOBS_TOKEN/HF_UPLOAD_TOKEN to a token that can start/manage Jobs "
+            "for that organization. "
             f"Current parsed permissions: {sorted(permissions)}"
+        )
+
+    hub_api = HfApi(token=settings.hf_token)
+    hub_whoami = hub_api.whoami()
+    hub_permissions = _token_permissions(hub_whoami, settings.hf_org)
+    if hub_permissions is not None and "repo.write" not in hub_permissions:
+        raise RuntimeError(
+            "HF_TOKEN is authenticated but cannot upload training artifacts. "
+            f"Add `repo.write` to the token scope for namespace `{settings.hf_org}` "
+            "or set HF_TOKEN to a token that can create and update the configured "
+            "dataset and model repositories. "
+            f"Current parsed permissions: {sorted(hub_permissions)}"
         )
 
     hardware_names = {hardware.name for hardware in api.list_jobs_hardware()}
@@ -197,7 +214,11 @@ def upload_sft_dataset(settings: Settings, dataset_path: Path) -> str:
 
 def launch_hf_job(settings: Settings, script_path: Path) -> str:
     if not settings.hf_token:
-        raise RuntimeError("HF_TOKEN is required to launch a Hugging Face Job.")
+        raise RuntimeError("HF_TOKEN is required so the training job can push artifacts.")
+    if not settings.hf_jobs_token:
+        raise RuntimeError(
+            "HF_JOBS_TOKEN, HF_UPLOAD_TOKEN, or HF_TOKEN is required to launch a Hugging Face Job."
+        )
     try:
         from huggingface_hub import HfApi, run_uv_job
     except ImportError as exc:
@@ -218,6 +239,6 @@ def launch_hf_job(settings: Settings, script_path: Path) -> str:
         flavor=settings.training_flavor,
         timeout=settings.hf_job_timeout,
         namespace=settings.hf_org,
-        token=settings.hf_token,
+        token=settings.hf_jobs_token,
     )
     return str(job)
