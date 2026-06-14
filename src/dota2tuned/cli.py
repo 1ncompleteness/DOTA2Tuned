@@ -104,6 +104,32 @@ def ingest(
     typer.echo(counts)
 
 
+@app.command("targeted-ingest")
+def targeted_ingest(
+    threshold: Annotated[
+        int, typer.Option(help="Hero sample threshold that defines high confidence.")
+    ] = 500,
+    hero_limit: Annotated[int, typer.Option(help="Maximum under-sampled heroes to target.")] = 64,
+    matches_per_hero: Annotated[
+        int, typer.Option(help="Maximum candidate details to fetch for each targeted hero.")
+    ] = 700,
+    max_new_details: Annotated[
+        int, typer.Option(help="Maximum new match details to append in this run.")
+    ] = 5000,
+    page_size: Annotated[int, typer.Option(help="Explorer rows per targeted query page.")] = 100,
+) -> None:
+    settings = get_settings()
+    coordinator = IngestCoordinator(settings)
+    counts = coordinator.ingest_targeted_hero_matches(
+        threshold=threshold,
+        hero_limit=hero_limit,
+        matches_per_hero=matches_per_hero,
+        max_new_details=max_new_details,
+        page_size=page_size,
+    )
+    typer.echo(json.dumps(counts, indent=2))
+
+
 @app.command()
 def normalize() -> None:
     settings = get_settings()

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
+
+import polars as pl
 
 from dota2tuned.clients import OpenDotaClient, StratzClient, ValvePatchClient
 from dota2tuned.clients.valve import flatten_patch_notes
 from dota2tuned.config import Settings
-from dota2tuned.storage import read_jsonl, write_jsonl
+from dota2tuned.storage import read_jsonl, read_parquet, write_jsonl
 
 
 def _take_unique_matches(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
@@ -48,6 +51,82 @@ def _indexed_match_details(path: Path, id_key: str = "match_id") -> dict[int, di
             continue
         details[int(match_id)] = row
     return details
+
+
+def _existing_match_ids(path: Path, id_key: str = "match_id") -> set[int]:
+    if not path.exists():
+        return set()
+    ids = set()
+    with path.open() as fh:
+        for line in fh:
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            match_id = row.get(id_key) or row.get("id")
+            if match_id:
+                ids.add(int(match_id))
+    return ids
+
+
+def _append_jsonl(path: Path, rows: list[dict[str, Any]]) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as fh:
+        for row in rows:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    return len(rows)
+
+
+def _targeted_match_query(hero_id: int, *, limit: int, offset: int) -> str:
+    return f"""
+select match_id,
+  m.start_time,
+  m.duration,
+  m.radiant_win,
+  m.game_mode,
+  m.lobby_type,
+  m.avg_rank_tier
+from public_matches m
+where ({hero_id} = any(m.radiant_team) or {hero_id} = any(m.dire_team))
+  and m.duration >= 600
+  and m.radiant_win is not null
+order by m.start_time desc
+limit {limit}
+offset {offset}
+""".strip()
+
+
+def _under_sampled_heroes(
+    parquet_dir: Path, *, threshold: int, limit: int
+) -> list[dict[str, int | str]]:
+    heroes = read_parquet(parquet_dir / "dim_hero.parquet")
+    players = read_parquet(parquet_dir / "fact_player_match.parquet")
+    if heroes.is_empty() or players.is_empty():
+        return []
+    if "pro_pick" not in heroes.columns:
+        heroes = heroes.with_columns(pl.lit(0).alias("pro_pick"))
+    counts = players.group_by("hero_id").agg(pl.len().cast(pl.Int64).alias("player_games"))
+    gaps = (
+        heroes.select(["hero_id", "hero_name", "pro_pick"])
+        .join(counts, on="hero_id", how="left")
+        .with_columns(pl.col("player_games").fill_null(0))
+        .with_columns(pl.max_horizontal("player_games", "pro_pick").alias("sample_size"))
+        .filter(pl.col("sample_size") < threshold)
+        .with_columns((pl.lit(threshold) - pl.col("sample_size")).alias("needed"))
+        .sort("needed", descending=True)
+        .head(limit)
+    )
+    return [
+        {
+            "hero_id": int(row["hero_id"]),
+            "hero_name": str(row["hero_name"]),
+            "sample_size": int(row["sample_size"]),
+            "needed": int(row["needed"]),
+        }
+        for row in gaps.iter_rows(named=True)
+    ]
 
 
 class IngestCoordinator:
@@ -202,6 +281,113 @@ class IngestCoordinator:
             od.close()
             if stratz:
                 stratz.close()
+
+    def ingest_targeted_hero_matches(
+        self,
+        *,
+        threshold: int = 500,
+        hero_limit: int = 64,
+        matches_per_hero: int = 700,
+        max_new_details: int = 5000,
+        page_size: int = 100,
+        checkpoint_every: int = 25,
+    ) -> dict[str, Any]:
+        od = OpenDotaClient(self.settings.opendota_api_key)
+        details_path = self.raw_dir / "matches" / "opendota_match_details.jsonl"
+        targeted_path = self.raw_dir / "matches" / "opendota_targeted_matches.jsonl"
+        error_path = self.raw_dir / "matches" / "opendota_targeted_errors.jsonl"
+        try:
+            gaps = _under_sampled_heroes(
+                self.settings.parquet_dir, threshold=threshold, limit=hero_limit
+            )
+            existing_details = _existing_match_ids(details_path)
+            targeted_by_match = _indexed_match_details(targeted_path)
+            error_ids = _existing_match_ids(error_path)
+            fetched = 0
+            discovered = 0
+            errors: list[dict[str, Any]] = []
+            per_hero: list[dict[str, Any]] = []
+
+            for gap in gaps:
+                if fetched >= max_new_details:
+                    break
+                hero_id = int(gap["hero_id"])
+                hero_goal = min(matches_per_hero, max(int(gap["needed"]) + 50, 100))
+                offset = 0
+                hero_discovered = 0
+                hero_fetched = 0
+                while hero_fetched < hero_goal and fetched < max_new_details:
+                    rows = od.explorer(
+                        _targeted_match_query(hero_id, limit=page_size, offset=offset)
+                    ).get("rows", [])
+                    if not rows:
+                        break
+                    offset += page_size
+                    discovered += len(rows)
+                    hero_discovered += len(rows)
+                    for row in rows:
+                        match_id = int(row["match_id"])
+                        targeted_by_match.setdefault(
+                            match_id,
+                                {
+                                    "match_id": match_id,
+                                    "hero_id": hero_id,
+                                    "start_time": row.get("start_time"),
+                                    "duration": row.get("duration"),
+                                    "radiant_win": row.get("radiant_win"),
+                                    "game_mode": row.get("game_mode"),
+                                    "lobby_type": row.get("lobby_type"),
+                                    "avg_rank_tier": row.get("avg_rank_tier"),
+                                "source": "opendota_explorer_targeted",
+                            },
+                        )
+                        if match_id in existing_details or match_id in error_ids:
+                            continue
+                        try:
+                            detail = od.match(match_id)
+                        except Exception as exc:
+                            errors.append(
+                                {
+                                    "match_id": match_id,
+                                    "hero_id": hero_id,
+                                    "error": str(exc),
+                                    "source": "opendota_explorer_targeted",
+                                }
+                            )
+                            error_ids.add(match_id)
+                            continue
+                        _append_jsonl(details_path, [detail])
+                        existing_details.add(match_id)
+                        fetched += 1
+                        hero_fetched += 1
+                        if fetched % checkpoint_every == 0:
+                            write_jsonl(targeted_path, targeted_by_match.values())
+                            if errors:
+                                _append_jsonl(error_path, errors)
+                                errors = []
+                        if hero_fetched >= hero_goal or fetched >= max_new_details:
+                            break
+                per_hero.append(
+                    {
+                        **gap,
+                        "discovered": hero_discovered,
+                        "fetched": hero_fetched,
+                    }
+                )
+
+            write_jsonl(targeted_path, targeted_by_match.values())
+            if errors:
+                _append_jsonl(error_path, errors)
+            return {
+                "targeted_heroes": len(gaps),
+                "targeted_discovered_rows": discovered,
+                "targeted_new_details": fetched,
+                "opendota_match_details": len(existing_details),
+                "opendota_targeted_matches": len(targeted_by_match),
+                "per_hero": per_hero,
+            }
+        finally:
+            od.close()
 
 
 def raw_path(settings: Settings, *parts: str) -> Path:

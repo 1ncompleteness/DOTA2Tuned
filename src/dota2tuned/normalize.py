@@ -230,6 +230,18 @@ def normalize_match_summaries(rows: list[dict[str, Any]], *, source: str) -> lis
     return output
 
 
+def dedupe_match_summaries(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen = set()
+    output = []
+    for row in rows:
+        match_id = row.get("match_id")
+        if not match_id or match_id in seen:
+            continue
+        seen.add(match_id)
+        output.append(row)
+    return output
+
+
 def normalize_match_details(
     rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -403,9 +415,13 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
     public_matches = normalize_match_summaries(
         read_jsonl(raw_dir / "matches" / "opendota_public_matches.jsonl"), source="opendota_public"
     )
+    targeted_matches = normalize_match_summaries(
+        read_jsonl(raw_dir / "matches" / "opendota_targeted_matches.jsonl"),
+        source="opendota_targeted",
+    )
     counts["fact_match"] = write_parquet(
         parquet_dir / "fact_match.parquet",
-        pro_matches + league_matches + public_matches,
+        dedupe_match_summaries(pro_matches + league_matches + public_matches + targeted_matches),
         schema=SCHEMAS["fact_match"],
     )
 

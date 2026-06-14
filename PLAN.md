@@ -92,6 +92,10 @@
     - Continue background expansion with `scripts/run_confidence_expansion.sh` after the active tmux ingest completes.
     - Default continuation policy: targets `12,000`, `17,000`, `22,000`, `27,000` match details and a `30,000` cap unless overridden through `DOTA2TUNED_CONFIDENCE_TARGET`, `DOTA2TUNED_CONFIDENCE_STEP`, or `DOTA2TUNED_CONFIDENCE_MAX_TARGET`.
     - Stop early when every hero base sample reaches `500`, when the source stops yielding new match details, or when the configured cap is reached. Rare heroes may remain below `500` even after large pro-match expansion because pick distribution is not uniform; those remain explicitly caveated.
+14. Targeted rare-hero backfill.
+    - Use `uv run dota2tuned targeted-ingest --threshold 500 --hero-limit 64 --matches-per-hero 700 --max-new-details 5000` to discover recent public match IDs for under-sampled heroes through OpenDota Explorer and append missing `/matches/{match_id}` details.
+    - Use `scripts/run_targeted_confidence_backfill.sh` for the durable loop; each round runs targeted ingest, normalization, feature rebuild, predictor training, RAG rebuild, SFT generation, and confidence audit.
+    - Retrain the Modal adapter only after the targeted fetch loop reaches high confidence or exhausts useful new match details, so the adapter is trained on the strongest available SFT snapshot.
 
 ## Timeline
 
@@ -126,6 +130,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 04:06: audited the current 1,604-match parquet artifacts before the 7,000-match run finished: `0` high-confidence heroes, `67` medium, `60` low, median sample `104`, max sample `496`. Added repeatable confidence audit and continuation scripts so expansion can proceed after the active tmux job until the `500`-sample high-confidence gate is reached or the configured cap/source exhaustion stops it.
 - 2026-06-14 05:37: completed the 7,000-target expansion with 7,004 enriched OpenDota match details, 70,040 player-match rows, 166,082 draft pick/ban rows, 2,661,012 item-purchase rows, 30,734 hero-pair rows, 49,327 build-stat rows, 489 SFT examples, and draft predictor metrics `roc_auc=0.5522`, `log_loss=0.7080`, `brier=0.2560`.
 - 2026-06-14 06:19: confidence supervisor finished after attempting continuation through the 27,000 target. The available current source pool only grew to 8,562 enriched details, producing 85,619 player-match rows and confidence coverage of `74` high, `52` medium, `1` low, median sample `533`, max sample `2479`. Full max confidence was not reached because rare heroes, especially Elder Titan at sample `42`, remain under the `500` high-confidence gate; further improvement requires broadening match discovery beyond the current OpenDota pro/league source pool.
+- 2026-06-14 15:13: added targeted rare-hero backfill based on OpenDota Explorer `public_matches` hero arrays. A capped smoke run targeted Elder Titan, discovered `10` candidate rows, fetched `5` new details, and raised raw OpenDota match details from `8,562` to `8,567` before launching the durable targeted loop.
 
 ## Adapter Eval Notes
 

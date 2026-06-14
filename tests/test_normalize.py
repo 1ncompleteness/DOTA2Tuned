@@ -50,6 +50,10 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
     write_jsonl(raw / "matches" / "opendota_league_matches.jsonl", [])
     write_jsonl(raw / "matches" / "opendota_public_matches.jsonl", [])
     write_jsonl(
+        raw / "matches" / "opendota_targeted_matches.jsonl",
+        [{"match_id": 43, "duration": 1500, "radiant_win": False}],
+    )
+    write_jsonl(
         raw / "matches" / "opendota_match_details.jsonl",
         [
             {
@@ -75,7 +79,7 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
     assert counts["dim_hero"] == 2
     assert counts["fact_item_purchase"] == 1
     assert counts["fact_hero_build_stats"] == 1
-    assert read_parquet(parquet / "fact_match.parquet").height == 1
+    assert read_parquet(parquet / "fact_match.parquet").height == 2
     build_row = read_parquet(parquet / "fact_hero_build_stats.parquet").row(0, named=True)
     assert build_row["item_key"] == "blink"
     assert build_row["time_bucket"] == "10-20m"
