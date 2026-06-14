@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from urllib.parse import quote
 
 import gradio as gr
 import polars as pl
@@ -17,31 +18,155 @@ from dota2tuned.train_predictor import predict_draft_win
 ASSET_BASE_URL = "https://cdn.cloudflare.steamstatic.com"
 DOTA_LOGO_URL = f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/global/dota2_logo_symbol.png"
 
-ROLE_ICONS = {
-    "Carry": "⚔",
-    "Support": "✚",
-    "Nuker": "✦",
-    "Disabler": "⛓",
-    "Jungler": "♣",
-    "Durable": "◆",
-    "Escape": "↗",
-    "Pusher": "▰",
-    "Initiator": "⚑",
+
+def _svg_data_uri(svg: str) -> str:
+    return "data:image/svg+xml;utf8," + quote(svg, safe="")
+
+
+def _badge_icon(body: str, accent: str = "#d9b166") -> str:
+    svg = (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+        "<rect x='2' y='2' width='28' height='28' rx='6' fill='#151817'/>"
+        f"<rect x='2.75' y='2.75' width='26.5' height='26.5' rx='5.25' "
+        f"fill='none' stroke='{accent}' stroke-opacity='.42' stroke-width='1.5'/>"
+        f"<g fill='none' stroke='{accent}' stroke-width='2.35' "
+        f"stroke-linecap='round' stroke-linejoin='round'>{body}</g>"
+        "</svg>"
+    )
+    return _svg_data_uri(svg)
+
+
+ROLE_ICON_BODIES = {
+    "Carry": (
+        "#d9b166",
+        (
+            "<path d='M10 7l12 18'/>",
+            "<path d='M22 7L10 25'/>",
+            "<path d='M8 7h5'/>",
+            "<path d='M19 7h5'/>",
+        ),
+    ),
+    "Support": (
+        "#8fd9b6",
+        (
+            "<circle cx='16' cy='16' r='9'/>",
+            "<path d='M16 9v14'/>",
+            "<path d='M9 16h14'/>",
+        ),
+    ),
+    "Nuker": (
+        "#e69b68",
+        (
+            "<path d='M16 5l2.5 7 7-2.5-4 6.5 6.5 3-7.5 1.4-1 7.6"
+            "-4.5-5.8-4.5 5.8-1-7.6L4 20l6.5-3-4-6.5 7 2.5z'/>",
+        ),
+    ),
+    "Disabler": (
+        "#b7a6ff",
+        (
+            "<path d='M12 13l8 8'/>",
+            "<path d='M10 18a5 5 0 010-7l2-2a5 5 0 017 0'/>",
+            "<path d='M22 14a5 5 0 010 7l-2 2a5 5 0 01-7 0'/>",
+        ),
+    ),
+    "Jungler": (
+        "#9edb74",
+        (
+            "<path d='M8 22c10-1 15-8 16-17-8 1-15 7-16 17z'/>",
+            "<path d='M8 22c3-4 7-7 12-10'/>",
+        ),
+    ),
+    "Durable": (
+        "#a9c7e8",
+        ("<path d='M16 5l10 4v7c0 6-4 10-10 12C10 26 6 22 6 16V9z'/>",),
+    ),
+    "Escape": (
+        "#8fc8ff",
+        (
+            "<path d='M8 22L24 6'/>",
+            "<path d='M15 6h9v9'/>",
+            "<path d='M7 12v13h13'/>",
+        ),
+    ),
+    "Pusher": (
+        "#e0c47b",
+        (
+            "<path d='M10 26h12'/>",
+            "<path d='M12 26V12h8v14'/>",
+            "<path d='M10 12h12'/>",
+            "<path d='M12 12V8h8v4'/>",
+            "<path d='M14 8V5h4v3'/>",
+        ),
+    ),
+    "Initiator": (
+        "#ee8f7d",
+        (
+            "<path d='M10 27V6'/>",
+            "<path d='M10 7h13l-3 5 3 5H10'/>",
+        ),
+    ),
+}
+
+ROLE_ICON_URLS = {
+    role: _badge_icon("".join(paths), accent)
+    for role, (accent, paths) in ROLE_ICON_BODIES.items()
 }
 
 ROLE_OPTIONS = [
-    ("⚔ Carry", "carry"),
-    ("✦ Mid", "mid"),
-    ("⚑ Offlane", "offlane"),
-    ("✚ Soft support", "soft support"),
-    ("✚ Hard support", "hard support"),
+    ("Position 1 Carry", "carry"),
+    ("Position 2 Mid", "mid"),
+    ("Position 3 Offlane", "offlane"),
+    ("Position 4 Soft support", "soft support"),
+    ("Position 5 Hard support", "hard support"),
 ]
 
 SCOPE_OPTIONS = [
-    ("◆ Pro", "pro"),
-    ("↗ High-rank", "high-rank"),
-    ("▰ Public", "public"),
+    ("Pro matches", "pro"),
+    ("High-rank pubs", "high-rank"),
+    ("Public matches", "public"),
 ]
+
+ROLE_DROPDOWN_ICONS = {
+    "carry": ROLE_ICON_URLS["Carry"],
+    "mid": ROLE_ICON_URLS["Nuker"],
+    "offlane": ROLE_ICON_URLS["Durable"],
+    "soft support": ROLE_ICON_URLS["Support"],
+    "hard support": ROLE_ICON_URLS["Support"],
+}
+
+SCOPE_ICON_BODIES = {
+    "pro": (
+        "#e1c16e",
+        (
+            "<path d='M10 7h12v4a6 6 0 01-12 0z'/>",
+            "<path d='M9 9H6a4 4 0 004 4'/>",
+            "<path d='M23 9h3a4 4 0 01-4 4'/>",
+            "<path d='M16 17v5'/>",
+            "<path d='M12 25h8'/>",
+        ),
+    ),
+    "high-rank": (
+        "#8fc8ff",
+        (
+            "<path d='M7 23l6-6 4 4 8-11'/>",
+            "<path d='M18 10h7v7'/>",
+        ),
+    ),
+    "public": (
+        "#b7d99a",
+        (
+            "<path d='M12 16a4 4 0 100-8 4 4 0 000 8z'/>",
+            "<path d='M20 17a3.5 3.5 0 100-7 3.5 3.5 0 000 7z'/>",
+            "<path d='M5 25c1-4 4-6 7-6s6 2 7 6'/>",
+            "<path d='M16 24c1-3 3-5 6-5 2 0 4 1 5 4'/>",
+        ),
+    ),
+}
+
+SCOPE_ICON_URLS = {
+    scope: _badge_icon("".join(paths), accent)
+    for scope, (accent, paths) in SCOPE_ICON_BODIES.items()
+}
 
 COMMON_HERO_ALIASES = {
     "Anti-Mage": ["AM"],
@@ -146,17 +271,20 @@ APP_CSS = """
   z-index: 4000 !important;
   pointer-events: auto !important;
 }
-.dota-hero-option {
+.dota-choice-option {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
 }
-.dota-hero-option img {
+.dota-choice-option .dota-choice-icon {
   width: 24px;
   height: 24px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 4px;
   flex: 0 0 24px;
+}
+.dota-choice-option.dota-hero-option .dota-choice-icon {
+  object-fit: cover;
 }
 .hero-strip, .item-strip {
   display: grid;
@@ -205,17 +333,18 @@ APP_CSS = """
   line-height: 14px;
 }
 .role-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   margin-right: 4px;
   border-radius: 50%;
   background: rgba(245, 245, 235, 0.10);
-  color: rgba(252, 225, 160, 0.90);
-  font-size: 10px;
-  line-height: 15px;
+  object-fit: contain;
+  padding: 1px;
+}
+.entity-chip .role-icon {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
 }
 .empty-strip {
   color: rgba(245, 245, 235, 0.60);
@@ -225,11 +354,11 @@ APP_CSS = """
 """
 
 
-def _dropdown_js(hero_icon_by_label: dict[str, str]) -> str:
+def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     topbar = _topbar_html()
     return f"""
 () => {{
-  const heroIcons = {json.dumps(hero_icon_by_label)};
+  const choiceIcons = {json.dumps(choice_icon_by_label)};
   const topbarHtml = {json.dumps(topbar)};
   const ensureTopbar = () => {{
     if (document.querySelector(".app-topbar")) return;
@@ -249,18 +378,20 @@ def _dropdown_js(hero_icon_by_label: dict[str, str]) -> str:
     ].join(', ');
     const options = document.querySelectorAll(optionSelector);
     options.forEach((option) => {{
-      if (option.dataset && option.dataset.dotaHeroIconDecorated === "1") return;
+      if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") return;
       const label = (option.textContent || "").trim().replace(/\\s+/g, " ");
-      const icon = heroIcons[label];
-      if (!icon) return;
-      option.classList.add("dota-hero-option");
+      const icon = choiceIcons[label];
+      if (!icon || !icon.src) return;
+      option.classList.add("dota-choice-option");
+      if (icon.kind) option.classList.add(`dota-${{icon.kind}}-option`);
       const img = document.createElement("img");
-      img.src = icon;
+      img.className = "dota-choice-icon";
+      img.src = icon.src;
       img.alt = "";
       img.loading = "lazy";
       img.decoding = "async";
       option.prepend(img);
-      if (option.dataset) option.dataset.dotaHeroIconDecorated = "1";
+      if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
     }});
   }};
   const observer = new MutationObserver(decorate);
@@ -394,9 +525,7 @@ def _role_tags_html(roles: object) -> str:
     return (
         "<div class='entity-tags'>"
         + "".join(
-            "<span class='entity-tag'>"
-            f"<span class='role-icon'>{_html_escape(ROLE_ICONS.get(tag, '•'))}</span>"
-            f"{_html_escape(tag)}</span>"
+            f"<span class='entity-tag'>{_role_icon_html(tag)}{_html_escape(tag)}</span>"
             for tag in tags
         )
         + "</div>"
@@ -442,12 +571,38 @@ def _hero_choices(heroes: pl.DataFrame) -> list[tuple[str, int]]:
 
 def _hero_icon_by_label(
     hero_choices: list[tuple[str, int]], metadata: dict[int, dict[str, str]]
-) -> dict[str, str]:
+) -> dict[str, dict[str, str]]:
     return {
-        label: metadata.get(int(hero_id), {}).get("icon", "")
+        label: {"src": metadata.get(int(hero_id), {}).get("icon", ""), "kind": "hero"}
         for label, hero_id in hero_choices
         if metadata.get(int(hero_id), {}).get("icon")
     }
+
+
+def _role_icon_html(role: str) -> str:
+    icon = ROLE_ICON_URLS.get(role)
+    if not icon:
+        return ""
+    return f"<img class='role-icon' src='{_html_escape(icon)}' alt='' loading='lazy'>"
+
+
+def _dropdown_icon_by_label(
+    hero_choices: list[tuple[str, int]], metadata: dict[int, dict[str, str]]
+) -> dict[str, dict[str, str]]:
+    icons = _hero_icon_by_label(hero_choices, metadata)
+    icons.update(
+        {
+            label: {"src": ROLE_DROPDOWN_ICONS[value], "kind": "role"}
+            for label, value in ROLE_OPTIONS
+        }
+    )
+    icons.update(
+        {
+            label: {"src": SCOPE_ICON_URLS[value], "kind": "scope"}
+            for label, value in SCOPE_OPTIONS
+        }
+    )
+    return icons
 
 
 def _topbar_html() -> str:
@@ -936,5 +1091,5 @@ def build_app() -> gr.Blocks:
                 status_output = gr.Markdown()
                 status_button.click(data_status, outputs=[status_output])
 
-    demo.dota2tuned_js = _dropdown_js(_hero_icon_by_label(hero_choices, hero_metadata))
+    demo.dota2tuned_js = _dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata))
     return demo
