@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import gradio as gr
 import polars as pl
@@ -40,6 +41,34 @@ def _format_recs(recs: list) -> str:
     return "\n".join(lines)
 
 
+def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int = 384) -> str:
+    if not question.strip():
+        return "Enter a question."
+    if not settings.modal_enabled:
+        return "Tuned model is unavailable because `MODAL_ENABLED` is not set."
+    if not settings.modal_token_id or not settings.modal_token_secret:
+        return "Tuned model is unavailable because Modal credentials are not configured."
+    try:
+        import modal
+    except ImportError:
+        return "Tuned model is unavailable because the Modal client is not installed."
+
+    os.environ["MODAL_TOKEN_ID"] = settings.modal_token_id
+    os.environ["MODAL_TOKEN_SECRET"] = settings.modal_token_secret
+    try:
+        generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
+        result = generate_fn.remote(question, context, max_new_tokens)
+    except Exception as exc:
+        return f"Tuned model call failed: {str(exc)[:500]}"
+
+    if result.get("status") != "ok":
+        return json.dumps(result, indent=2)
+    answer = result.get("answer") or ""
+    model = result.get("model") or settings.hf_model_repo_id
+    tokens = result.get("tokens")
+    return f"{answer}\n\n`model: {model}` `tokens: {tokens}`"
+
+
 def build_app() -> gr.Blocks:
     settings = get_settings()
     recommender = DraftRecommender(settings.parquet_dir)
@@ -65,6 +94,17 @@ def build_app() -> gr.Blocks:
         if not docs:
             return "No retrieval index is available yet. Run `dota2tuned build-rag` first."
         return "\n\n".join(f"**{doc['source']}** `{doc['score']}`\n{doc['text']}" for doc in docs)
+
+    def tuned_model(question: str, context: str, max_new_tokens: int) -> tuple[str, str]:
+        docs = []
+        evidence = context.strip()
+        if not evidence:
+            docs = retriever.search(question or "current meta", patch="current", limit=5)
+            evidence = "\n\n".join(
+                f"{doc['source']} score={doc['score']}\n{doc['text']}" for doc in docs
+            )
+        answer = _call_tuned_model(settings, question, evidence, max_new_tokens)
+        return answer, json.dumps(docs, indent=2)
 
     def data_status() -> str:
         files = []
@@ -132,6 +172,35 @@ def build_app() -> gr.Blocks:
             meta_button = gr.Button("Search")
             meta_output = gr.Markdown()
             meta_button.click(hero_meta, inputs=[query], outputs=[meta_output])
+
+        with gr.Tab("Tuned Model"):
+            tuned_question = gr.Textbox(
+                label="Question",
+                value=(
+                    "Suggest one mid hero against Phantom Assassin and Witch Doctor, "
+                    "and include one caveat."
+                ),
+            )
+            tuned_context = gr.Textbox(
+                label="Optional evidence",
+                lines=5,
+                placeholder="Leave blank to retrieve local patch/stat evidence automatically.",
+            )
+            tuned_tokens = gr.Slider(
+                minimum=64,
+                maximum=768,
+                value=256,
+                step=32,
+                label="Max response tokens",
+            )
+            tuned_button = gr.Button("Ask Tuned Model")
+            tuned_output = gr.Markdown()
+            tuned_evidence = gr.Code(label="Retrieved Evidence", language="json")
+            tuned_button.click(
+                tuned_model,
+                inputs=[tuned_question, tuned_context, tuned_tokens],
+                outputs=[tuned_output, tuned_evidence],
+            )
 
         with gr.Tab("Match Predictor"):
             with gr.Row():

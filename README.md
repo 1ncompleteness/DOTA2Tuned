@@ -11,6 +11,10 @@ DOTA2Tuned is a Hugging Face Build Small Hackathon project for Dota 2 drafting, 
 
 The implementation is designed around a simple rule: stats and predictors choose the recommendations, while a small fine-tuned model explains them with patch-aware evidence.
 
+- Hugging Face Space: https://build-small-hackathon-dota2tuned.hf.space
+- Modal alternate UI: https://dracufeuer--dota2tuned-ui.modal.run
+- Fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+
 ## Quick Start
 
 ```bash
@@ -45,6 +49,8 @@ The submitted Space includes compact serving artifacts under `data/parquet`, `da
 - `dota2tuned modal-ask` calls the fine-tuned adapter through Modal GPU inference.
 - `dota2tuned finetune --launch-job` remains available for Hugging Face Jobs if a token has `job.write`.
 - `dota2tuned serve` launches the Gradio app.
+
+The Gradio app includes a **Tuned Model** tab. It calls the Modal `generate_answer` function when Modal credentials are configured in the runtime environment; otherwise the tab degrades with a clear unavailable message.
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.
 See [MODEL_SELECTION.md](MODEL_SELECTION.md) for the current LLM decision and eval protocol.
