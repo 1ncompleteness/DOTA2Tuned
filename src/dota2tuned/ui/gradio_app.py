@@ -78,6 +78,13 @@ def _format_hero_ids(hero_ids: list[int], names: dict[int, str]) -> str:
     return ", ".join(f"{names.get(hero_id, f'Hero {hero_id}')} ({hero_id})" for hero_id in hero_ids)
 
 
+def _format_item_time(seconds: object) -> str:
+    value = float(seconds or 0)
+    if value < 0:
+        return "pre-game"
+    return f"{round(value / 60, 1)} min"
+
+
 def _format_recs(recs: list) -> str:
     if not recs:
         return (
@@ -209,10 +216,10 @@ def build_app() -> gr.Blocks:
         )
         lines = []
         for row in rows:
-            minutes = round(float(row.get("median_time") or 0) / 60, 1)
+            median_time = _format_item_time(row.get("median_time"))
             lines.append(
                 f"- **{row.get('item_key')}** in `{row.get('time_bucket')}`: "
-                f"{row.get('purchases')} purchases, median `{minutes}` min"
+                f"{row.get('purchases')} purchases, median `{median_time}`"
             )
         return "\n".join(lines) if lines else "No observed item timings for that hero."
 

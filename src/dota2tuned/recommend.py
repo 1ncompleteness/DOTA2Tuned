@@ -7,6 +7,14 @@ import polars as pl
 from dota2tuned.schemas import DraftInput, Recommendation
 from dota2tuned.storage import read_parquet
 
+_ROLE_HINTS = {
+    "carry": {"Carry"},
+    "mid": {"Carry", "Escape", "Initiator"},
+    "offlane": {"Initiator", "Durable", "Disabler"},
+    "soft support": {"Support"},
+    "hard support": {"Support"},
+}
+
 
 def _confidence(sample_size: int) -> str:
     if sample_size >= 500:
@@ -14,6 +22,33 @@ def _confidence(sample_size: int) -> str:
     if sample_size >= 100:
         return "medium"
     return "low"
+
+
+def _role_tokens(value: object) -> set[str]:
+    if not value:
+        return set()
+    return {part.strip() for part in str(value).split(",") if part.strip()}
+
+
+def _role_match(role: str | None, roles: object) -> bool:
+    if not role:
+        return True
+    tokens = _role_tokens(roles)
+    if not tokens:
+        return True
+    role_key = role.lower()
+    hints = _ROLE_HINTS.get(role_key)
+    if not hints:
+        return True
+    if role_key == "mid" and "Support" in tokens and "Carry" not in tokens:
+        return False
+    return bool(tokens & hints)
+
+
+def _shrunk_win_rate(pro_win: int, pro_pick: int, *, prior_games: int = 50) -> float:
+    if pro_pick <= 0:
+        return 0.5
+    return (pro_win + (prior_games * 0.5)) / (pro_pick + prior_games)
 
 
 class DraftRecommender:
@@ -36,10 +71,12 @@ class DraftRecommender:
 
         rows = []
         for row in candidates.iter_rows(named=True):
+            if not _role_match(draft.role, row.get("roles")):
+                continue
             hero_id = int(row["hero_id"])
             pro_pick = int(row.get("pro_pick") or 0)
-            pro_win_rate = row.get("pro_win_rate")
-            base_score = float(pro_win_rate or 0.5)
+            pro_win = int(row.get("pro_win") or 0)
+            base_score = _shrunk_win_rate(pro_win, pro_pick)
             synergy_lift = self._pair_lift(hero_id, draft.allied_heroes, "ally")
             counter_lift = self._pair_lift(hero_id, draft.enemy_heroes, "enemy")
             score = base_score + synergy_lift + counter_lift

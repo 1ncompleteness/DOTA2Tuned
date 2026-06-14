@@ -111,6 +111,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 01:13: updated this plan with the execution timeline. Current required finish checks are lint, tests, Gradio import smoke, commit/push, Space upload, Space HTTP 200, Modal UI HTTP 200, `modal-smoke`, and `modal-ask`.
 - 2026-06-14 01:21: checked the latest hackathon requirements again and added `SUBMISSION.md` with required links, final checklist, demo video script, social post draft, and verification commands.
 - 2026-06-14 01:27: addressed the submission-readiness review by adding hero-name parsing, making Draft Lab demoable, adding tests, preparing a dataset card, declaring Apache-2.0 licensing, and aligning the Modal dependency version.
+- 2026-06-14 02:36: continued demo-readiness hardening by adding role-aware recommendation filtering, Bayesian win-rate shrinkage for low samples, pre-game item timing labels, and a repeatable public Space API check script.
 
 ## Adapter Eval Notes
 

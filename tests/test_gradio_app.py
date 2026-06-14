@@ -1,6 +1,6 @@
 import polars as pl
 
-from dota2tuned.ui.gradio_app import _hero_lookup, _parse_heroes
+from dota2tuned.ui.gradio_app import _format_item_time, _hero_lookup, _parse_heroes
 
 
 def test_parse_heroes_accepts_names_and_ids():
@@ -27,3 +27,8 @@ def test_parse_heroes_reports_unknown_names():
 
     assert hero_ids == [1]
     assert unknown == ["Banana King"]
+
+
+def test_format_item_time_labels_pre_game_buys():
+    assert _format_item_time(-90) == "pre-game"
+    assert _format_item_time(180) == "3.0 min"

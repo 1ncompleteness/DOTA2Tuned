@@ -35,6 +35,7 @@ data/*.duckdb.tmp
 
 outputs/
 runs/
+submission_evidence/
 *.log
 
 .DS_Store
