@@ -109,6 +109,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 00:47-01:00: configured HF Space variables and secrets for Modal-backed inference without exposing values, uploaded the refreshed Space bundle, and verified the canonical Space at `https://build-small-hackathon-dota2tuned.hf.space`.
 - 2026-06-14 01:00-01:12: added the Gradio `Tuned Model` tab, added the Space-side `modal` dependency, ran a 10-prompt Modal adapter eval, fixed one grounding issue around unsupported generic build advice, and retested Shadow Fiend and fake-hero prompts successfully.
 - 2026-06-14 01:13: updated this plan with the execution timeline. Current required finish checks are lint, tests, Gradio import smoke, commit/push, Space upload, Space HTTP 200, Modal UI HTTP 200, `modal-smoke`, and `modal-ask`.
+- 2026-06-14 01:21: checked the latest hackathon requirements again and added `SUBMISSION.md` with required links, final checklist, demo video script, social post draft, and verification commands.
+- 2026-06-14 01:27: addressed the submission-readiness review by adding hero-name parsing, making Draft Lab demoable, adding tests, preparing a dataset card, declaring Apache-2.0 licensing, and aligning the Modal dependency version.
 
 ## Adapter Eval Notes
 
