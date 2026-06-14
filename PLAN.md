@@ -86,6 +86,12 @@
     - `uv run dota2tuned modal-smoke`.
     - `uv run dota2tuned modal-ask ...`.
     - `git status --short --branch` clean after commit/push.
+13. Confidence expansion gate.
+    - The runtime confidence ceiling is `high`, defined in code as `sample_size >= 500`.
+    - Audit current artifacts with `uv run python scripts/audit_confidence.py --threshold 500`.
+    - Continue background expansion with `scripts/run_confidence_expansion.sh` after the active tmux ingest completes.
+    - Default continuation policy: targets `12,000`, `17,000`, `22,000`, `27,000` match details and a `30,000` cap unless overridden through `DOTA2TUNED_CONFIDENCE_TARGET`, `DOTA2TUNED_CONFIDENCE_STEP`, or `DOTA2TUNED_CONFIDENCE_MAX_TARGET`.
+    - Stop early when every hero base sample reaches `500`, when the source stops yielding new match details, or when the configured cap is reached. Rare heroes may remain below `500` even after large pro-match expansion because pick distribution is not uniform; those remain explicitly caveated.
 
 ## Timeline
 
@@ -117,6 +123,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 03:29: started a durable tmux background data expansion toward 1,600 OpenDota match details, added checkpointed detail ingestion, moved recommendation confidence to normalized player-match samples, and upgraded the Gradio UI with searchable hero/item dropdowns, alias search, and icon previews.
 - 2026-06-14 03:49: completed the background data expansion with 1,604 enriched OpenDota match details, 16,040 player-match rows, 38,347 draft pick/ban rows, 728,416 item-purchase rows, 23,080 hero-pair rows, 32,517 build-stat rows, 1,604 draft predictor samples, and 279 SFT examples. Medium-confidence recommendations now appear where normalized sample sizes exceed 100.
 - 2026-06-14 03:50: started the next durable tmux expansion `dota2tuned_data_expand` toward 7,000 OpenDota match details with `--pro-matches 8000 --public-matches 500 --enrich-limit 7000 --patch-count 4 --league-limit 50`; the run continues in the background and checkpoints existing details every 25 new match fetches.
+- 2026-06-14 04:06: audited the current 1,604-match parquet artifacts before the 7,000-match run finished: `0` high-confidence heroes, `67` medium, `60` low, median sample `104`, max sample `496`. Added repeatable confidence audit and continuation scripts so expansion can proceed after the active tmux job until the `500`-sample high-confidence gate is reached or the configured cap/source exhaustion stops it.
 
 ## Adapter Eval Notes
 
