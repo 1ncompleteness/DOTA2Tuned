@@ -4,15 +4,14 @@ sdk: gradio
 app_file: app.py
 python_version: "3.12"
 tags:
-- build-small-hackathon
-- backyard-ai
-- thousand-token-wood
-- openbmb
-- openai
-- modal
-- well-tuned
-- off-brand
-- field-notes
+  - track:backyard
+  - track:wood
+  - sponsor:openbmb
+  - sponsor:openai
+  - sponsor:modal
+  - achievement:welltuned
+  - achievement:offbrand
+  - achievement:sharing
 models:
 - build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
 - build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
@@ -46,8 +45,8 @@ Selected tracks, prizes, and badges:
 
 - Tracks: Backyard AI, Thousand Token Wood.
 - Sponsor prizes: OpenBMB Best MiniCPM Build, OpenAI Best Use of Codex, Modal Best Use of Modal.
-- Bonus badges: Well-Tuned, Off-Brand, Field Notes.
-- Not claimed: Nemotron Hardware Prize, Off the Grid, Llama Champion, Sharing is Caring.
+- Bonus badges: Well-Tuned, Off-Brand, Sharing is Caring.
+- Not claimed: Nemotron Hardware Prize, Off the Grid, Llama Champion.
 - GPU note: this Space does not use Zero GPU allocation; training and tuned-model serving use Modal.
 
 Social post draft:
