@@ -519,7 +519,7 @@ APP_CSS = """
   width: 34px;
   height: 34px;
   object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(255, 96, 70, 0.36));
+  animation: d2-logo-red-flash 4.2s ease-in-out infinite;
 }
 .app-sidebar-brand strong {
   display: block;
@@ -1139,7 +1139,103 @@ __NAV_ICON_CSS__
 APP_HEAD = """
 <link rel="preconnect" href="https://cdn.steamstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com" crossorigin>
-"""
+<style>
+:root {
+  --d2-red: #ff6046;
+}
+@keyframes d2-logo-red-flash {
+  0%, 100% {
+    filter:
+      brightness(0) invert(1)
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.20));
+  }
+  50% {
+    filter:
+      brightness(0) saturate(100%) invert(50%) sepia(95%) saturate(1585%)
+      hue-rotate(326deg) brightness(102%) contrast(103%)
+      drop-shadow(0 0 16px rgba(255, 96, 70, 0.62));
+  }
+}
+html.d2-loading .gradio-container {
+  opacity: 0 !important;
+}
+#d2-startup-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
+  color: #efe5bb;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s ease, visibility 0.42s ease;
+}
+#d2-startup-loader.d2-loader-exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.d2-loader-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+}
+.d2-loader-brand img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  animation: d2-logo-red-flash 4.2s ease-in-out infinite;
+}
+.d2-loader-brand strong {
+  display: block;
+  color: #efe5bb;
+  font-size: 24px;
+  line-height: 28px;
+  letter-spacing: 0;
+}
+</style>
+<script>
+(() => {
+  const logoUrl = "__DOTA_LOGO_URL__";
+  document.documentElement.classList.add("d2-loading");
+  const ensureLoader = () => {
+    if (document.getElementById("d2-startup-loader")) return;
+    const loader = document.createElement("div");
+    loader.id = "d2-startup-loader";
+    loader.setAttribute("role", "status");
+    loader.setAttribute("aria-live", "polite");
+    loader.innerHTML = `
+      <div class="d2-loader-brand">
+        <img src="${logoUrl}" alt="Dota 2" decoding="async">
+        <strong>DOTA2Tuned</strong>
+      </div>
+    `;
+    document.body.prepend(loader);
+  };
+  window.dota2tunedHideLoader = () => {
+    const loader = document.getElementById("d2-startup-loader");
+    document.documentElement.classList.remove("d2-loading");
+    document.documentElement.classList.add("d2-ready");
+    if (!loader) return;
+    loader.classList.add("d2-loader-exit");
+    window.setTimeout(() => loader.remove(), 460);
+  };
+  if (document.body) {
+    ensureLoader();
+  } else {
+    document.addEventListener("DOMContentLoaded", ensureLoader, { once: true });
+  }
+  window.addEventListener("load", () => {
+    window.setTimeout(() => window.dota2tunedHideLoader?.(), 12000);
+  }, { once: true });
+})();
+</script>
+""".replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
 
 
 def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
@@ -1415,6 +1511,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   window.addEventListener("scroll", scheduleSync, {{ passive: true, capture: true }});
   decorate();
   syncSidebarView();
+  window.setTimeout(() => window.dota2tunedHideLoader?.(), 120);
 }}
 """
 

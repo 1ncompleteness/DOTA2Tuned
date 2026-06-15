@@ -158,6 +158,17 @@ def test_css_shows_full_selected_hero_cards():
     assert "text-overflow: clip" in APP_CSS
 
 
+def test_loader_and_sidebar_logo_use_shared_red_flash():
+    assert "d2-logo-red-flash" in APP_HEAD
+    assert "#d2-startup-loader" in APP_HEAD
+    assert "dota2tunedHideLoader" in APP_HEAD
+    assert "DOTA2Tuned" in APP_HEAD
+    assert "4.2s ease-in-out infinite" in APP_HEAD
+    assert "html.d2-loading .gradio-container" in APP_HEAD
+    assert ".app-sidebar-brand img" in APP_CSS
+    assert "animation: d2-logo-red-flash 4.2s ease-in-out infinite" in APP_CSS
+
+
 def test_parse_heroes_accepts_dropdown_values():
     heroes = pl.DataFrame([{"hero_id": 44, "hero_name": "Phantom Assassin"}])
     lookup, _ = _hero_lookup(heroes)
@@ -231,6 +242,7 @@ def test_app_head_preconnects_without_theme_redirect():
     assert "cdn.steamstatic.com" in APP_HEAD
     # Dark mode is a single CSS palette now; no ?__theme=dark URL redirect.
     assert "__theme" not in APP_HEAD
+    assert "__DOTA_LOGO_URL__" not in APP_HEAD
 
 
 def test_css_forces_single_dark_palette():

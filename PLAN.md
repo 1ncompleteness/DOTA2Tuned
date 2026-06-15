@@ -148,6 +148,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 22:11: fixed the Draft Coach hero dropdown field layout after Gradio 6 placed the chevron wrapper outside the visible input area. Replaced the forced `100%` hero search width with a flex/min-width-safe dropdown layout, reserved right-side input padding for `.icon-wrap`, and made the secondary search wrappers transparent so Allied heroes, Enemy heroes, and Banned heroes no longer show a distinct nested text background.
 - 2026-06-14 22:18: fixed selected hero-card readability by changing the direct hero portrait image to `object-fit: contain` in the existing 48x36 slot, narrowing the portrait selector so role icons are not affected, and allowing hero names to wrap instead of being ellipsized.
 - 2026-06-14 22:25: fixed stale dropdown search rendering after confirming Gradio can reuse option DOM nodes while changing the underlying `aria-label`/text. The client decorator now stores the label it rendered, removes only DOTA2Tuned-injected icon/label children when a reused row changes, and observes option label/text mutations so visible search results match the actual clickable choice.
+- 2026-06-14 22:59: added an early startup loader in `APP_HEAD` so the app shows the DOTA2Tuned brand and Dota symbol while Gradio mounts instead of briefly exposing bare elements. The Dota symbol pulses from white to the palette red `#ff6046` and back over a 4.2 second cycle, and the sidebar brand icon uses the same animation after the loader exits.
 
 ## Adapter Eval Notes
 
