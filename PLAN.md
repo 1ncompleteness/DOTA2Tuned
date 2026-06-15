@@ -171,6 +171,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 05:07: fixed the mobile responsiveness breakpoint where Gradio expanded the open sidebar to the full viewport width. Below `820px`, the sidebar now becomes a compact sticky top navigation bar with horizontal scrolling tabs, while an unscoped head override removes Gradio's outer mobile padding so the active page content keeps the full mobile viewport width below it.
 - 2026-06-15 05:12: standardized scrollbars across the app to use slim dark-track styling with Dota palette thumbs, and hardened the startup loader video for Safari by using the MP4 as the direct source plus muted inline autoplay attributes/properties (`defaultMuted`, `playsinline`, and `webkit-playsinline`) before playback.
 - 2026-06-15 05:16: moved the real startup-loader video into middleware-injected initial body HTML so Safari sees a visible muted inline `<video>` during document parse instead of waiting for Gradio's delayed `head=` injection. The app-head script now primes an existing critical loader and retries playback on `loadeddata`, `canplay`, and visibility changes while recording any play-block reason on the video dataset.
+- 2026-06-15 05:26: added an explicit Dota-styled startup-loader play button for Safari's autoplay safeguard path. The button is centered below the DOTA2Tuned icon/text, sits above all video and gradient layers, and invokes the same video prime/play logic in both the critical initial-body loader and the hydrated loader fallback.
 
 ## Adapter Eval Notes
 
