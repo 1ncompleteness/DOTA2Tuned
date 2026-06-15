@@ -376,6 +376,10 @@ ASSISTANT_EXAMPLE_PROMPTS = [
     "What changed in patch 7.41 for the current pro meta?",
     "Give me a safe support pick with synergy notes and evidence.",
     "Which items should I think about for Shadow Fiend, and what evidence is missing?",
+    "Predict this draft: Radiant AM, CM, Axe, Lina, Tide vs Dire PA, WD, SF, Lion, Mars.",
+    "Who counters Queen of Pain in the current patch, and what is the confidence?",
+    "Build a two-hero offlane plan against Drow Ranger with source links.",
+    "Explain why a low-sample recommendation should be treated carefully.",
 ]
 
 APP_CSS = """
@@ -585,6 +589,36 @@ body::-webkit-scrollbar-thumb:hover,
   background: var(--d2-action-fill) !important;
   color: #fff !important;
 }
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner {
+  background: inherit !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  box-shadow: none !important;
+}
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner,
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner *,
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner button {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner::before,
+.gradio-container .icon-button-wrapper.top-panel.hide-top-corner::after {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.gradio-container [data-testid="status-tracker"] {
+  color: var(--d2-gold-soft) !important;
+}
+.d2-module-intro {
+  margin: 0 0 10px;
+}
+.d2-module-intro .assistant-answer-text {
+  font-size: 13px;
+  line-height: 19px;
+}
 .gradio-container input[type="checkbox"],
 .gradio-container input[type="radio"],
 .gradio-container input[type="range"] {
@@ -617,6 +651,14 @@ body::-webkit-scrollbar-thumb:hover,
 }
 .app-main button:active {
   transform: translateY(0);
+}
+.app-main .icon-button-wrapper.top-panel.hide-top-corner button,
+.app-main .icon-button-wrapper.top-panel.hide-top-corner button:hover,
+.app-main .icon-button-wrapper.top-panel.hide-top-corner button:active {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 .app-title {
   display: flex;
@@ -977,12 +1019,25 @@ __NAV_ICON_CSS__
   padding-right: 32px !important;
   background: transparent !important;
   box-shadow: none !important;
+  caret-color: var(--d2-red) !important;
+}
+.dota-dropdown input[autocomplete="off"]:focus,
+.dota-dropdown input[role="combobox"]:focus {
+  animation: d2-caret-pulse 1s steps(1, end) infinite;
 }
 .dota-dropdown .secondary-wrap.d2-has-selected-icon input[autocomplete="off"],
 .dota-dropdown .secondary-wrapper.d2-has-selected-icon input[autocomplete="off"],
 .dota-dropdown .secondary-wrap.d2-has-selected-icon input[role="combobox"],
 .dota-dropdown .secondary-wrapper.d2-has-selected-icon input[role="combobox"] {
   padding-left: 34px !important;
+}
+.hero-dropdown .secondary-wrap.d2-hide-selected-text input[autocomplete="off"],
+.hero-dropdown .secondary-wrapper.d2-hide-selected-text input[autocomplete="off"],
+.hero-dropdown .secondary-wrap.d2-hide-selected-text input[role="combobox"],
+.hero-dropdown .secondary-wrapper.d2-hide-selected-text input[role="combobox"] {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
 }
 .dota-selected-field-icon {
   position: absolute;
@@ -1062,17 +1117,25 @@ __NAV_ICON_CSS__
   background: rgba(255, 96, 70, 0.16) !important;
   color: #fff !important;
 }
-/* Rich option rendering is additive: we inject an icon + label as new child
-   nodes and collapse Gradio's own text node/checkmark with font-size:0 instead
-   of deleting them, so Svelte's reconciliation never touches removed nodes. */
+.dota-dropdown [role="option"].dota-option-selected {
+  color: #fff !important;
+  background: rgba(255, 96, 70, 0.12) !important;
+}
+/* Rich option rendering is additive: injected nodes are visual only, while
+   Gradio/Svelte-owned option text stays in the DOM and is collapsed by CSS. */
 .dota-dropdown li[role="option"].dota-decorated-rich {
   font-size: 0 !important;
   line-height: 0 !important;
 }
+.dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-check,
 .dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-icon,
 .dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-label {
   font-size: 13px;
   line-height: 1.25;
+}
+.dota-dropdown [role="option"].dota-choice-option > .inner-item,
+.dota-dropdown li[role="option"].dota-decorated-rich > .inner-item {
+  display: none !important;
 }
 .dota-dropdown .token.dota-selected-token {
   display: inline-flex !important;
@@ -1102,6 +1165,17 @@ __NAV_ICON_CSS__
   max-width: 100% !important;
   box-sizing: border-box !important;
 }
+.dota-choice-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-height: 18px;
+  flex: 0 0 18px;
+  color: var(--d2-red);
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 96, 70, 0.45);
+}
 .dota-choice-option .dota-choice-icon {
   width: 22px;
   height: 22px;
@@ -1110,6 +1184,7 @@ __NAV_ICON_CSS__
   flex: 0 0 22px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.22);
 }
+.dota-choice-option .dota-choice-check,
 .dota-choice-option .dota-choice-icon,
 .dota-choice-label,
 .dota-choice-label * {
@@ -1127,7 +1202,7 @@ __NAV_ICON_CSS__
   gap: 3px;
   flex: 1 1 auto;
   min-width: 0;
-  max-width: calc(100% - 30px);
+  max-width: calc(100% - 56px);
 }
 .dota-choice-name {
   color: #f1f3f4;
@@ -1158,6 +1233,25 @@ __NAV_ICON_CSS__
 .hero-dropdown .token-remove.remove-all {
   display: none !important;
 }
+.hero-dropdown .token.d2-collapsed-selected-token,
+.item-dropdown .token.d2-collapsed-selected-token {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+.hero-dropdown .token.d2-collapsed-selected-token > span,
+.item-dropdown .token.d2-collapsed-selected-token > span,
+.hero-dropdown .token.d2-collapsed-selected-token > img,
+.item-dropdown .token.d2-collapsed-selected-token > img {
+  display: none !important;
+}
 .hero-strip {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
@@ -1177,6 +1271,10 @@ __NAV_ICON_CSS__
 .item-strip:empty {
   display: none;
   margin-top: 0;
+}
+.d2-preview-output:has(.prose:empty),
+.d2-preview-output:has(.prose > :first-child:last-child:empty) {
+  display: none !important;
 }
 .entity-chip {
   display: flex;
@@ -1224,6 +1322,9 @@ __NAV_ICON_CSS__
   width: 20px !important;
   height: 20px !important;
   min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
   padding: 0 !important;
   border: 1px solid rgba(235, 207, 135, 0.70) !important;
   border-radius: 50% !important;
@@ -1298,6 +1399,50 @@ __NAV_ICON_CSS__
   color: var(--d2-fg-muted);
   font-size: 13px;
   padding: 7px 0;
+}
+.d2-text-glitch {
+  position: relative;
+  color: #fff3df;
+  text-shadow: 1px 0 rgba(255, 96, 70, 0.85), -1px 0 rgba(235, 207, 135, 0.50);
+  animation: d2-glitch-skew 0.38s steps(2, end) 1;
+}
+.d2-text-glitch::before,
+.d2-text-glitch::after {
+  content: attr(data-d2-glitch-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.d2-text-glitch::before {
+  color: var(--d2-red);
+  transform: translate(1px, 0);
+  clip-path: inset(0 0 58% 0);
+  opacity: 0.72;
+}
+.d2-text-glitch::after {
+  color: var(--d2-gold);
+  transform: translate(-1px, 0);
+  clip-path: inset(54% 0 0 0);
+  opacity: 0.54;
+}
+@keyframes d2-caret-pulse {
+  0%, 49% { caret-color: var(--d2-red); }
+  50%, 100% { caret-color: transparent; }
+}
+@keyframes d2-glitch-skew {
+  0% { transform: translateX(0); }
+  18% { transform: translateX(1px) skewX(4deg); }
+  36% { transform: translateX(-1px) skewX(-3deg); }
+  58% { transform: translateX(1px) skewX(2deg); }
+  100% { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dota-dropdown input[autocomplete="off"]:focus,
+  .dota-dropdown input[role="combobox"]:focus,
+  .d2-text-glitch {
+    animation: none !important;
+  }
 }
 .build-hero-header {
   position: relative;
@@ -2335,9 +2480,6 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     const ariaLabel = cleanLabel(option.getAttribute("aria-label") || "");
     if (ariaLabel) return ariaLabel.replace(/^✓\\s*/, "");
     const clone = option.cloneNode(true);
-    clone.querySelectorAll(".dota-choice-icon, .dota-choice-label").forEach((node) => {{
-      node.remove();
-    }});
     return cleanLabel(clone.textContent).replace(/^✓\\s*/, "");
   }};
   const resolveChoiceIcon = (label) => {{
@@ -2349,19 +2491,84 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     clone.querySelectorAll(
       ".dota-selected-token-icon, .token-remove, .remove-all, button"
     ).forEach((node) => node.remove());
-    return cleanLabel(clone.textContent);
+    const liveLabel = cleanLabel(clone.textContent);
+    if (liveLabel) return liveLabel;
+    return cleanLabel(token?.dataset?.dotaSelectedLabel || "");
+  }};
+  const tokenLabelsForDropdown = (dropdown) =>
+    Array.from(dropdown.querySelectorAll(".token"))
+      .map(selectedTokenLabel)
+      .filter(Boolean);
+  const isHeroDropdown = (dropdown) => dropdown?.classList?.contains("hero-dropdown");
+  const isHiddenValueDropdown = (dropdown) =>
+    dropdown?.classList?.contains("hero-dropdown")
+    || dropdown?.classList?.contains("item-dropdown");
+  const isSingleHiddenValueDropdown = (dropdown) =>
+    isHiddenValueDropdown(dropdown) && !dropdown.querySelector(".token");
+  const previewLabelsForDropdown = (dropdown) => {{
+    const target = dropdown?.id || "";
+    if (!target) return [];
+    return Array.from(document.querySelectorAll(".hero-card-remove"))
+      .filter((button) => button.dataset.dotaTarget === target)
+      .map((button) => cleanLabel(button.dataset.dotaHeroName || ""))
+      .filter(Boolean);
   }};
   const selectedInputLabel = (dropdown, input) => {{
+    const previewLabels = previewLabelsForDropdown(dropdown);
+    if (previewLabels.length) return previewLabels[previewLabels.length - 1];
+    const tokens = tokenLabelsForDropdown(dropdown);
+    if (tokens.length) return tokens[tokens.length - 1];
     const inputLabel = cleanLabel(input?.value || "");
-    if (inputLabel) return inputLabel;
-    const tokens = Array.from(dropdown.querySelectorAll(".token"));
-    if (tokens.length) return selectedTokenLabel(tokens[tokens.length - 1]);
-    return "";
+    if (isSingleHiddenValueDropdown(dropdown) && inputLabel) return inputLabel;
+    const wrap = dropdown.querySelector(".secondary-wrap, .secondary-wrapper");
+    const savedLabel = cleanLabel(wrap?.dataset?.dotaSelectedIconLabel || "");
+    if (savedLabel) return savedLabel;
+    return inputLabel;
+  }};
+  const choiceLabelsMatch = (optionLabel, selectedLabel) =>
+    normalizeChoiceKey(optionLabel) === normalizeChoiceKey(selectedLabel)
+    || (
+      comparableHeroName(optionLabel)
+      && comparableHeroName(optionLabel) === comparableHeroName(selectedLabel)
+    );
+  const syncSelectedInputVisibility = (dropdown, wrap, input) => {{
+    const inputLabel = cleanLabel(input?.value || "");
+    const selectedLabels = [
+      ...tokenLabelsForDropdown(dropdown),
+      cleanLabel(wrap?.dataset?.dotaSelectedIconLabel || "")
+    ].filter(Boolean);
+    const duplicatesSelection = Boolean(
+      isHiddenValueDropdown(dropdown)
+      && inputLabel
+      && selectedLabels.some((label) => choiceLabelsMatch(inputLabel, label))
+    );
+    wrap.classList.toggle("d2-hide-selected-text", duplicatesSelection);
+    if (duplicatesSelection) input.value = "";
   }};
   const iconClassName = (base, icon) =>
     `${{base}} dota-selected-${{icon?.kind || "choice"}}-icon`;
-  const decorateSelectedToken = (token) => {{
-    const label = selectedTokenLabel(token);
+  const collapseSelectedToken = (token, label) => {{
+    if (!label) return;
+    token.classList.add("d2-collapsed-selected-token");
+    token.classList.remove("dota-selected-token");
+    token.setAttribute("aria-hidden", "true");
+    if (token.dataset) {{
+      token.dataset.dotaSelectedLabel = label;
+      delete token.dataset.dotaSelectedIconLabel;
+    }}
+    token.querySelectorAll(".dota-selected-token-icon").forEach((node) => node.remove());
+    token.querySelectorAll(":scope > span").forEach((span) => {{
+      if (!span.dataset.dotaOriginalText) span.dataset.dotaOriginalText = label;
+      span.textContent = "";
+    }});
+  }};
+  const decorateSelectedToken = (token, fallbackLabel = "") => {{
+    const label = cleanLabel(fallbackLabel) || selectedTokenLabel(token);
+    const dropdown = token.closest(".dota-dropdown");
+    if (isHiddenValueDropdown(dropdown)) {{
+      collapseSelectedToken(token, label);
+      return;
+    }}
     const icon = resolveChoiceIcon(label);
     const existing = token.querySelector(".dota-selected-token-icon");
     if (!icon || !icon.src) {{
@@ -2396,10 +2603,20 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     const label = selectedInputLabel(dropdown, input);
     const icon = resolveChoiceIcon(label);
     let img = wrap.querySelector(".dota-selected-field-icon");
+    if (isHiddenValueDropdown(dropdown)) {{
+      img?.remove();
+      wrap.classList.remove("d2-has-selected-icon");
+      if (icon?.src && wrap.dataset) {{
+        wrap.dataset.dotaSelectedIconLabel = label;
+      }}
+      syncSelectedInputVisibility(dropdown, wrap, input);
+      return;
+    }}
     if (!icon || !icon.src) {{
       img?.remove();
       wrap.classList.remove("d2-has-selected-icon");
       if (wrap.dataset) delete wrap.dataset.dotaSelectedIconLabel;
+      syncSelectedInputVisibility(dropdown, wrap, input);
       return;
     }}
     wrap.classList.add("d2-has-selected-icon");
@@ -2418,17 +2635,41 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     img.decoding = "async";
     wrap.prepend(img);
     if (wrap.dataset) wrap.dataset.dotaSelectedIconLabel = label;
+    syncSelectedInputVisibility(dropdown, wrap, input);
   }};
   const decorateSelectedDropdownValues = () => {{
     document.querySelectorAll(".dota-dropdown").forEach((dropdown) => {{
-      dropdown.querySelectorAll(".token").forEach(decorateSelectedToken);
+      const previewLabels = previewLabelsForDropdown(dropdown);
+      dropdown.querySelectorAll(".token").forEach((token, index) => {{
+        decorateSelectedToken(token, previewLabels[index] || "");
+      }});
       decorateSelectedField(dropdown);
     }});
+  }};
+  const optionHasNativeCheck = (option) =>
+    option.getAttribute("aria-selected") === "true"
+    || option.getAttribute("aria-checked") === "true"
+    || option.getAttribute("data-selected") === "true";
+  const selectedLabelsForDropdown = (dropdown) => {{
+    const labels = [];
+    const previewLabels = previewLabelsForDropdown(dropdown);
+    const tokenLabels = tokenLabelsForDropdown(dropdown);
+    labels.push(...(previewLabels.length ? previewLabels : tokenLabels));
+    const wrap = dropdown.querySelector(".secondary-wrap, .secondary-wrapper");
+    const savedLabel = cleanLabel(wrap?.dataset?.dotaSelectedIconLabel || "");
+    const input = dropdown.querySelector(
+      'input[autocomplete="off"], input[role="combobox"], input'
+    );
+    const inputLabel = cleanLabel(input?.value || "");
+    if (!previewLabels.length && !tokenLabels.length && savedLabel) labels.push(savedLabel);
+    if (inputLabel && document.activeElement !== input) labels.push(inputLabel);
+    return labels;
   }};
   const resetOptionDecoration = (option) => {{
     Array.from(option.children).forEach((child) => {{
       if (
-        child.classList?.contains("dota-choice-icon")
+        child.classList?.contains("dota-choice-check")
+        || child.classList?.contains("dota-choice-icon")
         || child.classList?.contains("dota-choice-label")
       ) {{
         child.remove();
@@ -2440,35 +2681,55 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       "dota-item-option",
       "dota-role-option",
       "dota-scope-option",
+      "dota-mode-option",
       "dota-decorated-rich"
     );
     if (option.dataset) {{
-      delete option.dataset.dotaChoiceIconDecorated;
+      delete option.dataset.dotaChoiceDecorated;
       delete option.dataset.dotaChoiceLabel;
+      delete option.dataset.dotaChoiceSelected;
     }}
   }};
   const decorateOption = (option) => {{
-    // Gradio 6.18 prefixes option text with a "✓" checkmark glyph; the clean
-    // choice label lives in aria-label, which is what choiceIcons is keyed on.
+    const dropdown = option.closest(".dota-dropdown");
+    if (!dropdown) return;
     const label = readOptionLabel(option);
+    const nativeSelected = optionHasNativeCheck(option);
+    const selected = nativeSelected
+      || selectedLabelsForDropdown(dropdown).some((selectedLabel) =>
+        choiceLabelsMatch(label, selectedLabel)
+      );
     if (
       option.dataset
-      && option.dataset.dotaChoiceIconDecorated === "1"
+      && option.dataset.dotaChoiceDecorated === "1"
       && option.dataset.dotaChoiceLabel === label
+      && option.dataset.dotaChoiceSelected === (selected ? "1" : "0")
     ) return;
-    if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") {{
+    if (option.dataset && option.dataset.dotaChoiceDecorated === "1") {{
       resetOptionDecoration(option);
     }}
+    option.classList.toggle("dota-option-selected", selected);
+    option.classList.toggle("dota-option-native-selected", nativeSelected);
     const icon = resolveChoiceIcon(label);
-    if (!icon || !icon.src) return;
+    if (!icon || !icon.src) {{
+      if (option.dataset) {{
+        option.dataset.dotaChoiceLabel = label;
+        option.dataset.dotaChoiceSelected = selected ? "1" : "0";
+      }}
+      return;
+    }}
     option.classList.add("dota-choice-option");
     if (icon.kind) option.classList.add(`dota-${{icon.kind}}-option`);
+    const check = document.createElement("span");
+    check.className = "dota-choice-check";
+    check.textContent = selected ? "✓" : "";
     const img = document.createElement("img");
     img.className = "dota-choice-icon";
     img.src = icon.src;
     img.alt = "";
     img.loading = "lazy";
     img.decoding = "async";
+    option.prepend(check, img);
     if (icon.kind === "hero" && label.includes(" · ")) {{
       const [name, tagsText] = label.split(" · ", 2);
       const labelWrap = document.createElement("span");
@@ -2485,22 +2746,120 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
         tagsEl.append(tagEl);
       }});
       labelWrap.append(nameEl, tagsEl);
-      // Additive only: never delete Gradio/Svelte-owned nodes (textContent="").
-      // CSS (.dota-decorated-rich) collapses the original text node + checkmark,
-      // so Svelte's per-option reactive effect never reconciles a removed node.
-      option.prepend(img);
       option.append(labelWrap);
       option.classList.add("dota-decorated-rich");
-    }} else {{
-      option.prepend(img);
     }}
     if (option.dataset) {{
-      option.dataset.dotaChoiceIconDecorated = "1";
+      option.dataset.dotaChoiceDecorated = "1";
       option.dataset.dotaChoiceLabel = label;
+      option.dataset.dotaChoiceSelected = selected ? "1" : "0";
     }}
   }};
+  const textAnimationSelectors = [
+    ".d2-dynamic-output .prose p",
+    ".d2-dynamic-output .prose li",
+    ".d2-dynamic-output .prose h1",
+    ".d2-dynamic-output .prose h2",
+    ".d2-dynamic-output .prose h3",
+    ".d2-dynamic-output .prose h4",
+    ".d2-dynamic-output .prose strong",
+    ".d2-preview-output .hero-card strong",
+    ".d2-preview-output .entity-tag",
+    ".d2-preview-output .entity-chip strong",
+    ".d2-preview-output .entity-chip span",
+    ".assistant-answer-text",
+    ".assistant-answer-text strong",
+    ".assistant-entity span",
+    ".assistant-reference a",
+    ".assistant-reference span",
+    ".assistant-reference p",
+    ".build-hero-title strong",
+    ".build-stat-pill",
+    ".build-column-title",
+    ".build-item-meta strong",
+    ".build-item-meta span",
+    ".build-item-order"
+  ];
+  const scrambleChars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    + "!@#$%^&*()[]{{}}<>.,;:";
+  const reducedMotion = () =>
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const hasVisibleRect = (element) => Boolean(element.getClientRects().length);
+  const isLeafTextElement = (element) => {{
+    if (!(element instanceof HTMLElement)) return false;
+    if (!hasVisibleRect(element)) return false;
+    if (element.closest(".dota-dropdown, .app-sidebar, button, input, textarea, pre")) {{
+      return false;
+    }}
+    const text = element.textContent || "";
+    if (!cleanLabel(text)) return false;
+    return !Array.from(element.children).some((child) => cleanLabel(child.textContent || ""));
+  }};
+  const scrambledText = (text, resolvedCount) =>
+    Array.from(text, (char, index) => {{
+      if (/\\s/.test(char) || index < resolvedCount) return char;
+      return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+    }}).join("");
+  const settleGlitch = (element, finalText) => {{
+    element.textContent = finalText;
+    element.dataset.d2TextValue = finalText;
+    element.dataset.d2GlitchText = finalText;
+    element.classList.add("d2-text-glitch");
+    window.setTimeout(() => {{
+      element.classList.remove("d2-text-glitch");
+      if (element.dataset) delete element.dataset.d2Animating;
+    }}, 420);
+  }};
+  const animateTextElement = (element) => {{
+    if (!isLeafTextElement(element)) return;
+    const finalText = element.textContent || "";
+    if (element.dataset.d2Animating === "1") return;
+    if (element.dataset.d2TextValue === finalText) return;
+    if (reducedMotion()) {{
+      element.dataset.d2TextValue = finalText;
+      return;
+    }}
+    element.dataset.d2Animating = "1";
+    const frames = Math.min(18, Math.max(7, Math.ceil(finalText.length / 5)));
+    let frame = 0;
+    const step = () => {{
+      if (!document.body.contains(element)) return;
+      const resolved = Math.floor((frame / frames) * finalText.length);
+      element.textContent = scrambledText(finalText, resolved);
+      frame += 1;
+      if (frame <= frames) {{
+        requestAnimationFrame(step);
+        return;
+      }}
+      settleGlitch(element, finalText);
+    }};
+    requestAnimationFrame(step);
+  }};
+  let textAnimationScheduled = false;
+  const scheduleTextAnimations = () => {{
+    if (textAnimationScheduled) return;
+    textAnimationScheduled = true;
+    requestAnimationFrame(() => {{
+      textAnimationScheduled = false;
+      document
+        .querySelectorAll(textAnimationSelectors.join(","))
+        .forEach(animateTextElement);
+    }});
+  }};
+  const syncStatusTrackers = () => {{
+    document.querySelectorAll('[data-testid="status-tracker"]').forEach((tracker) => {{
+      const walker = document.createTreeWalker(tracker, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+      textNodes.forEach((node) => {{
+        node.nodeValue = (node.nodeValue || "").replace(/processing/gi, "Thinking");
+      }});
+    }});
+  }};
   const decorate = () => {{
-    const options = document.querySelectorAll('li[role="option"], [role="option"]');
+    decorateSelectedDropdownValues();
+    const options = document.querySelectorAll('.dota-dropdown [role="option"]');
     if (options.length) {{
       observer.disconnect();
       options.forEach(decorateOption);
@@ -2512,8 +2871,9 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
         characterData: true
       }});
     }}
-    decorateSelectedDropdownValues();
     syncDropdownMenus();
+    scheduleTextAnimations();
+    syncStatusTrackers();
   }};
   let decorateScheduled = false;
   const scheduleDecorate = () => {{
@@ -2557,9 +2917,19 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     event.stopPropagation();
     const dropdown = document.getElementById(button.dataset.dotaTarget || "");
     if (!dropdown) return;
+    const siblingCards = Array.from(document.querySelectorAll(".hero-card-remove"))
+      .filter((candidate) => candidate.dataset.dotaTarget === button.dataset.dotaTarget);
+    const tokenIndex = siblingCards.indexOf(button);
+    const indexedToken = Array.from(dropdown.querySelectorAll(".token"))[tokenIndex];
+    const indexedRemoveButton = indexedToken?.querySelector(".token-remove:not(.remove-all)");
+    if (indexedRemoveButton) {{
+      indexedRemoveButton.click();
+      setTimeout(decorate, 0);
+      return;
+    }}
     const wantedName = comparableHeroName(button.dataset.dotaHeroName || "");
     const token = Array.from(dropdown.querySelectorAll(".token")).find((candidate) => {{
-      const tokenName = comparableHeroName(candidate.textContent || "");
+      const tokenName = comparableHeroName(selectedTokenLabel(candidate));
       return tokenName === wantedName || tokenName.startsWith(wantedName);
     }});
     const removeButton = token?.querySelector(".token-remove:not(.remove-all)");
@@ -3413,6 +3783,14 @@ def _assistant_empty_state_html() -> str:
     )
 
 
+def _module_intro_html(text: str) -> str:
+    return (
+        "<div class='assistant-result d2-module-intro'>"
+        f"<div class='assistant-answer-text'>{_html_escape(text)}</div>"
+        "</div>"
+    )
+
+
 def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int = 384) -> str:
     if not question.strip():
         return "Enter a question."
@@ -3459,19 +3837,28 @@ def build_app() -> gr.Blocks:
     def has_transient_null_selection(value: object) -> bool:
         return isinstance(value, list) and any(item is None for item in value)
 
-    def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str | dict:
+    def preview_update(html: str) -> dict:
+        return gr.update(value=html, visible=bool(html))
+
+    def hero_preview_html(hero_ids: list[int] | None, target: str | None = None) -> str:
+        return _selected_hero_html(clean_hero_values(hero_ids), hero_metadata, target)
+
+    def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> dict:
         if has_transient_null_selection(hero_ids):
             return gr.skip()
-        return _selected_hero_html(clean_hero_values(hero_ids), hero_metadata, target)
+        return preview_update(hero_preview_html(hero_ids, target))
 
     def hero_preview_for(target: str):
         return lambda hero_ids: hero_preview(hero_ids, target)
 
-    def hero_single_preview(hero_id: int | None) -> str:
+    def hero_single_preview(hero_id: int | None) -> dict:
         return hero_preview([hero_id] if hero_id else [])
 
-    def item_preview(item_key: str | None) -> str:
+    def item_preview_html(item_key: str | None) -> str:
         return _selected_item_html(item_key, item_table)
+
+    def item_preview(item_key: str | None) -> dict:
+        return preview_update(item_preview_html(item_key))
 
     def draft_coach(
         allies: list[int] | None,
@@ -3641,7 +4028,10 @@ def build_app() -> gr.Blocks:
                 elem_classes=["app-view", "assistant-landing", "d2-active"],
             ):
                 with gr.Column(elem_classes=["assistant-shell"]):
-                    assistant_output = gr.HTML(_assistant_empty_state_html())
+                    assistant_output = gr.HTML(
+                        _assistant_empty_state_html(),
+                        elem_classes=["d2-dynamic-output"],
+                    )
                     with gr.Column(elem_classes=["assistant-composer"]):
                         tuned_question = gr.Textbox(
                             show_label=False,
@@ -3669,8 +4059,7 @@ def build_app() -> gr.Blocks:
                                     api_visibility="private",
                                     queue=False,
                                 )
-                    with gr.Accordion("Retrieved Evidence", open=False):
-                        tuned_evidence = gr.Code(label="Evidence", language="json", value="[]")
+                    tuned_evidence = gr.Code(label="Evidence", language="json", value="[]")
                     tuned_button.click(
                         tuned_model,
                         inputs=[tuned_question],
@@ -3691,6 +4080,12 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="draft-coach-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Draft Coach recommends heroes from allied, enemy, and banned "
+                        "picks, then shows confidence and retrieval evidence."
+                    )
+                )
                 with gr.Row():
                     allies = gr.Dropdown(
                         choices=hero_choices,
@@ -3753,9 +4148,24 @@ def build_app() -> gr.Blocks:
                             queue=False,
                         )
                 with gr.Row():
-                    ally_preview = gr.HTML(hero_preview([], "draft-allies-dropdown"))
-                    enemy_preview = gr.HTML(hero_preview([44, 30], "draft-enemies-dropdown"))
-                    ban_preview = gr.HTML(hero_preview([], "draft-bans-dropdown"))
+                    ally_preview_html = hero_preview_html([], "draft-allies-dropdown")
+                    enemy_preview_html = hero_preview_html([44, 30], "draft-enemies-dropdown")
+                    ban_preview_html = hero_preview_html([], "draft-bans-dropdown")
+                    ally_preview = gr.HTML(
+                        ally_preview_html,
+                        visible=bool(ally_preview_html),
+                        elem_classes=["d2-preview-output"],
+                    )
+                    enemy_preview = gr.HTML(
+                        enemy_preview_html,
+                        visible=bool(enemy_preview_html),
+                        elem_classes=["d2-preview-output"],
+                    )
+                    ban_preview = gr.HTML(
+                        ban_preview_html,
+                        visible=bool(ban_preview_html),
+                        elem_classes=["d2-preview-output"],
+                    )
                 with gr.Row():
                     role = gr.Dropdown(
                         choices=ROLE_OPTIONS,
@@ -3770,9 +4180,8 @@ def build_app() -> gr.Blocks:
                         elem_classes=["dota-dropdown", "scope-dropdown"],
                     )
                 run = gr.Button("Recommend")
-                rec_output = gr.Markdown()
-                with gr.Accordion("Evidence", open=False):
-                    evidence_output = gr.Code(label="Evidence", language="json")
+                rec_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
+                evidence_output = gr.Code(label="Evidence", language="json")
                 allies.change(
                     hero_preview_for("draft-allies-dropdown"),
                     inputs=[allies],
@@ -3803,12 +4212,19 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="hero-meta-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Hero Meta searches patch, hero, and item evidence so you can inspect "
+                        "current trends without manually typing every source query."
+                    )
+                )
                 with gr.Row():
                     meta_hero = gr.Dropdown(
                         choices=hero_choices,
                         label="Hero",
                         value=None,
                         filterable=True,
+                        elem_id="meta-hero-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                     meta_item = gr.Dropdown(
@@ -3816,14 +4232,25 @@ def build_app() -> gr.Blocks:
                         label="Item",
                         value=None,
                         filterable=True,
+                        elem_id="meta-item-dropdown",
                         elem_classes=["dota-dropdown", "item-dropdown"],
                     )
                 with gr.Row():
-                    meta_hero_preview = gr.HTML(hero_preview([]))
-                    meta_item_preview = gr.HTML(item_preview(None))
+                    meta_hero_preview_html = hero_preview_html([])
+                    meta_item_preview_html = item_preview_html(None)
+                    meta_hero_preview = gr.HTML(
+                        meta_hero_preview_html,
+                        visible=bool(meta_hero_preview_html),
+                        elem_classes=["d2-preview-output"],
+                    )
+                    meta_item_preview = gr.HTML(
+                        meta_item_preview_html,
+                        visible=bool(meta_item_preview_html),
+                        elem_classes=["d2-preview-output"],
+                    )
                 query = gr.Textbox(label="Patch or meta query", value="current pro meta")
                 meta_button = gr.Button("Search")
-                meta_output = gr.Markdown()
+                meta_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
                 meta_hero.change(
                     hero_single_preview,
                     inputs=[meta_hero],
@@ -3847,6 +4274,12 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="match-predictor-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Match Predictor estimates Radiant win chance from both five-hero "
+                        "lineups using the local draft model."
+                    )
+                )
                 with gr.Row():
                     radiant = gr.Dropdown(
                         choices=hero_choices,
@@ -3871,15 +4304,24 @@ def build_app() -> gr.Blocks:
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                 with gr.Row():
+                    radiant_preview_html = hero_preview_html(
+                        [1, 2, 3, 25, 5], "predict-radiant-dropdown"
+                    )
+                    dire_preview_html = hero_preview_html(
+                        [14, 74, 6, 26, 18], "predict-dire-dropdown"
+                    )
                     radiant_preview = gr.HTML(
-                        hero_preview([1, 2, 3, 25, 5], "predict-radiant-dropdown")
+                        radiant_preview_html,
+                        visible=bool(radiant_preview_html),
+                        elem_classes=["d2-preview-output"],
                     )
                     dire_preview = gr.HTML(
-                        hero_preview([14, 74, 6, 26, 18], "predict-dire-dropdown")
+                        dire_preview_html,
+                        visible=bool(dire_preview_html),
+                        elem_classes=["d2-preview-output"],
                     )
                 predict_button = gr.Button("Predict")
-                with gr.Accordion("Prediction", open=False):
-                    predict_output = gr.Code(label="Prediction", language="json")
+                predict_output = gr.Code(label="Prediction", language="json")
                 radiant.change(
                     hero_preview_for("predict-radiant-dropdown"),
                     inputs=[radiant],
@@ -3903,11 +4345,18 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="builds-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Builds summarizes observed hero item timings and popular build paths "
+                        "from the normalized match dataset."
+                    )
+                )
                 hero = gr.Dropdown(
                     choices=hero_choices,
                     label="Hero",
                     value=1,
                     filterable=True,
+                    elem_id="builds-hero-dropdown",
                     elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
                 build_role = gr.Radio(
@@ -3916,7 +4365,9 @@ def build_app() -> gr.Blocks:
                     value="all",
                     elem_classes=["build-role-radio"],
                 )
-                builds_output = gr.HTML(hero_builds(1, "all"))
+                builds_output = gr.HTML(
+                    hero_builds(1, "all"), elem_classes=["d2-dynamic-output"]
+                )
                 hero.change(
                     hero_builds, inputs=[hero, build_role], outputs=[builds_output]
                 )
@@ -3927,6 +4378,12 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="draft-lab-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Draft Lab turns the recommendation engine into compact coaching cards "
+                        "for scouting, one-minute explanations, and constraint drills."
+                    )
+                )
                 lab_enemies = gr.Dropdown(
                     choices=hero_choices,
                     label="Enemy heroes",
@@ -3938,7 +4395,12 @@ def build_app() -> gr.Blocks:
                     elem_id="lab-enemies-dropdown",
                     elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
-                lab_enemy_preview = gr.HTML(hero_preview([44, 30], "lab-enemies-dropdown"))
+                lab_enemy_preview_html = hero_preview_html([44, 30], "lab-enemies-dropdown")
+                lab_enemy_preview = gr.HTML(
+                    lab_enemy_preview_html,
+                    visible=bool(lab_enemy_preview_html),
+                    elem_classes=["d2-preview-output"],
+                )
                 lab_role = gr.Dropdown(
                     choices=ROLE_OPTIONS,
                     label="Role",
@@ -3952,7 +4414,7 @@ def build_app() -> gr.Blocks:
                     elem_classes=["dota-dropdown"],
                 )
                 lab_button = gr.Button("Generate Draft Lab Card")
-                lab_output = gr.Markdown()
+                lab_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
                 lab_enemies.change(
                     hero_preview_for("lab-enemies-dropdown"),
                     inputs=[lab_enemies],
@@ -3969,6 +4431,12 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=True, elem_id="data-freshness-view", elem_classes=["app-view"]
             ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Data Freshness lists the normalized Parquet artifacts currently loaded "
+                        "by the app."
+                    )
+                )
                 status_button = gr.Button("Refresh")
                 status_output = gr.Markdown()
                 status_button.click(data_status, outputs=[status_output])
