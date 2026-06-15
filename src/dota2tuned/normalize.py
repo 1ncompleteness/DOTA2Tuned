@@ -34,6 +34,12 @@ SCHEMAS: dict[str, dict[str, pl.DataType]] = {
         "notes": pl.Utf8,
         "lore": pl.Utf8,
     },
+    "dim_ability": {
+        "ability_id": pl.Int64,
+        "ability_key": pl.Utf8,
+        "ability_name": pl.Utf8,
+        "img": pl.Utf8,
+    },
     "dim_patch": {
         "patch_id": pl.Int64,
         "patch_name": pl.Utf8,
@@ -106,10 +112,18 @@ SCHEMAS: dict[str, dict[str, pl.DataType]] = {
     },
     "fact_hero_build_stats": {
         "hero_id": pl.Int64,
+        "role": pl.Utf8,
         "item_key": pl.Utf8,
         "time_bucket": pl.Utf8,
         "purchases": pl.Int64,
         "median_time": pl.Float64,
+    },
+    "fact_hero_skill_builds": {
+        "hero_id": pl.Int64,
+        "role": pl.Utf8,
+        "ability_id": pl.Int64,
+        "pick_order": pl.Int64,
+        "picks": pl.Int64,
     },
     "doc_patch_change": {
         "patch": pl.Utf8,
@@ -207,6 +221,35 @@ def normalize_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return output
 
 
+def normalize_abilities(
+    ability_id_rows: list[dict[str, Any]], ability_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    metadata_by_key = {
+        str(row.get("key")): row for row in ability_rows if row.get("key")
+    }
+    output = []
+    for row in ability_id_rows:
+        raw_id = row.get("key")
+        ability_key = row.get("value")
+        try:
+            ability_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if not ability_key:
+            continue
+        ability_key = str(ability_key)
+        metadata = metadata_by_key.get(ability_key, {})
+        output.append(
+            {
+                "ability_id": ability_id,
+                "ability_key": ability_key,
+                "ability_name": metadata.get("dname") or ability_key,
+                "img": metadata.get("img"),
+            }
+        )
+    return output
+
+
 def normalize_patches(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     for row in rows:
@@ -285,10 +328,13 @@ def dedupe_match_summaries(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def normalize_match_details(
     rows: list[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[
+    list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]
+]:
     players = []
     drafts = []
     purchases = []
+    ability_upgrades = []
     for match in rows:
         match_id = match.get("match_id")
         if not match_id:
@@ -335,6 +381,36 @@ def normalize_match_details(
                         "patch": player.get("patch") or match.get("patch"),
                     }
                 )
+            ability_log = player.get("ability_upgrades")
+            if ability_log:
+                for order, upgrade in enumerate(ability_log, start=1):
+                    ability_id = upgrade.get("ability") if isinstance(upgrade, dict) else upgrade
+                    if not ability_id:
+                        continue
+                    ability_upgrades.append(
+                        {
+                            "match_id": int(match_id),
+                            "hero_id": int(hero_id),
+                            "ability_id": int(ability_id),
+                            "pick_order": order,
+                            "time": upgrade.get("time") if isinstance(upgrade, dict) else None,
+                        }
+                    )
+            else:
+                for order, ability_id in enumerate(
+                    player.get("ability_upgrades_arr") or [], start=1
+                ):
+                    if not ability_id:
+                        continue
+                    ability_upgrades.append(
+                        {
+                            "match_id": int(match_id),
+                            "hero_id": int(hero_id),
+                            "ability_id": int(ability_id),
+                            "pick_order": order,
+                            "time": None,
+                        }
+                    )
         for pick in match.get("picks_bans") or []:
             drafts.append(
                 {
@@ -345,7 +421,7 @@ def normalize_match_details(
                     "order": pick.get("order"),
                 }
             )
-    return players, drafts, purchases
+    return players, drafts, purchases, ability_upgrades
 
 
 def build_pair_stats(player_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -394,11 +470,52 @@ def _time_bucket(seconds: int | None) -> str:
     return "40m+"
 
 
-def build_hero_build_stats(purchase_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[tuple[int, str, str], list[int]] = defaultdict(list)
+ROLE_ALL = "all"
+
+
+def derive_player_roles(player_rows: list[dict[str, Any]]) -> dict[tuple[int, int], str]:
+    """Map (match_id, hero_id) to a Position 1-5 role.
+
+    Players are grouped by their lane (lane_role) within each match/side, then ranked by
+    gold_per_min: the higher-farming player on safe lane is the carry (pos 1) and the other
+    is hard support (pos 5); on the off lane the higher-farming player is offlane (pos 3)
+    and the other is soft support (pos 4). Mid lane is always pos 2; unknown/jungle lanes
+    fall back to carry.
+    """
+    groups: dict[tuple[int, bool, int | None], list[dict[str, Any]]] = defaultdict(list)
+    for row in player_rows:
+        match_id = row.get("match_id")
+        hero_id = row.get("hero_id")
+        if not match_id or not hero_id:
+            continue
+        groups[(int(match_id), bool(row.get("is_radiant")), row.get("lane_role"))].append(row)
+
+    roles: dict[tuple[int, int], str] = {}
+    for (match_id, _is_radiant, lane_role), rows in groups.items():
+        ordered = sorted(rows, key=lambda r: r.get("gold_per_min") or 0, reverse=True)
+        for rank, row in enumerate(ordered):
+            hero_id = int(row["hero_id"])
+            if lane_role == 2:
+                role = "mid"
+            elif lane_role == 1:
+                role = "carry" if rank == 0 else "hard support"
+            elif lane_role == 3:
+                role = "offlane" if rank == 0 else "soft support"
+            else:
+                role = "carry"
+            roles[(match_id, hero_id)] = role
+    return roles
+
+
+def build_hero_build_stats(
+    purchase_rows: list[dict[str, Any]], player_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    roles = derive_player_roles(player_rows)
+    grouped: dict[tuple[int, str, str, str], list[int]] = defaultdict(list)
     for row in purchase_rows:
         hero_id = row.get("hero_id")
         item_key = row.get("item_key")
+        match_id = row.get("match_id")
         if not hero_id or not item_key:
             continue
         time = row.get("time")
@@ -406,17 +523,55 @@ def build_hero_build_stats(purchase_rows: list[dict[str, Any]]) -> list[dict[str
             time = int(time)
         except (TypeError, ValueError):
             time = None
-        grouped[(int(hero_id), str(item_key), _time_bucket(time))].append(time or 0)
+        hero_id = int(hero_id)
+        bucket = _time_bucket(time)
+        grouped[(hero_id, ROLE_ALL, str(item_key), bucket)].append(time or 0)
+        role = roles.get((int(match_id), hero_id)) if match_id else None
+        if role:
+            grouped[(hero_id, role, str(item_key), bucket)].append(time or 0)
 
     return [
         {
             "hero_id": hero_id,
+            "role": role,
             "item_key": item_key,
             "time_bucket": time_bucket,
             "purchases": len(times),
             "median_time": float(median(times)),
         }
-        for (hero_id, item_key, time_bucket), times in grouped.items()
+        for (hero_id, role, item_key, time_bucket), times in grouped.items()
+    ]
+
+
+def build_hero_skill_stats(
+    ability_rows: list[dict[str, Any]], player_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    roles = derive_player_roles(player_rows)
+    counts: Counter[tuple[int, str, int, int]] = Counter()
+    for row in ability_rows:
+        hero_id = row.get("hero_id")
+        ability_id = row.get("ability_id")
+        pick_order = row.get("pick_order")
+        match_id = row.get("match_id")
+        if not hero_id or not ability_id or not pick_order:
+            continue
+        hero_id = int(hero_id)
+        ability_id = int(ability_id)
+        pick_order = int(pick_order)
+        counts[(hero_id, ROLE_ALL, ability_id, pick_order)] += 1
+        role = roles.get((int(match_id), hero_id)) if match_id else None
+        if role:
+            counts[(hero_id, role, ability_id, pick_order)] += 1
+
+    return [
+        {
+            "hero_id": hero_id,
+            "role": role,
+            "ability_id": ability_id,
+            "pick_order": pick_order,
+            "picks": picks,
+        }
+        for (hero_id, role, ability_id, pick_order), picks in counts.items()
     ]
 
 
@@ -434,6 +589,14 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
         parquet_dir / "dim_item.parquet",
         normalize_items(read_jsonl(raw_dir / "reference" / "opendota_constants_items.jsonl")),
         schema=SCHEMAS["dim_item"],
+    )
+    counts["dim_ability"] = write_parquet(
+        parquet_dir / "dim_ability.parquet",
+        normalize_abilities(
+            read_jsonl(raw_dir / "reference" / "opendota_constants_ability_ids.jsonl"),
+            read_jsonl(raw_dir / "reference" / "opendota_constants_abilities.jsonl"),
+        ),
+        schema=SCHEMAS["dim_ability"],
     )
     counts["dim_patch"] = write_parquet(
         parquet_dir / "dim_patch.parquet",
@@ -467,7 +630,7 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
     )
 
     match_details = read_jsonl(raw_dir / "matches" / "opendota_match_details.jsonl")
-    players, drafts, purchases = normalize_match_details(match_details)
+    players, drafts, purchases, ability_upgrades = normalize_match_details(match_details)
     counts["fact_player_match"] = write_parquet(
         parquet_dir / "fact_player_match.parquet", players, schema=SCHEMAS["fact_player_match"]
     )
@@ -486,8 +649,13 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
     )
     counts["fact_hero_build_stats"] = write_parquet(
         parquet_dir / "fact_hero_build_stats.parquet",
-        build_hero_build_stats(purchases),
+        build_hero_build_stats(purchases, players),
         schema=SCHEMAS["fact_hero_build_stats"],
+    )
+    counts["fact_hero_skill_builds"] = write_parquet(
+        parquet_dir / "fact_hero_skill_builds.parquet",
+        build_hero_skill_stats(ability_upgrades, players),
+        schema=SCHEMAS["fact_hero_skill_builds"],
     )
 
     patch_changes = read_jsonl(raw_dir / "patches" / "valve_patch_changes.jsonl")

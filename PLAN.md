@@ -192,6 +192,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 14:27: removed the duplicate Tuned Model pending tracker from the assistant HTML output while preserving the bottom Evidence tracker as the single visible `Thinking | time` indicator. Compacted that remaining tracker so it does not reserve an oversized panel before evidence content loads.
 - 2026-06-15 14:34: refined Tuned Model pending state again: neutralized Gradio's greyed `pending` opacity on the assistant HTML output, expanded the remaining Evidence `Thinking | time` tracker to cover its full parent block, and slowed the loader status randomizer to one letter per timed step with a longer red/gold settle pulse.
 - 2026-06-15 14:40: retuned the loader status animation to be 50% faster than the previous slow pass while keeping the left-to-right one-letter randomizer behavior and a shorter red/gold settle pulse.
+- 2026-06-15 14:45: merged the `origin/Builds` branch into `main`. The merge adds OpenDota ability constants, ability-upgrade normalization, per-role item build buckets, skill-build order artifacts, refreshed Builds page role filtering, core-item highlights, and larger item/ability icon presentation while preserving `AGENTS.md`.
 
 ## Adapter Eval Notes
 

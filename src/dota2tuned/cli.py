@@ -19,11 +19,11 @@ from dota2tuned.finetune import (
     write_train_script,
 )
 from dota2tuned.ingest import IngestCoordinator
-from dota2tuned.normalize import normalize_all
+from dota2tuned.normalize import SCHEMAS, build_hero_build_stats, normalize_all
 from dota2tuned.rag import build_index
 from dota2tuned.sft import create_sft_examples
 from dota2tuned.smoke import has_failures, run_smoke_checks
-from dota2tuned.storage import refresh_views
+from dota2tuned.storage import read_parquet, refresh_views, write_parquet
 from dota2tuned.train_predictor import train_predictor
 
 app = typer.Typer(no_args_is_help=True)
@@ -135,6 +135,26 @@ def normalize() -> None:
     counts = normalize_all(settings.raw_data_dir, settings.parquet_dir)
     refresh_views(settings.duckdb_path, settings.parquet_dir)
     typer.echo(counts)
+
+
+@app.command("rebuild-build-stats")
+def rebuild_build_stats() -> None:
+    """Regenerate fact_hero_build_stats.parquet (with per-role buckets) from the
+    existing fact_item_purchase and fact_player_match tables, without re-ingesting."""
+    settings = get_settings()
+    purchases = read_parquet(settings.parquet_dir / "fact_item_purchase.parquet")
+    players = read_parquet(settings.parquet_dir / "fact_player_match.parquet")
+    rows = build_hero_build_stats(
+        purchases.to_dicts(),
+        players.to_dicts(),
+    )
+    count = write_parquet(
+        settings.parquet_dir / "fact_hero_build_stats.parquet",
+        rows,
+        schema=SCHEMAS["fact_hero_build_stats"],
+    )
+    refresh_views(settings.duckdb_path, settings.parquet_dir)
+    typer.echo({"fact_hero_build_stats": count})
 
 
 @app.command()

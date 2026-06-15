@@ -157,7 +157,16 @@ class IngestCoordinator:
                     client.hero_stats(),
                 ),
             }
-            for resource in ["heroes", "items", "patch", "game_mode", "lobby_type", "region"]:
+            for resource in [
+                "heroes",
+                "items",
+                "abilities",
+                "ability_ids",
+                "patch",
+                "game_mode",
+                "lobby_type",
+                "region",
+            ]:
                 rows = client.constants(resource)
                 if isinstance(rows, dict):
                     rows = [
