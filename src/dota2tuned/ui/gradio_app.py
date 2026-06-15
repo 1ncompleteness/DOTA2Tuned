@@ -10,6 +10,7 @@ import polars as pl
 from starlette.middleware import Middleware
 
 from dota2tuned.config import get_settings
+from dota2tuned.model_profiles import profile_choices
 from dota2tuned.normalize import ROLE_ALL
 from dota2tuned.rag import Retriever
 from dota2tuned.recommend import DraftRecommender
@@ -151,16 +152,16 @@ SCOPE_OPTIONS = [
 DRAFT_LAB_MODE_OPTIONS = ["Tiny scout card", "One-minute coach", "Chaos constraint"]
 
 NAV_OPTIONS = [
-    "Tuned Model",
+    "Ask",
     "Draft",
-    "Hero Meta",
-    "Match Predictor",
+    "Meta",
     "Builds",
-    "Data Freshness",
+    "Predictor",
+    "Data",
 ]
 
 NAV_ICON_BODIES = {
-    "Tuned Model": (
+    "Ask": (
         "#9fc7ff",
         (
             "<path d='M10 12a6 6 0 0112 0v8a4 4 0 01-4 4h-4a4 4 0 01-4-4z'/>",
@@ -178,19 +179,10 @@ NAV_ICON_BODIES = {
             "<path d='M18 8v16'/>",
         ),
     ),
-    "Hero Meta": (
+    "Meta": (
         "#e08a62",
         (
             "<path d='M16 5l3.2 6.5 7.2 1-5.2 5 1.2 7.1L16 21.2l-6.4 3.4 1.2-7.1-5.2-5 7.2-1z'/>",
-        ),
-    ),
-    "Match Predictor": (
-        "#8fd19e",
-        (
-            "<path d='M7 23V9'/>",
-            "<path d='M13 23V13'/>",
-            "<path d='M19 23V6'/>",
-            "<path d='M25 23H5'/>",
         ),
     ),
     "Builds": (
@@ -202,15 +194,16 @@ NAV_ICON_BODIES = {
             "<path d='M12 20l-4 4'/>",
         ),
     ),
-    "Draft Lab": (
-        "#c09cff",
+    "Predictor": (
+        "#8fd19e",
         (
-            "<path d='M12 6h8'/>",
-            "<path d='M14 6v7l-5 9a4 4 0 003.5 6h7a4 4 0 003.5-6l-5-9V6'/>",
-            "<path d='M11 22h10'/>",
+            "<path d='M7 23V9'/>",
+            "<path d='M13 23V13'/>",
+            "<path d='M19 23V6'/>",
+            "<path d='M25 23H5'/>",
         ),
     ),
-    "Data Freshness": (
+    "Data": (
         "#86d8d0",
         (
             "<path d='M24 12a8 8 0 00-14-4l-2 2'/>",
@@ -274,10 +267,55 @@ SCOPE_ICON_URLS = {
     for scope, (accent, paths) in SCOPE_ICON_BODIES.items()
 }
 
+MODEL_ICON_URLS = {
+    "qwen3_4b_2507": _badge_icon(
+        "<path d='M9 16h14'/>"
+        "<path d='M16 9v14'/>"
+        "<path d='M11 11l10 10'/>"
+        "<path d='M21 11L11 21'/>",
+        "#86d8d0",
+    ),
+    "qwen3_30b_a3b_2507": _badge_icon(
+        "<path d='M16 5l3.2 6.5 7.2 1-5.2 5 1.2 7.1L16 21.2l-6.4 3.4 1.2-7.1-5.2-5 7.2-1z'/>",
+        "#d9b166",
+    ),
+    "minicpm4_1_8b": _badge_icon(
+        "<path d='M8 12h16'/>"
+        "<path d='M12 12l-3 8h6z'/>"
+        "<path d='M20 12l-3 8h6z'/>"
+        "<path d='M16 7v18'/>",
+        "#ee8f7d",
+    ),
+}
+
+SOURCE_ICON_URLS = {
+    "All sources": _badge_icon(
+        "<path d='M8 9h16'/>"
+        "<path d='M8 16h16'/>"
+        "<path d='M8 23h16'/>",
+        "#dcdedf",
+    ),
+    "Valve": _badge_icon(
+        "<path d='M16 5l3 8 8 3-8 3-3 8-3-8-8-3 8-3z'/>",
+        "#d9b166",
+    ),
+    "OpenDota": _badge_icon(
+        "<path d='M8 8h16v16H8z'/>"
+        "<path d='M8 13h16'/>"
+        "<path d='M13 8v16'/>",
+        "#9fc7ff",
+    ),
+    "STRATZ": _badge_icon(
+        "<path d='M8 22l5-12 5 8 3-5 3 9'/>"
+        "<path d='M7 24h18'/>",
+        "#8fd19e",
+    ),
+}
+
 MODE_ICON_URLS = {
-    "Tiny scout card": NAV_ICON_URLS["Hero Meta"],
+    "Tiny scout card": NAV_ICON_URLS["Meta"],
     "One-minute coach": NAV_ICON_URLS["Draft"],
-    "Chaos constraint": NAV_ICON_URLS["Draft Lab"],
+    "Chaos constraint": NAV_ICON_URLS["Draft"],
 }
 
 PRIMARY_ATTR_INFO = {
@@ -1828,11 +1866,23 @@ __NAV_ICON_CSS__
     font-size: 14px;
     line-height: 16px;
   }
+  /* Single horizontal scroller is the .app-nav block; the section and the inner
+     radio wrap must not add their own (redundant) scrollbar. The scrollbar chrome
+     on .app-nav is hidden too — the nav still scrolls by swipe/wheel. */
   .app-sidebar-nav-section {
     padding-top: 0;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--d2-scroll-thumb) var(--d2-scroll-track);
+    overflow: visible !important;
+  }
+  .app-sidebar .app-nav {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .app-sidebar .app-nav::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
   .app-sidebar .app-nav .wrap,
   .app-sidebar .app-nav .options,
@@ -1841,9 +1891,8 @@ __NAV_ICON_CSS__
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
-    width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    width: max-content !important;
+    overflow: visible !important;
   }
   .app-sidebar .app-nav label {
     flex: 0 0 auto !important;
@@ -2910,12 +2959,12 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     return target.closest(selector);
   }};
   const navViews = {{
-    "Tuned Model": "tuned-model-view",
+    "Ask": "tuned-model-view",
     "Draft": "draft-coach-view",
-    "Hero Meta": "hero-meta-view",
-    "Match Predictor": "match-predictor-view",
+    "Meta": "hero-meta-view",
     "Builds": "builds-view",
-    "Data Freshness": "data-freshness-view"
+    "Predictor": "match-predictor-view",
+    "Data": "data-freshness-view"
   }};
   const comparableHeroName = (value) =>
     cleanLabel(value)
@@ -2992,7 +3041,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     if (!nav) return;
     const checked = nav.querySelector('input[type="radio"]:checked');
     const label = checked ? closestElement(checked, "label") : null;
-    const selected = cleanLabel(label?.textContent || checked?.value || "Tuned Model");
+    const selected = cleanLabel(label?.textContent || checked?.value || "Ask");
     Object.entries(navViews).forEach(([name, id]) => {{
       const view = document.getElementById(id);
       if (!view) return;
@@ -3815,6 +3864,9 @@ def _dropdown_icon_by_label(
     hero_choices: list[tuple[str, int]],
     hero_metadata: dict[int, dict[str, str]],
     item_choices: list[tuple[str, str]] | None = None,
+    model_choices: list[tuple[str, str]] | None = None,
+    ability_metadata: dict[int, dict[str, object]] | None = None,
+    ability_choices: list[tuple[str, int]] | None = None,
 ) -> dict[str, dict[str, str]]:
     icons = _hero_icon_by_label(hero_choices, hero_metadata)
     if item_choices:
@@ -3822,6 +3874,16 @@ def _dropdown_icon_by_label(
             {
                 label: {"src": _item_icon_url(value), "kind": "item"}
                 for label, value in item_choices
+            }
+        )
+    if ability_choices and ability_metadata:
+        icons.update(
+            {
+                label: {
+                    "src": str(ability_metadata.get(int(value), {}).get("icon") or ""),
+                    "kind": "ability",
+                }
+                for label, value in ability_choices
             }
         )
     icons.update(
@@ -3838,6 +3900,19 @@ def _dropdown_icon_by_label(
     )
     icons.update(
         {label: {"src": MODE_ICON_URLS[label], "kind": "mode"} for label in DRAFT_LAB_MODE_OPTIONS}
+    )
+    if model_choices:
+        icons.update(
+            {
+                label: {
+                    "src": MODEL_ICON_URLS.get(value, MODEL_ICON_URLS["qwen3_4b_2507"]),
+                    "kind": "model",
+                }
+                for label, value in model_choices
+            }
+        )
+    icons.update(
+        {label: {"src": SOURCE_ICON_URLS[label], "kind": "source"} for label in SOURCE_ICON_URLS}
     )
     return icons
 
@@ -3917,6 +3992,16 @@ def _ability_metadata(abilities: pl.DataFrame) -> dict[int, dict[str, object]]:
             "is_talent": key.startswith("special_bonus"),
         }
     return metadata
+
+
+def _ability_choices(abilities: pl.DataFrame) -> list[tuple[str, int]]:
+    metadata = _ability_metadata(abilities)
+    choices = [
+        (str(row.get("name") or f"Ability {ability_id}"), ability_id)
+        for ability_id, row in metadata.items()
+        if row.get("key") and not row.get("is_talent")
+    ]
+    return sorted(choices, key=lambda item: item[0])
 
 
 def _build_hero_header_html(hero_id: int, metadata: dict[int, dict[str, object]]) -> str:
@@ -4209,6 +4294,26 @@ def _selected_item_html(item_key: object, items: pl.DataFrame) -> str:
     )
 
 
+def _selected_ability_html(
+    ability_id: object, ability_metadata: dict[int, dict[str, object]]
+) -> str:
+    if not ability_id:
+        return ""
+    try:
+        ability_id = int(ability_id)
+    except (TypeError, ValueError):
+        return ""
+    row = ability_metadata.get(ability_id, {})
+    name = _html_escape(row.get("name") or f"Ability {ability_id}")
+    icon = _html_escape(row.get("icon") or "")
+    img = f"<img src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+    return (
+        "<div class='item-strip'><div class='entity-chip'>"
+        f"{img}<div><strong>{name}</strong><span>Skill evidence</span></div>"
+        "</div></div>"
+    )
+
+
 def _format_recs(recs: list) -> str:
     if not recs:
         return (
@@ -4236,6 +4341,15 @@ def _doc_source_url(doc: dict[str, object]) -> str:
         hero_id = doc_id.split(":", 1)[1]
         if hero_id.isdigit():
             return f"https://www.opendota.com/heroes/{hero_id}"
+    if doc_id.startswith("stratz_match:"):
+        match_id = doc_id.split(":", 1)[1]
+        if match_id.isdigit():
+            return f"https://stratz.com/matches/{match_id}"
+    text = str(doc.get("text") or "")
+    if "https://huggingface.co/" in text:
+        match = re.search(r"https://huggingface\.co/[^\s]+", text)
+        if match:
+            return match.group(0)
     if source.startswith("OpenDota"):
         return "https://www.opendota.com/"
     if source.startswith("STRATZ"):
@@ -4380,6 +4494,15 @@ def _render_tuned_answer_html(
     )
 
 
+def _render_module_result_html(
+    answer: str,
+    docs: list[dict[str, object]],
+    hero_metadata: dict[int, dict[str, object]],
+    item_metadata: dict[str, dict[str, object]],
+) -> str:
+    return _render_tuned_answer_html(answer, docs, hero_metadata, item_metadata)
+
+
 def _assistant_empty_state_html() -> str:
     return (
         "<div class='assistant-result'>"
@@ -4407,7 +4530,13 @@ def _module_guide_html(title: str, steps: list[str]) -> str:
     )
 
 
-def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int = 384) -> str:
+def _call_tuned_model(
+    settings,
+    question: str,
+    context: str,
+    max_new_tokens: int = 384,
+    profile: str | None = None,
+) -> str:
     if not question.strip():
         return "Enter a question."
     if not settings.modal_enabled:
@@ -4423,7 +4552,7 @@ def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int
     os.environ["MODAL_TOKEN_SECRET"] = settings.modal_token_secret
     try:
         generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
-        result = generate_fn.remote(question, context, max_new_tokens)
+        result = generate_fn.remote(question, context, max_new_tokens, profile)
     except Exception as exc:
         return f"Tuned model call failed: {str(exc)[:500]}"
 
@@ -4431,8 +4560,9 @@ def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int
         return json.dumps(result, indent=2)
     answer = result.get("answer") or ""
     model = result.get("model") or settings.hf_model_repo_id
+    profile_key = result.get("profile") or profile or settings.model_profile
     tokens = result.get("tokens")
-    return f"{answer}\n\n`model: {model}` `tokens: {tokens}`"
+    return f"{answer}\n\n`profile: {profile_key}` `model: {model}` `tokens: {tokens}`"
 
 
 def build_app() -> gr.Blocks:
@@ -4445,6 +4575,16 @@ def build_app() -> gr.Blocks:
     item_table = read_parquet(settings.parquet_dir / "dim_item.parquet")
     item_choices = _item_choices(item_table)
     item_metadata = _item_metadata(item_table)
+    ability_table = read_parquet(settings.parquet_dir / "dim_ability.parquet")
+    ability_metadata = _ability_metadata(ability_table)
+    ability_choices = _ability_choices(ability_table)
+    model_profile_choices = profile_choices()
+    model_profile_values = {value for _, value in model_profile_choices}
+    selected_model_profile = (
+        settings.model_profile
+        if settings.model_profile in model_profile_values
+        else model_profile_choices[0][1]
+    )
 
     def clean_hero_values(value: object, max_count: int | None = None) -> list[int]:
         hero_ids, _ = _parse_heroes(value, hero_name_lookup)
@@ -4476,6 +4616,12 @@ def build_app() -> gr.Blocks:
     def item_preview(item_key: str | None) -> dict:
         return preview_update(item_preview_html(item_key))
 
+    def ability_preview_html(ability_id: int | None) -> str:
+        return _selected_ability_html(ability_id, ability_metadata)
+
+    def ability_preview(ability_id: int | None) -> dict:
+        return preview_update(ability_preview_html(ability_id))
+
     def draft_coach(
         allies: list[int] | None,
         enemies: list[int] | None,
@@ -4506,59 +4652,146 @@ def build_app() -> gr.Blocks:
         )
         unknown = allied_unknown + enemy_unknown + banned_unknown
         warning = f"Unrecognized heroes ignored: {', '.join(unknown)}\n\n" if unknown else ""
-        return warning + _format_recs(recs), json.dumps(evidence, indent=2)
+        answer = warning + _format_recs(recs)
+        return (
+            _render_module_result_html(answer, evidence, hero_metadata, item_metadata),
+            json.dumps(evidence, indent=2),
+        )
 
-    def hero_meta(query: str, hero_id: int | None, item_key: str | None) -> str:
+    def hero_meta(
+        query: str,
+        hero_id: int | None,
+        item_key: str | None,
+        ability_id: int | None,
+    ) -> str:
         parts = [query or "current meta"]
         if hero_id:
             parts.append(hero_names.get(int(hero_id), str(hero_id)))
         if item_key:
             parts.append(str(item_key).replace("_", " "))
+        if ability_id:
+            parts.append(str(ability_metadata.get(int(ability_id), {}).get("name") or ability_id))
         docs = retriever.search(" ".join(parts), patch="current", limit=8)
         if not docs:
-            return "No retrieval index is available yet. Run `dota2tuned build-rag` first."
-        return "\n\n".join(f"**{doc['source']}** `{doc['score']}`\n{doc['text']}" for doc in docs)
+            return _render_module_result_html(
+                "No retrieval index is available yet. Run `dota2tuned build-rag` first.",
+                [],
+                hero_metadata,
+                item_metadata,
+            )
+        answer = "\n\n".join(
+            f"**{doc['source']}** `{doc['score']}`\n{doc['text']}" for doc in docs
+        )
+        return _render_module_result_html(answer, docs, hero_metadata, item_metadata)
 
-    def tuned_model(question: str) -> tuple[str, str]:
+    def tuned_model(
+        question: str, model_profile: str | None, source_filter: str
+    ) -> tuple[str, str]:
         question = (question or "").strip()
         docs = retriever.search(question or "current meta", patch="current", limit=6)
+        if source_filter and source_filter != "All sources":
+            docs = [
+                doc
+                for doc in docs
+                if str(doc.get("source") or "").startswith(source_filter)
+            ]
         evidence = "\n\n".join(
             f"{doc['source']} score={doc['score']}\n{doc['text']}" for doc in docs
         )
-        answer = _call_tuned_model(settings, question, evidence, 384)
+        answer = _call_tuned_model(settings, question, evidence, 384, model_profile)
         html = _render_tuned_answer_html(answer, docs, hero_metadata, item_metadata)
         return html, json.dumps(docs, indent=2)
 
     def data_status() -> str:
-        files = []
+        lines = [
+            f"Active model profile: `{settings.model_profile}`",
+            f"Active adapter repo: `{settings.hf_model_repo_id}`",
+            f"Dataset repo: `{settings.hf_dataset_repo_id}`",
+        ]
         for path in sorted(settings.parquet_dir.glob("*.parquet")):
-            files.append(f"- `{path.name}` ({path.stat().st_size:,} bytes)")
-        if not files:
-            return "No normalized Parquet files found."
-        return "\n".join(files)
+            try:
+                row_count = read_parquet(path).height
+            except Exception:
+                row_count = "unknown"
+            lines.append(
+                f"`{path.name}`: `{row_count}` rows, `{path.stat().st_size:,}` bytes"
+            )
+        rag_index = settings.rag_dir / "tfidf.joblib"
+        if rag_index.exists():
+            lines.append(f"`tfidf.joblib`: `{rag_index.stat().st_size:,}` bytes")
+        sft_examples = settings.model_dir / "sft_examples.jsonl"
+        if sft_examples.exists():
+            lines.append(f"`sft_examples.jsonl`: `{sft_examples.stat().st_size:,}` bytes")
+        if len(lines) <= 3:
+            lines.append("No normalized Parquet files found.")
+        docs = [
+            {
+                "id": "space",
+                "kind": "deployment",
+                "patch": "current",
+                "source": "Hugging Face Space",
+                "score": "",
+                "text": f"Public app: https://huggingface.co/spaces/{settings.hf_space_id}",
+            },
+            {
+                "id": "dataset",
+                "kind": "dataset",
+                "patch": "current",
+                "source": "Hugging Face dataset",
+                "score": "",
+                "text": f"Dataset artifacts: https://huggingface.co/datasets/{settings.hf_dataset_repo_id}",
+            },
+            {
+                "id": "model",
+                "kind": "model",
+                "patch": "current",
+                "source": "Hugging Face model",
+                "score": "",
+                "text": f"Adapter: https://huggingface.co/{settings.hf_model_repo_id}",
+            },
+        ]
+        return _render_module_result_html(
+            "\n".join(lines), docs, hero_metadata, item_metadata
+        )
 
     build_stats = read_parquet(settings.parquet_dir / "fact_hero_build_stats.parquet")
     skill_stats = read_parquet(settings.parquet_dir / "fact_hero_skill_builds.parquet")
-    ability_metadata = _ability_metadata(
-        read_parquet(settings.parquet_dir / "dim_ability.parquet")
-    )
 
     def match_predictor(radiant: list[int] | None, dire: list[int] | None) -> str:
         radiant_ids, radiant_unknown = _parse_heroes(radiant, hero_name_lookup)
         dire_ids, dire_unknown = _parse_heroes(dire, hero_name_lookup)
         if radiant_unknown or dire_unknown:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "message": "Unrecognized heroes.",
-                    "unknown": radiant_unknown + dire_unknown,
-                },
-                indent=2,
+            return _render_module_result_html(
+                f"Unrecognized heroes: {', '.join(radiant_unknown + dire_unknown)}",
+                [],
+                hero_metadata,
+                item_metadata,
             )
         prediction = predict_draft_win(settings.model_dir, radiant_ids, dire_ids)
         if prediction.get("status") != "ok":
-            return prediction.get("message", "Prediction unavailable.")
-        return json.dumps(prediction, indent=2)
+            return _render_module_result_html(
+                str(prediction.get("message", "Prediction unavailable.")),
+                [],
+                hero_metadata,
+                item_metadata,
+            )
+        radiant_names = _format_hero_ids(radiant_ids, hero_names)
+        dire_names = _format_hero_ids(dire_ids, hero_names)
+        docs = retriever.search(f"{radiant_names} {dire_names} match prediction", limit=6)
+        radiant_prob = float(prediction["radiant_win_probability"]) * 100
+        dire_prob = float(prediction["dire_win_probability"]) * 100
+        answer = (
+            f"**Radiant win probability:** `{radiant_prob:.1f}%`\n"
+            f"**Dire win probability:** `{dire_prob:.1f}%`\n\n"
+            f"Radiant: {radiant_names}\n"
+            f"Dire: {dire_names}\n"
+            f"Training samples: `{prediction.get('samples')}`\n\n"
+            "Caveat: this predictor is draft-only. It does not model player skill, "
+            "lane execution, live itemization, or in-game state."
+        )
+        if prediction.get("ignored_hero_ids"):
+            answer += f"\n\nIgnored hero IDs: `{prediction['ignored_hero_ids']}`"
+        return _render_module_result_html(answer, docs, hero_metadata, item_metadata)
 
     def hero_builds(hero_id: int | None, role: str | None = None) -> str:
         hero_ids, unknown = _parse_heroes([hero_id] if hero_id else [], hero_name_lookup)
@@ -4592,7 +4825,7 @@ def build_app() -> gr.Blocks:
         draft = DraftInput(enemy_heroes=enemy_ids, role=role or "mid", scope="pro", patch="current")
         recs = recommender.recommend(draft, limit=5)
         if not recs:
-            return "Draft Lab needs local hero stats. Run ingestion and normalization first."
+            return "Draft needs local hero stats. Run ingestion and normalization first."
         top = recs[0]
         enemy_text = (
             _format_hero_ids(enemy_ids, hero_names) if enemy_ids else "an unknown enemy draft"
@@ -4629,7 +4862,7 @@ def build_app() -> gr.Blocks:
             with gr.Column(elem_classes=["app-sidebar-nav-section"]):
                 gr.Radio(
                     choices=NAV_OPTIONS,
-                    value="Tuned Model",
+                    value="Ask",
                     show_label=False,
                     container=False,
                     # Force interactive: the nav drives view switching purely in JS
@@ -4659,6 +4892,24 @@ def build_app() -> gr.Blocks:
                             max_lines=8,
                             elem_classes=["assistant-input"],
                         )
+                        with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                            tuned_profile = gr.Dropdown(
+                                choices=model_profile_choices,
+                                value=selected_model_profile,
+                                label="Model",
+                                elem_classes=["dota-dropdown"],
+                            )
+                            tuned_source_filter = gr.Dropdown(
+                                choices=[
+                                    "All sources",
+                                    "Valve",
+                                    "OpenDota",
+                                    "STRATZ",
+                                ],
+                                value="All sources",
+                                label="Sources",
+                                elem_classes=["dota-dropdown"],
+                            )
                         with gr.Row(elem_classes=["assistant-actions"]):
                             tuned_button = gr.Button("Ask DOTA2Tuned", variant="primary")
                             tuned_clear = gr.Button("Clear")
@@ -4678,12 +4929,12 @@ def build_app() -> gr.Blocks:
                     tuned_evidence = gr.Code(label="Evidence", language="json", value="[]")
                     tuned_button.click(
                         tuned_model,
-                        inputs=[tuned_question],
+                        inputs=[tuned_question, tuned_profile, tuned_source_filter],
                         outputs=[assistant_output, tuned_evidence],
                     )
                     tuned_question.submit(
                         tuned_model,
-                        inputs=[tuned_question],
+                        inputs=[tuned_question, tuned_profile, tuned_source_filter],
                         outputs=[assistant_output, tuned_evidence],
                     )
                     tuned_clear.click(
@@ -4720,10 +4971,10 @@ def build_app() -> gr.Blocks:
                             "heroes, with the evidence used to justify each pick shown below.",
                             "Click any hero's name in the preview cards to jump straight to "
                             "its <strong>Builds</strong> page for item and skill guidance.",
-                            "Scroll down to <strong>Draft Lab</strong> to turn the same enemy "
+                            "Scroll down to <strong>Draft cards</strong> to turn the same enemy "
                             "picks and role into a scouting card, a one-minute explanation, "
                             "or a constraint drill &mdash; pick a Mode and click "
-                            "<strong>Generate Draft Lab Card</strong>.",
+                            "<strong>Generate Draft Card</strong>.",
                         ],
                     )
                 )
@@ -4823,7 +5074,7 @@ def build_app() -> gr.Blocks:
                         elem_classes=["dota-dropdown", "scope-dropdown"],
                     )
                 run = gr.Button("Recommend")
-                rec_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
+                rec_output = gr.HTML(elem_classes=["d2-dynamic-output"])
                 evidence_output = gr.Code(label="Evidence", language="json")
                 allies.change(
                     hero_preview_for("draft-allies-dropdown"),
@@ -4851,10 +5102,63 @@ def build_app() -> gr.Blocks:
                     inputs=[allies, enemies, bans, role, scope],
                     outputs=[rec_output, evidence_output],
                 )
+                gr.HTML(
+                    _module_intro_html(
+                        "Draft also generates compact scouting cards, one-minute explanations, "
+                        "and constraint drills from the same recommendation engine."
+                    )
+                )
+                lab_enemy_preview_html = hero_preview_html([44, 30], "lab-enemies-dropdown")
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-3"]):
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_enemies = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Lab enemy heroes",
+                            value=[44, 30],
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="lab-enemies-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        lab_enemy_preview = gr.HTML(
+                            lab_enemy_preview_html,
+                            visible=bool(lab_enemy_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_role = gr.Dropdown(
+                            choices=ROLE_OPTIONS,
+                            label="Lab role",
+                            value="mid",
+                            elem_classes=["dota-dropdown", "role-dropdown"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_twist = gr.Dropdown(
+                            DRAFT_LAB_MODE_OPTIONS,
+                            label="Mode",
+                            value="Tiny scout card",
+                            elem_classes=["dota-dropdown"],
+                        )
+                lab_button = gr.Button("Generate Draft Card")
+                lab_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
+                lab_enemies.change(
+                    hero_preview_for("lab-enemies-dropdown"),
+                    inputs=[lab_enemies],
+                    outputs=[lab_enemy_preview],
+                    api_visibility="private",
+                    queue=False,
+                )
+                lab_button.click(
+                    draft_lab,
+                    inputs=[lab_enemies, lab_role, lab_twist],
+                    outputs=[lab_output],
+                )
 
                 gr.HTML(
                     _module_intro_html(
-                        "Draft Lab turns the recommendation engine into compact coaching "
+                        "Draft turns the recommendation engine into compact coaching "
                         "cards for scouting, one-minute explanations, and constraint "
                         "drills, using the enemy heroes and role selected above."
                     )
@@ -4865,7 +5169,7 @@ def build_app() -> gr.Blocks:
                     value="Tiny scout card",
                     elem_classes=["dota-dropdown"],
                 )
-                lab_button = gr.Button("Generate Draft Lab Card")
+                lab_button = gr.Button("Generate Draft Card")
                 lab_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
                 lab_button.click(
                     draft_lab,
@@ -4878,13 +5182,14 @@ def build_app() -> gr.Blocks:
             ):
                 gr.HTML(
                     _module_intro_html(
-                        "Hero Meta searches patch, hero, and item evidence so you can inspect "
+                        "Meta searches patch, hero, item, and skill evidence so you can inspect "
                         "current trends without manually typing every source query."
                     )
                 )
                 meta_hero_preview_html = hero_preview_html([])
                 meta_item_preview_html = item_preview_html(None)
-                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                meta_ability_preview_html = ability_preview_html(None)
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-3"]):
                     with gr.Column(elem_classes=["d2-selector-stack"]):
                         meta_hero = gr.Dropdown(
                             choices=hero_choices,
@@ -4913,9 +5218,23 @@ def build_app() -> gr.Blocks:
                             visible=True,
                             elem_classes=["d2-preview-output"],
                         )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        meta_ability = gr.Dropdown(
+                            choices=ability_choices,
+                            label="Skill",
+                            value=None,
+                            filterable=True,
+                            elem_id="meta-ability-dropdown",
+                            elem_classes=["dota-dropdown", "ability-dropdown"],
+                        )
+                        meta_ability_preview = gr.HTML(
+                            meta_ability_preview_html,
+                            visible=True,
+                            elem_classes=["d2-preview-output"],
+                        )
                 query = gr.Textbox(label="Patch or meta query", value="current pro meta")
                 meta_button = gr.Button("Search")
-                meta_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
+                meta_output = gr.HTML(elem_classes=["d2-dynamic-output"])
                 meta_hero.change(
                     hero_single_preview,
                     inputs=[meta_hero],
@@ -4930,10 +5249,51 @@ def build_app() -> gr.Blocks:
                     api_visibility="private",
                     queue=False,
                 )
+                meta_ability.change(
+                    ability_preview,
+                    inputs=[meta_ability],
+                    outputs=[meta_ability_preview],
+                    api_visibility="private",
+                    queue=False,
+                )
                 meta_button.click(
                     hero_meta,
-                    inputs=[query, meta_hero, meta_item],
+                    inputs=[query, meta_hero, meta_item, meta_ability],
                     outputs=[meta_output],
+                )
+
+            with gr.Column(
+                visible=True, elem_id="builds-view", elem_classes=["app-view"]
+            ):
+                gr.HTML(
+                    _module_intro_html(
+                        "Builds summarizes observed hero item timings, core items, and "
+                        "common skill orders from normalized match details."
+                    )
+                )
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                    hero = gr.Dropdown(
+                        choices=hero_choices,
+                        label="Hero",
+                        value=1,
+                        filterable=True,
+                        elem_id="builds-hero-dropdown",
+                        elem_classes=["dota-dropdown", "hero-dropdown"],
+                    )
+                    build_role = gr.Radio(
+                        choices=BUILD_ROLE_OPTIONS,
+                        label="Role",
+                        value="all",
+                        elem_classes=["build-role-radio"],
+                    )
+                builds_output = gr.HTML(
+                    hero_builds(1, "all"), elem_classes=["d2-dynamic-output"]
+                )
+                hero.change(
+                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
+                )
+                build_role.change(
+                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
                 )
 
             with gr.Column(
@@ -4941,7 +5301,7 @@ def build_app() -> gr.Blocks:
             ):
                 gr.HTML(
                     _module_intro_html(
-                        "Match Predictor estimates Radiant win chance from both five-hero "
+                        "Predictor estimates Radiant win chance from both five-hero "
                         "lineups using the local draft model."
                     )
                 )
@@ -4987,7 +5347,7 @@ def build_app() -> gr.Blocks:
                             elem_classes=["d2-preview-output"],
                         )
                 predict_button = gr.Button("Predict")
-                predict_output = gr.Code(label="Prediction", language="json")
+                predict_output = gr.HTML(elem_classes=["d2-dynamic-output"])
                 radiant.change(
                     hero_preview_for("predict-radiant-dropdown"),
                     inputs=[radiant],
@@ -5009,49 +5369,16 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=True, elem_id="builds-view", elem_classes=["app-view"]
-            ):
-                gr.HTML(
-                    _module_intro_html(
-                        "Builds summarizes observed hero item timings and popular build paths "
-                        "from the normalized match dataset."
-                    )
-                )
-                hero = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Hero",
-                    value=1,
-                    filterable=True,
-                    elem_id="builds-hero-dropdown",
-                    elem_classes=["dota-dropdown", "hero-dropdown"],
-                )
-                build_role = gr.Radio(
-                    choices=BUILD_ROLE_OPTIONS,
-                    label="Role",
-                    value="all",
-                    elem_classes=["build-role-radio"],
-                )
-                builds_output = gr.HTML(
-                    hero_builds(1, "all"), elem_classes=["d2-dynamic-output"]
-                )
-                hero.change(
-                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
-                )
-                build_role.change(
-                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
-                )
-
-            with gr.Column(
                 visible=True, elem_id="data-freshness-view", elem_classes=["app-view"]
             ):
                 gr.HTML(
                     _module_intro_html(
-                        "Data Freshness lists the normalized Parquet artifacts currently loaded "
+                        "Data lists the normalized Parquet artifacts currently loaded "
                         "by the app."
                     )
                 )
                 status_button = gr.Button("Refresh")
-                status_output = gr.Markdown()
+                status_output = gr.HTML()
                 status_button.click(data_status, outputs=[status_output])
 
         # Gradio 6.18 runs client JS only via the load EVENT — launch(js=) and
@@ -5061,6 +5388,15 @@ def build_app() -> gr.Blocks:
             None,
             None,
             None,
-            js=_dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata, item_choices)),
+            js=_dropdown_js(
+                _dropdown_icon_by_label(
+                    hero_choices,
+                    hero_metadata,
+                    item_choices,
+                    model_profile_choices,
+                    ability_metadata,
+                    ability_choices,
+                )
+            ),
         )
     return demo

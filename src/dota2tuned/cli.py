@@ -19,6 +19,7 @@ from dota2tuned.finetune import (
     write_train_script,
 )
 from dota2tuned.ingest import IngestCoordinator
+from dota2tuned.model_profiles import resolve_model_profile
 from dota2tuned.normalize import SCHEMAS, build_hero_build_stats, normalize_all
 from dota2tuned.rag import build_index
 from dota2tuned.sft import create_sft_examples
@@ -55,8 +56,61 @@ def health() -> None:
     typer.echo(f"parquet_dir={settings.parquet_dir}")
     typer.echo(f"duckdb_path={settings.duckdb_path}")
     typer.echo(f"hf_space_id={settings.hf_space_id}")
+    typer.echo(f"model_profile={settings.model_profile}")
     typer.echo(f"base_model_id={settings.base_model_id}")
+    typer.echo(f"hf_model_repo_id={settings.hf_model_repo_id}")
     typer.echo(f"modal_enabled={settings.modal_enabled}")
+
+
+def _settings_for_profile(profile: str | None):
+    if not profile:
+        return get_settings()
+    selected = resolve_model_profile(profile)
+    settings = get_settings()
+    return type(settings)(
+        hf_token=settings.hf_token,
+        hf_jobs_token=settings.hf_jobs_token,
+        hf_org=settings.hf_org,
+        hf_space_id=settings.hf_space_id,
+        model_profile=selected.key,
+        model_profiles_path=settings.model_profiles_path,
+        hf_model_repo_id=selected.hf_model_repo_id,
+        hf_dataset_repo_id=settings.hf_dataset_repo_id,
+        stratz_token=settings.stratz_token,
+        opendota_api_key=settings.opendota_api_key,
+        steam_api_key=settings.steam_api_key,
+        base_model_id=selected.base_model_id,
+        fallback_base_model_id=settings.fallback_base_model_id,
+        training_flavor=settings.training_flavor,
+        hf_job_timeout=settings.hf_job_timeout,
+        space_hardware=settings.space_hardware,
+        sft_max_length=selected.sft_max_length,
+        lora_r=selected.lora_r,
+        lora_alpha=selected.lora_alpha,
+        lora_dropout=selected.lora_dropout,
+        lora_target_modules=selected.lora_target_modules,
+        sft_learning_rate=selected.sft_learning_rate,
+        sft_epochs=selected.sft_epochs,
+        sft_batch_size=selected.sft_batch_size,
+        sft_grad_accum=selected.sft_grad_accum,
+        model_load_in_4bit=selected.model_load_in_4bit,
+        model_torch_dtype=selected.model_torch_dtype,
+        modal_enabled=settings.modal_enabled,
+        modal_app_name=settings.modal_app_name,
+        modal_token_id=settings.modal_token_id,
+        modal_token_secret=settings.modal_token_secret,
+        modal_train_gpu=selected.modal_train_gpu,
+        modal_train_timeout=selected.modal_train_timeout,
+        modal_infer_gpu=selected.modal_infer_gpu,
+        modal_infer_timeout=selected.modal_infer_timeout,
+        modal_cache_volume=settings.modal_cache_volume,
+        modal_output_volume=settings.modal_output_volume,
+        duckdb_path=settings.duckdb_path,
+        raw_data_dir=settings.raw_data_dir,
+        parquet_dir=settings.parquet_dir,
+        rag_dir=settings.rag_dir,
+        model_dir=settings.model_dir,
+    )
 
 
 @app.command()
@@ -194,8 +248,12 @@ def finetune(
         "data/models/sft_examples.jsonl"
     ),
     launch_job: Annotated[bool, typer.Option(help="Launch on Hugging Face Jobs.")] = False,
+    profile: Annotated[
+        str | None,
+        typer.Option(help="Model profile key, e.g. qwen3_30b_a3b_2507."),
+    ] = None,
 ) -> None:
-    settings = get_settings()
+    settings = _settings_for_profile(profile)
     if launch_job:
         try:
             preflight = validate_hf_jobs_access(settings)
@@ -291,6 +349,10 @@ def modal_train(
         typer.Option(help="Local-in-Modal JSONL path or Hub dataset id for SFT data."),
     ] = "data/models/sft_examples.jsonl",
     wait: Annotated[bool, typer.Option(help="Wait for training to finish.")] = False,
+    profile: Annotated[
+        str | None,
+        typer.Option(help="Model profile key, e.g. qwen3_30b_a3b_2507."),
+    ] = None,
 ) -> None:
     settings = get_settings()
     _require_modal(settings)
@@ -305,18 +367,25 @@ def modal_train(
 
     if dataset_source == "data/models/sft_examples.jsonl":
         dataset_source = "/app/data/models/sft_examples.jsonl"
-    train_fn = modal.Function.from_name(settings.modal_app_name, "train_sft")
+    selected_profile = resolve_model_profile(profile or settings.model_profile)
+    function_name = (
+        "train_sft_quality"
+        if selected_profile.key == "qwen3_30b_a3b_2507"
+        else "train_sft"
+    )
+    train_fn = modal.Function.from_name(settings.modal_app_name, function_name)
     if wait:
-        typer.echo(json.dumps(train_fn.remote(dataset_source), indent=2))
+        typer.echo(json.dumps(train_fn.remote(dataset_source, selected_profile.key), indent=2))
         return
 
-    call = train_fn.spawn(dataset_source)
+    call = train_fn.spawn(dataset_source, selected_profile.key)
     typer.echo(
         json.dumps(
             {
                 "status": "submitted",
                 "app": settings.modal_app_name,
-                "function": "train_sft",
+                "function": function_name,
+                "profile": selected_profile.key,
                 "function_call_id": getattr(call, "object_id", str(call)),
             },
             indent=2,
@@ -332,6 +401,10 @@ def modal_ask(
         typer.Option(help="Optional evidence/context to pass to the adapter."),
     ] = "",
     max_new_tokens: Annotated[int, typer.Option(help="Maximum new tokens.")] = 384,
+    profile: Annotated[
+        str | None,
+        typer.Option(help="Model profile key, e.g. qwen3_30b_a3b_2507."),
+    ] = None,
 ) -> None:
     settings = get_settings()
     _require_modal(settings)
@@ -342,4 +415,6 @@ def modal_ask(
         raise typer.Exit(1) from exc
 
     generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
-    typer.echo(json.dumps(generate_fn.remote(question, context, max_new_tokens), indent=2))
+    typer.echo(
+        json.dumps(generate_fn.remote(question, context, max_new_tokens, profile), indent=2)
+    )

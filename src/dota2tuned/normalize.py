@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -135,6 +136,16 @@ SCHEMAS: dict[str, dict[str, pl.DataType]] = {
         "indent_level": pl.Int64,
         "aghanims": pl.Utf8,
         "icon": pl.Utf8,
+    },
+    "doc_stratz_match": {
+        "match_id": pl.Int64,
+        "patch": pl.Utf8,
+        "source": pl.Utf8,
+        "url": pl.Utf8,
+        "winner": pl.Utf8,
+        "duration_seconds": pl.Int64,
+        "start_time": pl.Int64,
+        "text": pl.Utf8,
     },
 }
 
@@ -424,6 +435,163 @@ def normalize_match_details(
     return players, drafts, purchases, ability_upgrades
 
 
+def _timestamp(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return int(value)
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return int(float(text))
+    except ValueError:
+        pass
+    try:
+        return int(datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp())
+    except ValueError:
+        return None
+
+
+def _patch_timeline(patches: list[dict[str, Any]]) -> list[tuple[int, str]]:
+    timeline: list[tuple[int, str]] = []
+    for row in patches:
+        name = str(row.get("patch_name") or row.get("name") or row.get("id") or "").strip()
+        ts = _timestamp(row.get("date"))
+        if ts is None or not name:
+            continue
+        timeline.append((ts, name))
+    return sorted(timeline)
+
+
+def _patch_for_time(start_time: int | None, timeline: list[tuple[int, str]]) -> str:
+    if start_time is None or not timeline:
+        return "current"
+    patch = "current"
+    for patch_ts, patch_name in timeline:
+        if patch_ts <= start_time:
+            patch = patch_name
+        else:
+            break
+    return patch
+
+
+def _hero_name_map(heroes: list[dict[str, Any]]) -> dict[int, str]:
+    names = {}
+    for row in heroes:
+        hero_id = row.get("hero_id") or row.get("id")
+        try:
+            hero_id = int(hero_id)
+        except (TypeError, ValueError):
+            continue
+        names[hero_id] = str(row.get("hero_name") or row.get("localized_name") or f"Hero {hero_id}")
+    return names
+
+
+def _stratz_hero_name(hero_id: Any, hero_names: dict[int, str]) -> str:
+    try:
+        return hero_names[int(hero_id)]
+    except (KeyError, TypeError, ValueError):
+        return f"Hero {hero_id}"
+
+
+def _stratz_player_line(player: dict[str, Any], hero_names: dict[int, str]) -> str:
+    hero = _stratz_hero_name(player.get("heroId"), hero_names)
+    kda = f"{player.get('kills') or 0}/{player.get('deaths') or 0}/{player.get('assists') or 0}"
+    gpm = player.get("goldPerMinute")
+    xpm = player.get("experiencePerMinute")
+    imp = player.get("imp")
+    position = player.get("position")
+    lane = player.get("lane")
+    parts = [f"{hero} KDA {kda}"]
+    if gpm is not None:
+        parts.append(f"GPM {gpm}")
+    if xpm is not None:
+        parts.append(f"XPM {xpm}")
+    if imp is not None:
+        parts.append(f"IMP {imp}")
+    if position:
+        parts.append(f"position {str(position).replace('_', ' ').title()}")
+    if lane:
+        parts.append(f"lane {str(lane).replace('_', ' ').title()}")
+    return ", ".join(parts)
+
+
+def _stratz_pickban_text(match: dict[str, Any], hero_names: dict[int, str]) -> str:
+    parts = []
+    for pick in sorted(match.get("pickBans") or [], key=lambda row: row.get("order") or 0):
+        hero_id = pick.get("heroId") or pick.get("bannedHeroId")
+        if not hero_id:
+            continue
+        action = "pick" if pick.get("isPick") else "ban"
+        side = "Radiant" if pick.get("isRadiant") else "Dire"
+        order = pick.get("order")
+        parts.append(f"{order}: {side} {action} {_stratz_hero_name(hero_id, hero_names)}")
+    return "; ".join(parts[:24])
+
+
+def normalize_stratz_match_docs(
+    rows: list[dict[str, Any]], heroes: list[dict[str, Any]], patches: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    hero_names = _hero_name_map(heroes)
+    timeline = _patch_timeline(patches)
+    docs = []
+    for match in rows:
+        match_id = match.get("id") or match.get("match_id")
+        if not match_id or match.get("error"):
+            continue
+        try:
+            match_id = int(match_id)
+        except (TypeError, ValueError):
+            continue
+        start_time = _timestamp(match.get("startDateTime") or match.get("start_time"))
+        duration = int(match.get("durationSeconds") or match.get("duration") or 0)
+        winner = "Radiant" if match.get("didRadiantWin") else "Dire"
+        radiant = []
+        dire = []
+        player_lines = []
+        for player in match.get("players") or []:
+            hero_id = player.get("heroId")
+            if not hero_id:
+                continue
+            hero = _stratz_hero_name(hero_id, hero_names)
+            if player.get("isRadiant"):
+                radiant.append(hero)
+            else:
+                dire.append(hero)
+            player_lines.append(_stratz_player_line(player, hero_names))
+        pickban = _stratz_pickban_text(match, hero_names)
+        duration_text = f"{duration // 60}m {duration % 60}s" if duration else "unknown duration"
+        text_parts = [
+            f"STRATZ match {match_id}: {winner} won in {duration_text}.",
+            f"Radiant heroes: {', '.join(radiant) or 'unknown'}.",
+            f"Dire heroes: {', '.join(dire) or 'unknown'}.",
+        ]
+        if pickban:
+            text_parts.append(f"Draft order: {pickban}.")
+        if player_lines:
+            text_parts.append(f"Player lines: {'; '.join(player_lines[:10])}.")
+        if match.get("gameMode"):
+            text_parts.append(f"Game mode: {str(match.get('gameMode')).replace('_', ' ').title()}.")
+        if match.get("lobbyType"):
+            text_parts.append(
+                f"Lobby type: {str(match.get('lobbyType')).replace('_', ' ').title()}."
+            )
+        docs.append(
+            {
+                "match_id": match_id,
+                "patch": _patch_for_time(start_time, timeline),
+                "source": "STRATZ match details",
+                "url": f"https://stratz.com/matches/{match_id}",
+                "winner": winner,
+                "duration_seconds": duration,
+                "start_time": start_time,
+                "text": " ".join(text_parts),
+            }
+        )
+    return docs
+
+
 def build_pair_stats(player_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_match: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in player_rows:
@@ -598,9 +766,12 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
         ),
         schema=SCHEMAS["dim_ability"],
     )
+    patch_rows = normalize_patches(
+        read_jsonl(raw_dir / "reference" / "opendota_constants_patch.jsonl")
+    )
     counts["dim_patch"] = write_parquet(
         parquet_dir / "dim_patch.parquet",
-        normalize_patches(read_jsonl(raw_dir / "reference" / "opendota_constants_patch.jsonl")),
+        patch_rows,
         schema=SCHEMAS["dim_patch"],
     )
     counts["dim_league"] = write_parquet(
@@ -656,6 +827,15 @@ def normalize_all(raw_dir: Path, parquet_dir: Path) -> dict[str, int]:
         parquet_dir / "fact_hero_skill_builds.parquet",
         build_hero_skill_stats(ability_upgrades, players),
         schema=SCHEMAS["fact_hero_skill_builds"],
+    )
+    counts["doc_stratz_match"] = write_parquet(
+        parquet_dir / "doc_stratz_match.parquet",
+        normalize_stratz_match_docs(
+            read_jsonl(raw_dir / "matches" / "stratz_match_details.jsonl"),
+            hero_stats,
+            patch_rows,
+        ),
+        schema=SCHEMAS["doc_stratz_match"],
     )
 
     patch_changes = read_jsonl(raw_dir / "patches" / "valve_patch_changes.jsonl")

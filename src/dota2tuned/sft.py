@@ -59,16 +59,41 @@ def _hero_names(heroes: pl.DataFrame) -> dict[int, str]:
     }
 
 
+def _item_names(items: pl.DataFrame) -> dict[str, str]:
+    if items.is_empty():
+        return {}
+    return {
+        str(row["item_key"]): str(row.get("item_name") or row["item_key"])
+        for row in items.iter_rows(named=True)
+        if row.get("item_key")
+    }
+
+
+def _ability_names(abilities: pl.DataFrame) -> dict[int, str]:
+    if abilities.is_empty():
+        return {}
+    return {
+        int(row["ability_id"]): str(row.get("ability_name") or row.get("ability_key"))
+        for row in abilities.iter_rows(named=True)
+        if row.get("ability_id") is not None
+    }
+
+
 def create_sft_examples(
     parquet_dir: Path, rag_dir: Path, output_path: Path, *, limit: int = 100
 ) -> int:
     recommender = DraftRecommender(parquet_dir)
     retriever = Retriever(rag_dir)
     heroes = read_parquet(parquet_dir / "dim_hero.parquet")
+    items = read_parquet(parquet_dir / "dim_item.parquet")
+    abilities = read_parquet(parquet_dir / "dim_ability.parquet")
     build_stats = read_parquet(parquet_dir / "fact_hero_build_stats.parquet")
+    skill_stats = read_parquet(parquet_dir / "fact_hero_skill_builds.parquet")
     pair_stats = read_parquet(parquet_dir / "fact_hero_pair_stats.parquet")
     patch_changes = read_parquet(parquet_dir / "doc_patch_change.parquet")
+    stratz_matches = read_parquet(parquet_dir / "doc_stratz_match.parquet")
     names = _hero_names(heroes)
+    ability_names = _ability_names(abilities)
     examples: list[dict[str, Any]] = []
     seen: set[str] = set()
     if not recommender.ready():
@@ -76,11 +101,24 @@ def create_sft_examples(
         output_path.write_text("")
         return 0
 
-    draft_cap = max(1, int(limit * 0.30))
-    hero_cap = max(1, int(limit * 0.20))
-    build_cap = max(1, int(limit * 0.20))
-    pair_cap = max(1, int(limit * 0.15))
-    patch_cap = max(1, limit - draft_cap - hero_cap - build_cap - pair_cap)
+    draft_cap = max(1, int(limit * 0.22))
+    hero_cap = max(1, int(limit * 0.12))
+    item_cap = max(1, int(limit * 0.08))
+    build_cap = max(1, int(limit * 0.14))
+    skill_cap = max(1, int(limit * 0.11))
+    pair_cap = max(1, int(limit * 0.11))
+    stratz_cap = max(1, int(limit * 0.12))
+    patch_cap = max(
+        1,
+        limit
+        - draft_cap
+        - hero_cap
+        - item_cap
+        - build_cap
+        - skill_cap
+        - pair_cap
+        - stratz_cap,
+    )
 
     top_hero_ids = (
         heroes.sort(["pro_pick", "pro_win_rate"], descending=[True, True])
@@ -168,6 +206,40 @@ def create_sft_examples(
             if len(examples) >= limit or added >= hero_cap:
                 break
 
+    if len(examples) < limit and not items.is_empty():
+        added = 0
+        for row in (
+            items.filter(~pl.col("item_key").str.starts_with("recipe_"))
+            .sort("cost", descending=True, nulls_last=True)
+            .head(limit)
+            .iter_rows(named=True)
+        ):
+            item_key = row.get("item_key")
+            item_name = row.get("item_name") or str(item_key).replace("_", " ").title()
+            before = len(examples)
+            _append(
+                examples,
+                seen,
+                f"What does {item_name} do and when should I cite it in Dota analysis?",
+                {
+                    "task": "item_meta",
+                    "item": item_name,
+                    "item_key": item_key,
+                    "cost": row.get("cost"),
+                    "attributes": row.get("attrib"),
+                    "notes": row.get("notes"),
+                    "sources": ["OpenDota item constants"],
+                    "caveat": (
+                        "Item advice should be grounded in observed purchase stats when "
+                        "available."
+                    ),
+                },
+            )
+            if len(examples) > before:
+                added += 1
+            if len(examples) >= limit or added >= item_cap:
+                break
+
     if len(examples) < limit and not build_stats.is_empty():
         added = 0
         grouped = (
@@ -213,6 +285,41 @@ def create_sft_examples(
             if len(examples) >= limit or added >= build_cap:
                 break
 
+    if len(examples) < limit and not skill_stats.is_empty():
+        added = 0
+        skill_rows = (
+            skill_stats.sort("picks", descending=True)
+            .head(limit * 6)
+            .iter_rows(named=True)
+        )
+        for row in skill_rows:
+            hero_id = int(row["hero_id"])
+            ability_id = int(row["ability_id"])
+            hero_name = names.get(hero_id, f"Hero {hero_id}")
+            ability_name = ability_names.get(ability_id, f"Ability {ability_id}")
+            before = len(examples)
+            _append(
+                examples,
+                seen,
+                f"What skill-build evidence do we have for {hero_name}?",
+                {
+                    "task": "skill_build",
+                    "hero": hero_name,
+                    "hero_id": hero_id,
+                    "ability": ability_name,
+                    "ability_id": ability_id,
+                    "role": row.get("role"),
+                    "pick_order": row.get("pick_order"),
+                    "picks": row.get("picks"),
+                    "sources": ["OpenDota normalized ability upgrade stats"],
+                    "caveat": "This is observed leveling behavior, not a guaranteed optimal build.",
+                },
+            )
+            if len(examples) > before:
+                added += 1
+            if len(examples) >= limit or added >= skill_cap:
+                break
+
     if len(examples) < limit and not pair_stats.is_empty():
         added = 0
         pair_rows = (
@@ -248,6 +355,37 @@ def create_sft_examples(
             if len(examples) > before:
                 added += 1
             if len(examples) >= limit or added >= pair_cap:
+                break
+
+    if len(examples) < limit and not stratz_matches.is_empty():
+        added = 0
+        for row in (
+            stratz_matches.sort("start_time", descending=True, nulls_last=True)
+            .head(limit * 3)
+            .iter_rows(named=True)
+        ):
+            text = _clip(row.get("text"), 700)
+            if not text:
+                continue
+            before = len(examples)
+            _append(
+                examples,
+                seen,
+                f"What grounded evidence is available from STRATZ match {row.get('match_id')}?",
+                {
+                    "task": "stratz_match_evidence",
+                    "match_id": row.get("match_id"),
+                    "patch": row.get("patch"),
+                    "winner": row.get("winner"),
+                    "duration_seconds": row.get("duration_seconds"),
+                    "summary": text,
+                    "sources": ["STRATZ match details", row.get("url")],
+                    "caveat": "A single match is evidence, not a global meta conclusion.",
+                },
+            )
+            if len(examples) > before:
+                added += 1
+            if len(examples) >= limit or added >= stratz_cap:
                 break
 
     if len(examples) < limit and not patch_changes.is_empty():

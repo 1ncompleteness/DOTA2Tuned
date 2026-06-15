@@ -36,16 +36,51 @@ TRAIN_SCRIPT = """# /// script
 #   "hf-transfer>=0.1.9",
 # ]
 # ///
+import os
+
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 import torch
 from datasets import load_dataset
 from peft import LoraConfig, prepare_model_for_kbit_training
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
 
+try:
+    from transformers.utils import import_utils
+    if not hasattr(import_utils, "is_torch_fx_available"):
+        def _is_torch_fx_available():
+            try:
+                import torch.fx  # noqa: F401
+                return True
+            except Exception:
+                return False
+        import_utils.is_torch_fx_available = _is_torch_fx_available
+except Exception:
+    pass
+
 model_id = "{model_id}"
 dataset_source = "{dataset_source}"
 output_repo = "{output_repo}"
 max_length = {max_length}
+lora_r = {lora_r}
+lora_alpha = {lora_alpha}
+lora_dropout = {lora_dropout}
+raw_lora_target_modules = {lora_target_modules}
+if isinstance(raw_lora_target_modules, str) and raw_lora_target_modules != "all-linear":
+    lora_target_modules = [
+        module.strip()
+        for module in raw_lora_target_modules.split(",")
+        if module.strip()
+    ]
+else:
+    lora_target_modules = raw_lora_target_modules
+sft_learning_rate = {sft_learning_rate}
+sft_epochs = {sft_epochs}
+sft_batch_size = {sft_batch_size}
+sft_grad_accum = {sft_grad_accum}
+load_in_4bit = {model_load_in_4bit}
+torch_dtype = getattr(torch, "{model_torch_dtype}", torch.bfloat16)
 
 if dataset_source.endswith(".jsonl"):
     dataset = load_dataset("json", data_files=dataset_source, split="train")
@@ -56,34 +91,39 @@ tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
+quantization_config = (
+    BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch_dtype,
+        bnb_4bit_use_double_quant=True,
+    )
+    if load_in_4bit
+    else None
 )
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
     quantization_config=quantization_config,
     device_map="auto",
-    torch_dtype=torch.bfloat16,
+    torch_dtype=torch_dtype,
     trust_remote_code=True,
 )
-model = prepare_model_for_kbit_training(model)
+if load_in_4bit:
+    model = prepare_model_for_kbit_training(model)
 
 peft_config = LoraConfig(
-    r=32,
-    lora_alpha=16,
-    lora_dropout=0.05,
-    target_modules="all-linear",
+    r=lora_r,
+    lora_alpha=lora_alpha,
+    lora_dropout=lora_dropout,
+    target_modules=lora_target_modules,
     task_type="CAUSAL_LM",
 )
 args = SFTConfig(
     output_dir="dota2tuned-sft",
-    num_train_epochs=1,
-    learning_rate=2e-4,
-    per_device_train_batch_size=1,
-    gradient_accumulation_steps=8,
+    num_train_epochs=sft_epochs,
+    learning_rate=sft_learning_rate,
+    per_device_train_batch_size=sft_batch_size,
+    gradient_accumulation_steps=sft_grad_accum,
     max_length=max_length,
     packing=True,
     optim="paged_adamw_8bit",
@@ -183,6 +223,16 @@ def write_train_script(settings: Settings, dataset_source: str | Path) -> Path:
             dataset_source=str(dataset_source),
             output_repo=settings.hf_model_repo_id,
             max_length=settings.sft_max_length,
+            lora_r=settings.lora_r,
+            lora_alpha=settings.lora_alpha,
+            lora_dropout=settings.lora_dropout,
+            lora_target_modules=repr(settings.lora_target_modules),
+            sft_learning_rate=settings.sft_learning_rate,
+            sft_epochs=settings.sft_epochs,
+            sft_batch_size=settings.sft_batch_size,
+            sft_grad_accum=settings.sft_grad_accum,
+            model_load_in_4bit=repr(settings.model_load_in_4bit),
+            model_torch_dtype=settings.model_torch_dtype,
         )
     )
     return script_path

@@ -16,9 +16,17 @@ datasets:
 
 # DOTA2Tuned Qwen3 4B LoRA
 
-This is the fine-tuned adapter used by DOTA2Tuned, a Hugging Face Build Small Hackathon Gradio app for Dota 2 draft coaching, hero meta lookup, counter/synergy reasoning, build timing summaries, and match prediction explanations.
+This is the Tiny fine-tuned adapter used by DOTA2Tuned, a Hugging Face Build Small Hackathon Gradio app for Dota 2 draft coaching, hero/item/skill meta lookup, counter/synergy reasoning, build timing summaries, and match prediction explanations.
 
 The adapter is based on `Qwen/Qwen3-4B-Instruct-2507`, keeping the total model size below the hackathon `<=32B` parameter limit. It was trained with TRL SFT and QLoRA on Modal GPU infrastructure, then served through Modal-backed inference from the Hugging Face Space.
+
+The app also defines Balanced and Quality profiles for `openbmb/MiniCPM4.1-8B` and `Qwen/Qwen3-30B-A3B-Instruct-2507`. Those adapters are trained through the same Modal pipeline and exposed through the app's model selector when available.
+
+Current profile status:
+
+- Tiny Qwen3 4B: trained and published at `build-small-hackathon/dota2tuned-qwen3-4b-2507-lora`.
+- Balanced MiniCPM4.1 8B: trained and published at `build-small-hackathon/dota2tuned-minicpm4-1-8b-lora`.
+- Quality Qwen3 30B-A3B: original A100 call `fc-01KV6S4FC8PZHBR6Y9QPFQSNFQ` failed with CUDA OOM; H200 retry is running as `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
 
 ## Intended Behavior
 
@@ -39,7 +47,7 @@ Training examples are generated from the DOTA2Tuned pipeline and published in th
 
 https://huggingface.co/datasets/build-small-hackathon/dota2tuned-data
 
-The examples combine normalized Dota 2 stat cards, draft recommendation outputs, patch-change retrieval snippets, and refusal/caveat behaviors.
+The current examples combine normalized Dota 2 stat cards, STRATZ match evidence, draft recommendation outputs, item timing summaries, skill-build summaries, patch-change retrieval snippets, and refusal/caveat behaviors. The refreshed SFT set has 942 examples generated from 15,508 retrieval documents.
 
 ## Usage
 
@@ -101,7 +109,7 @@ One grounding weakness was found during testing: generic build prompts could pro
 ## Limitations
 
 - The adapter is only as reliable as the supplied Dota 2 evidence.
-- The current hackathon dataset is compact, so many hero and matchup samples are sparse.
+- The current hackathon dataset is compact, so many hero, item, skill, and matchup samples still need caveats.
 - Match prediction is draft-only and does not model player skill, execution, lane assignments, itemization, or in-game state.
 - Dota 2 patches change quickly; refresh the data pipeline before making current-meta claims.
 - The adapter is not affiliated with Valve, OpenDota, STRATZ, Steam, Hugging Face, Modal, or Qwen.

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from dota2tuned.rag import build_index
+from dota2tuned.rag import build_documents, build_index
 from dota2tuned.sft import create_sft_examples
 from dota2tuned.storage import write_parquet
 
@@ -93,3 +93,40 @@ def test_create_sft_examples_draws_from_multiple_sources(tmp_path: Path):
         assert messages[0]["role"] == "user"
         assert messages[1]["role"] == "assistant"
         assert json.loads(messages[1]["content"])
+
+
+def test_rag_documents_include_stratz_match_docs(tmp_path: Path):
+    parquet = tmp_path / "parquet"
+    write_parquet(parquet / "doc_patch_change.parquet", [])
+    write_parquet(parquet / "dim_hero.parquet", [])
+    write_parquet(parquet / "dim_item.parquet", [])
+    write_parquet(parquet / "fact_hero_build_stats.parquet", [])
+    write_parquet(parquet / "dim_ability.parquet", [])
+    write_parquet(parquet / "fact_hero_skill_builds.parquet", [])
+    write_parquet(
+        parquet / "doc_stratz_match.parquet",
+        [
+            {
+                "match_id": 42,
+                "patch": "7.41d",
+                "source": "STRATZ match details",
+                "url": "https://stratz.com/matches/42",
+                "winner": "Radiant",
+                "duration_seconds": 1800,
+                "start_time": 1780617600,
+                "text": "STRATZ match 42: Radiant won with Anti-Mage.",
+            }
+        ],
+    )
+
+    docs = build_documents(parquet)
+
+    assert docs == [
+        {
+            "id": "stratz_match:42",
+            "kind": "stratz_match",
+            "patch": "7.41d",
+            "text": "STRATZ match 42: Radiant won with Anti-Mage.",
+            "source": "STRATZ match details",
+        }
+    ]

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from dota2tuned.config import get_settings
+from dota2tuned.model_profiles import resolve_model_profile
 
 try:
     import modal
@@ -57,6 +58,7 @@ REMOTE_ENV = {
     "MODEL_DIR": str(REMOTE_DATA / "models"),
     "RAW_DATA_DIR": str(REMOTE_DATA / "raw"),
     "DUCKDB_PATH": str(REMOTE_DATA / "dota2tuned.duckdb"),
+    "MODEL_PROFILE": settings.model_profile,
     "BASE_MODEL_ID": settings.base_model_id,
     "HF_MODEL_REPO_ID": settings.hf_model_repo_id,
     "HF_DATASET_REPO_ID": settings.hf_dataset_repo_id,
@@ -67,6 +69,7 @@ REMOTE_ENV = {
     "HF_HUB_DISABLE_PROGRESS_BARS": "1",
     "TQDM_DISABLE": "1",
     "TRANSFORMERS_VERBOSITY": "warning",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
 
 
@@ -111,6 +114,7 @@ if modal is not None and settings.modal_enabled:
         modal.Image.debian_slim(python_version="3.12").uv_pip_install(*TRAIN_DEPS).env(REMOTE_ENV)
     )
     _MODEL_CACHE: dict[str, object] = {}
+    quality_train_profile = resolve_model_profile("qwen3_30b_a3b_2507")
 
     @app.function(image=web_image, secrets=[runtime_secret], timeout=900)
     def remote_smoke() -> dict[str, object]:
@@ -162,15 +166,9 @@ if modal is not None and settings.modal_enabled:
             head=APP_HEAD,
         )
 
-    @app.function(
-        image=train_image,
-        gpu=settings.modal_train_gpu,
-        secrets=[runtime_secret],
-        volumes={REMOTE_CACHE: cache_volume, REMOTE_OUTPUTS: output_volume},
-        timeout=settings.modal_train_timeout,
-    )
-    def train_sft(
+    def _run_train_sft(
         dataset_source: str = str(REMOTE_DATA / "models" / "sft_examples.jsonl"),
+        profile: str | None = None,
     ) -> dict[str, object]:
         from dota2tuned.config import Settings
         from dota2tuned.finetune import write_train_script
@@ -183,12 +181,24 @@ if modal is not None and settings.modal_enabled:
             raise RuntimeError(f"SFT dataset not found: {dataset_source}")
 
         REMOTE_OUTPUTS.mkdir(parents=True, exist_ok=True)
+        selected = resolve_model_profile(profile)
         train_settings = Settings(
             hf_token=os.environ.get("HF_TOKEN"),
-            hf_model_repo_id=os.environ["HF_MODEL_REPO_ID"],
+            model_profile=selected.key,
+            hf_model_repo_id=selected.hf_model_repo_id,
             hf_dataset_repo_id=os.environ["HF_DATASET_REPO_ID"],
-            base_model_id=os.environ["BASE_MODEL_ID"],
-            sft_max_length=int(os.environ["SFT_MAX_LENGTH"]),
+            base_model_id=selected.base_model_id,
+            sft_max_length=selected.sft_max_length,
+            lora_r=selected.lora_r,
+            lora_alpha=selected.lora_alpha,
+            lora_dropout=selected.lora_dropout,
+            lora_target_modules=selected.lora_target_modules,
+            sft_learning_rate=selected.sft_learning_rate,
+            sft_epochs=selected.sft_epochs,
+            sft_batch_size=selected.sft_batch_size,
+            sft_grad_accum=selected.sft_grad_accum,
+            model_load_in_4bit=selected.model_load_in_4bit,
+            model_torch_dtype=selected.model_torch_dtype,
             raw_data_dir=REMOTE_DATA / "raw",
             parquet_dir=REMOTE_DATA / "parquet",
             rag_dir=REMOTE_DATA / "rag",
@@ -199,11 +209,38 @@ if modal is not None and settings.modal_enabled:
         subprocess.run([sys.executable, str(script_path)], check=True)
         return {
             "status": "ok",
+            "profile": selected.key,
             "base_model": train_settings.base_model_id,
             "output_repo": train_settings.hf_model_repo_id,
             "dataset_source": dataset_source,
             "script": str(script_path),
         }
+
+    @app.function(
+        image=train_image,
+        gpu=settings.modal_train_gpu,
+        secrets=[runtime_secret],
+        volumes={REMOTE_CACHE: cache_volume, REMOTE_OUTPUTS: output_volume},
+        timeout=settings.modal_train_timeout,
+    )
+    def train_sft(
+        dataset_source: str = str(REMOTE_DATA / "models" / "sft_examples.jsonl"),
+        profile: str | None = None,
+    ) -> dict[str, object]:
+        return _run_train_sft(dataset_source, profile)
+
+    @app.function(
+        image=train_image,
+        gpu=quality_train_profile.modal_train_gpu,
+        secrets=[runtime_secret],
+        volumes={REMOTE_CACHE: cache_volume, REMOTE_OUTPUTS: output_volume},
+        timeout=quality_train_profile.modal_train_timeout,
+    )
+    def train_sft_quality(
+        dataset_source: str = str(REMOTE_DATA / "models" / "sft_examples.jsonl"),
+        profile: str | None = None,
+    ) -> dict[str, object]:
+        return _run_train_sft(dataset_source, profile or quality_train_profile.key)
 
     @app.function(
         image=train_image,
@@ -217,16 +254,38 @@ if modal is not None and settings.modal_enabled:
         question: str,
         context: str = "",
         max_new_tokens: int = 384,
+        profile: str | None = None,
     ) -> dict[str, object]:
         import torch
         from peft import AutoPeftModelForCausalLM
         from transformers import AutoTokenizer, BitsAndBytesConfig
 
+        from dota2tuned.model_profiles import resolve_model_profile
+
+        try:
+            from transformers.utils import import_utils
+
+            if not hasattr(import_utils, "is_torch_fx_available"):
+
+                def _is_torch_fx_available():
+                    try:
+                        import torch.fx  # noqa: F401
+
+                        return True
+                    except Exception:
+                        return False
+
+                import_utils.is_torch_fx_available = _is_torch_fx_available
+        except Exception:
+            pass
+
         if not question.strip():
             raise RuntimeError("question is required.")
 
-        model_id = os.environ["HF_MODEL_REPO_ID"]
-        if "model" not in _MODEL_CACHE:
+        selected = resolve_model_profile(profile)
+        model_id = selected.hf_model_repo_id
+        cache_key = f"{selected.key}:{model_id}"
+        if cache_key not in _MODEL_CACHE:
             tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
             if tokenizer.pad_token is None:
                 tokenizer.pad_token = tokenizer.eos_token
@@ -243,12 +302,13 @@ if modal is not None and settings.modal_enabled:
                 torch_dtype=torch.bfloat16,
                 trust_remote_code=True,
             )
+            model.config.use_cache = False
             model.eval()
-            _MODEL_CACHE["tokenizer"] = tokenizer
-            _MODEL_CACHE["model"] = model
+            _MODEL_CACHE[cache_key] = {"tokenizer": tokenizer, "model": model}
 
-        tokenizer = _MODEL_CACHE["tokenizer"]
-        model = _MODEL_CACHE["model"]
+        cached = _MODEL_CACHE[cache_key]
+        tokenizer = cached["tokenizer"]
+        model = cached["model"]
         system = (
             "You are DOTA2Tuned, a Dota 2 draft and meta assistant. "
             "Use only the supplied evidence when it contains concrete facts. "
@@ -277,6 +337,7 @@ if modal is not None and settings.modal_enabled:
                 **inputs,
                 max_new_tokens=max(32, min(max_new_tokens, 768)),
                 do_sample=False,
+                use_cache=False,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
             )
@@ -284,6 +345,7 @@ if modal is not None and settings.modal_enabled:
         answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
         return {
             "status": "ok",
+            "profile": selected.key,
             "model": model_id,
             "answer": answer,
             "tokens": int(generated.numel()),

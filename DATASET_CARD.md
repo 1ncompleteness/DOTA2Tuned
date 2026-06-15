@@ -15,14 +15,15 @@ tags:
 
 # DOTA2Tuned Data
 
-This dataset supports the DOTA2Tuned Hugging Face Build Small Hackathon app. It contains compact derived artifacts for Dota 2 draft recommendations, hero meta lookup, build timing summaries, match prediction, retrieval, and supervised fine-tuning examples.
+This dataset supports the DOTA2Tuned Hugging Face Build Small Hackathon app. It contains compact derived artifacts for Dota 2 draft recommendations, hero/item/skill meta lookup, build timing summaries, match prediction, retrieval, and supervised fine-tuning examples.
 
 ## Contents
 
-- `sft_examples.jsonl`: instruction examples generated from normalized Dota 2 recommendations, patch/stat cards, and app behaviors.
+- `sft_examples.jsonl`: 942 instruction examples generated from normalized Dota 2 recommendations, patch/stat cards, STRATZ match evidence, item meta, skill builds, and app behaviors.
 - Compact Parquet artifacts used by the Space:
   - `dim_hero`
   - `dim_item`
+  - `dim_ability`
   - `dim_league`
   - `dim_patch`
   - `fact_match`
@@ -31,28 +32,32 @@ This dataset supports the DOTA2Tuned Hugging Face Build Small Hackathon app. It 
   - `fact_item_purchase`
   - `fact_hero_pair_stats`
   - `fact_hero_build_stats`
+  - `fact_hero_skill_builds`
   - `doc_patch_change`
+  - `doc_stratz_match`
 
-The submitted Space also includes a local TF-IDF retrieval index and a draft predictor artifact. Raw API payloads are intentionally not published in the Space bundle.
+Current compact artifact counts include 15,784 normalized matches, 159,998 player-match rows, 292,124 draft pick/ban rows, 3,432,956 item-purchase rows, 173,408 hero build rows, 95,519 skill-build rows, 7,094 patch-change docs, and 1,786 STRATZ match docs.
+
+The submitted Space also includes a local TF-IDF retrieval index with 15,508 documents and a draft predictor artifact. Raw API payloads are intentionally not published in the Space bundle.
 
 ## Sources
 
 - OpenDota API for public Dota 2 metadata, hero statistics, pro match references, league data, and match details.
-- STRATZ API for optional match enrichment where configured.
+- STRATZ API for match enrichment and match-evidence retrieval documents where configured.
 - Steam Web API for configured Steam-backed checks.
 - Valve / Dota 2 patch and constants feeds where available through the ingestion pipeline.
 
 ## Processing
 
-The pipeline stores raw JSONL locally, normalizes it into Parquet tables, builds hero pair and build timing features, trains a draft predictor, builds retrieval documents, and emits SFT examples for the published LoRA adapter.
+The pipeline stores raw JSONL locally, normalizes it into Parquet tables, builds hero pair, item timing, and skill-build features, trains a draft predictor, builds retrieval documents, and emits SFT examples for the published LoRA adapters.
 
 The app treats deterministic stats and predictors as the source of truth. The fine-tuned model explains retrieved evidence and should caveat weak or missing data.
 
 ## Intended Use
 
 - Dota 2 draft recommendation demos.
-- Patch-aware hero meta lookup.
-- Counter, synergy, and build timing summaries.
+- Patch-aware hero, item, and skill meta lookup.
+- Counter, synergy, build timing, and skill-order summaries.
 - Grounded small-model answer generation examples.
 - Hackathon reproducibility for the DOTA2Tuned Space.
 

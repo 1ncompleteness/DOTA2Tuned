@@ -81,6 +81,43 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
             }
         ],
     )
+    write_jsonl(
+        raw / "matches" / "stratz_match_details.jsonl",
+        [
+            {
+                "id": 42,
+                "didRadiantWin": True,
+                "durationSeconds": 1800,
+                "startDateTime": 1780617600,
+                "gameMode": "CAPTAINS_MODE",
+                "lobbyType": "PRACTICE",
+                "players": [
+                    {
+                        "heroId": 1,
+                        "isRadiant": True,
+                        "kills": 7,
+                        "deaths": 1,
+                        "assists": 5,
+                        "goldPerMinute": 650,
+                        "experiencePerMinute": 800,
+                    },
+                    {
+                        "heroId": 2,
+                        "isRadiant": False,
+                        "kills": 2,
+                        "deaths": 7,
+                        "assists": 3,
+                        "goldPerMinute": 420,
+                        "experiencePerMinute": 500,
+                    },
+                ],
+                "pickBans": [
+                    {"heroId": 1, "isPick": True, "isRadiant": True, "order": 1},
+                    {"heroId": 2, "isPick": True, "isRadiant": False, "order": 2},
+                ],
+            }
+        ],
+    )
     write_jsonl(raw / "patches" / "valve_patch_changes.jsonl", [])
 
     counts = normalize_all(raw, parquet)
@@ -90,7 +127,12 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
     assert counts["fact_item_purchase"] == 1
     assert counts["fact_hero_build_stats"] == 2
     assert counts["fact_hero_skill_builds"] == 2
+    assert counts["doc_stratz_match"] == 1
     assert read_parquet(parquet / "fact_match.parquet").height == 2
+    stratz_rows = read_parquet(parquet / "doc_stratz_match.parquet")
+    assert stratz_rows["source"].to_list() == ["STRATZ match details"]
+    assert "Anti-Mage" in stratz_rows["text"].item()
+    assert stratz_rows["url"].item() == "https://stratz.com/matches/42"
     build_rows = read_parquet(parquet / "fact_hero_build_stats.parquet")
     assert set(build_rows["role"].to_list()) == {"all", "carry"}
     assert set(build_rows["item_key"].to_list()) == {"blink"}

@@ -123,11 +123,13 @@ def test_empty_selection_previews_render_no_placeholder():
 def test_tuned_model_is_first_nav_and_default_view():
     source = inspect.getsource(build_app)
 
-    assert NAV_OPTIONS[0] == "Tuned Model"
-    assert 'value="Tuned Model"' in source
+    assert NAV_OPTIONS == ["Ask", "Draft", "Meta", "Builds", "Predictor", "Data"]
+    assert 'value="Ask"' in source
     assert 'elem_id="tuned-model-view"' in source
     assert 'elem_classes=["app-view", "assistant-landing", "d2-active"]' in source
     assert 'elem_id="draft-coach-view", elem_classes=["app-view"]' in source
+    assert 'elem_id="builds-view"' in source
+    assert 'elem_id="draft-lab-view"' not in source
     assert len(ASSISTANT_EXAMPLE_PROMPTS) >= 8
     assert ".assistant-shell" in APP_CSS
     assert "width: 100%" in APP_CSS
@@ -153,15 +155,25 @@ def test_assistant_references_link_patch_and_hero_sources():
             "score": "0.31",
             "text": "Phantom Assassin current pro stat card.",
         },
+        {
+            "id": "stratz_match:42",
+            "kind": "stratz_match",
+            "patch": "7.41d",
+            "source": "STRATZ match details",
+            "score": "0.29",
+            "text": "STRATZ match 42.",
+        },
     ]
 
     html = _assistant_references_html(docs)
 
     assert _doc_source_url(docs[0]) == "https://www.dota2.com/patches/7.41d"
     assert _doc_source_url(docs[1]) == "https://www.opendota.com/heroes/44"
+    assert _doc_source_url(docs[2]) == "https://stratz.com/matches/42"
     assert "assistant-reference" in html
     assert "https://www.dota2.com/patches/7.41d" in html
     assert "https://www.opendota.com/heroes/44" in html
+    assert "https://stratz.com/matches/42" in html
 
 
 def test_assistant_output_includes_hero_and_item_icons():
@@ -642,7 +654,7 @@ def test_code_outputs_use_plain_code_sections():
     assert 'gr.Accordion("Prediction", open=False)' not in source
     assert 'gr.Code(label="Evidence", language="json", value="[]")' in source
     assert 'gr.Code(label="Evidence", language="json")' in source
-    assert 'gr.Code(label="Prediction", language="json")' in source
+    assert 'predict_output = gr.HTML(elem_classes=["d2-dynamic-output"])' in source
 
 
 def test_dynamic_outputs_have_stable_animation_classes():
@@ -653,9 +665,9 @@ def test_dynamic_outputs_have_stable_animation_classes():
     assert 'elem_classes=["d2-selector-grid", "d2-selector-grid-3"]' in source
     assert 'elem_classes=["d2-selector-grid", "d2-selector-grid-2"]' in source
     assert 'elem_classes=["d2-selector-stack"]' in source
-    assert "visible=bool(ally_preview_html)" in source
-    assert "visible=bool(meta_item_preview_html)" in source
-    assert "return gr.update(value=html, visible=bool(html))" in source
+    assert 'visible=True,\n                            elem_classes=["d2-preview-output"]' in source
+    assert "return gr.update(value=html)" in source
+    assert "return gr.update(value=html, visible=bool(html))" not in source
 
 
 def test_module_intro_copy_replaces_static_status_strips():
@@ -665,12 +677,12 @@ def test_module_intro_copy_replaces_static_status_strips():
     assert "def _module_status_html" not in source
     assert "d2-module-status" not in source
     assert "def _module_intro_html" in source
-    assert "Draft Coach recommends heroes" in source
-    assert "Hero Meta searches patch" in source
-    assert "Match Predictor estimates Radiant win chance" in source
+    assert "Draft recommends heroes" in source
+    assert "Meta searches patch" in source
+    assert "Predictor estimates Radiant win chance" in source
     assert "Builds summarizes observed hero item timings" in source
-    assert "Draft Lab turns the recommendation engine" in source
-    assert "Data Freshness lists the normalized Parquet artifacts" in source
+    assert "Draft also generates compact scouting cards" in source
+    assert "Data lists the normalized Parquet artifacts" in source
 
 
 def test_tuned_model_hides_duplicate_output_status_tracker():

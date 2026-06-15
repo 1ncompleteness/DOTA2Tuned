@@ -4,7 +4,7 @@
 
 - Build a full Dota 2 data platform plus a Hugging Face Gradio Space for the Build Small Hackathon, backed by Modal GPU functions for training and optional serving.
 - Optimize for both tracks: a serious draft/meta coach for Backyard AI and a playful Draft Lab mode for Thousand Token Wood.
-- Use deterministic stats and predictors for recommendations; use a fine-tuned 3-4B QLoRA model for grounded explanations.
+- Use deterministic stats and predictors for recommendations; use profiled sub-32B QLoRA adapters for grounded explanations.
 - Keep Hugging Face Space as the canonical submitted app, with Modal as the GPU execution path because Modal credits are available.
 - First implementation step: create `PLAN.md`, `.env.example`, `.env`, and `.gitignore` secret rules, then build the code scaffold.
 
@@ -17,18 +17,18 @@
 
 ## Architecture
 
-- Stack: Python 3.11, `uv`, `src/` layout, `ruff`, `pytest`, `pydantic`, `httpx`, `tenacity`, `polars`, `pyarrow`, `duckdb`, `scikit-learn`, `lightgbm`, `datasets`, `huggingface_hub`, `transformers`, `trl`, `peft`, `bitsandbytes`, `gradio`, optional `modal`.
+- Stack: Python 3.12, `uv`, `src/` layout, `ruff`, `pytest`, `pydantic`, `httpx`, `tenacity`, `polars`, `pyarrow`, `duckdb`, `scikit-learn`, `lightgbm`, `datasets`, `huggingface_hub`, `transformers`, `trl`, `peft`, `bitsandbytes`, `gradio`, optional `modal`.
 - Storage: raw API JSONL in `data/raw`, normalized Parquet in `data/parquet`, DuckDB at `data/dota2tuned.duckdb`, generated RAG docs in `data/rag`.
-- Tables: `dim_patch`, `dim_hero`, `dim_item`, `dim_league`, `fact_match`, `fact_player_match`, `fact_draft_pickban`, `fact_item_purchase`, `fact_hero_pair_stats`, `fact_hero_build_stats`, `doc_patch_change`, `doc_stat_card`, `ingest_run`, `api_call_log`.
+- Tables: `dim_patch`, `dim_hero`, `dim_item`, `dim_ability`, `dim_league`, `fact_match`, `fact_player_match`, `fact_draft_pickban`, `fact_item_purchase`, `fact_hero_pair_stats`, `fact_hero_build_stats`, `fact_hero_skill_builds`, `doc_patch_change`, `doc_stratz_match`, `doc_stat_card`, `ingest_run`, `api_call_log`.
 - Data clients: Steam discovery/raw facts, OpenDota normalized stats, STRATZ rich enrichment, Valve patch JSON feed, dotaconstants constants.
 - Modal backend: deployed `ui`, `remote_smoke`, `train_sft`, and `generate_answer` functions. The HF Space remains available; Modal provides GPU training, adapter inference, and a verified alternate Gradio endpoint.
 
 ## Interfaces
 
 - CLI: `dota2tuned ingest`, `normalize`, `features`, `train-predictor`, `build-rag`, `make-sft`, `finetune`, `eval`, `serve`, `modal-deploy`, `modal-smoke`, `modal-train`, `modal-ask`.
-- `.env` keys: `HF_TOKEN`, `HF_ORG`, `HF_SPACE_ID`, `HF_MODEL_REPO_ID`, `HF_DATASET_REPO_ID`, `STRATZ_TOKEN`, `OPENDOTA_API_KEY`, `STEAM_API_KEY`, `BASE_MODEL_ID`, `TRAINING_FLAVOR`, `SPACE_HARDWARE`, `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `MODAL_APP_NAME`, `MODAL_ENABLED`, `MODAL_TRAIN_GPU`, `MODAL_TRAIN_TIMEOUT`, `MODAL_INFER_GPU`, `MODAL_INFER_TIMEOUT`, `MODAL_CACHE_VOLUME`, `MODAL_OUTPUT_VOLUME`, `DUCKDB_PATH`, `RAW_DATA_DIR`, `PARQUET_DIR`.
+- `.env` keys: `HF_TOKEN`, `HF_ORG`, `HF_SPACE_ID`, `MODEL_PROFILE`, `MODEL_PROFILES_PATH`, `HF_MODEL_REPO_ID`, `HF_DATASET_REPO_ID`, `STRATZ_TOKEN`, `OPENDOTA_API_KEY`, `STEAM_API_KEY`, `BASE_MODEL_ID`, `TRAINING_FLAVOR`, `SPACE_HARDWARE`, `SFT_MAX_LENGTH`, `LORA_R`, `LORA_ALPHA`, `LORA_DROPOUT`, `LORA_TARGET_MODULES`, `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `MODAL_APP_NAME`, `MODAL_ENABLED`, `MODAL_TRAIN_GPU`, `MODAL_TRAIN_TIMEOUT`, `MODAL_INFER_GPU`, `MODAL_INFER_TIMEOUT`, `MODAL_CACHE_VOLUME`, `MODAL_OUTPUT_VOLUME`, `DUCKDB_PATH`, `RAW_DATA_DIR`, `PARQUET_DIR`.
 - Recommendation schema: `hero_id`, `hero_name`, `role`, `score`, `win_prob_delta`, `counter_lift`, `synergy_lift`, `sample_size`, `patch`, `scope`, `sources`, `confidence`, `caveats`.
-- Gradio left-sidebar views: Draft Coach, Hero Meta, Tuned Model, Match Predictor, Builds, Draft Lab, Data Freshness.
+- Gradio left-sidebar views: Ask, Draft, Meta, Builds, Predictor, Data.
 
 ## Pipeline
 
@@ -37,8 +37,8 @@
 - Budget defaults: OpenDota free day uses about `1900` pro/current league calls, `750` high-rank/public enrichment calls, `250` constants/retries; STRATZ default day uses `7000` pro enrich, `2000` high-rank/public enrich, `1000` retry/schema reserve.
 - Prediction: train calibrated logistic baseline and LightGBM draft predictor; choose by temporal patch validation.
 - Recommendations: rank heroes by predicted win-probability delta plus empirical counter/synergy lift; builds come from observed item/skill/talent timing stats, not LLM invention.
-- RAG: index patch-change docs and stat cards with patch/scope filters before retrieval.
-- Fine-tuning: default `Qwen/Qwen3-4B-Instruct-2507`; fallback `HuggingFaceTB/SmolLM3-3B`. Use explicit 4-bit QLoRA with TRL SFT on Modal `A100-80GB`, 1 epoch, structured answer examples, then push to Hub.
+- RAG: index patch-change docs, hero stat cards, item constants, item timing stats, skill-build stats, and STRATZ match docs with patch/scope filters before retrieval.
+- Fine-tuning: default Tiny profile `Qwen/Qwen3-4B-Instruct-2507`; Balanced profile `openbmb/MiniCPM4.1-8B`; Quality profile `Qwen/Qwen3-30B-A3B-Instruct-2507`. Use explicit 4-bit QLoRA with TRL SFT on Modal `A100-80GB`, 1 epoch, structured answer examples, then push adapters to Hub.
 - Serving: HF Gradio Space loads compact predictor/RAG artifacts; Modal `ui` is a verified alternate Gradio endpoint, Modal `train_sft` handles GPU fine-tuning, and Modal `generate_answer` serves the fine-tuned adapter for explicit LLM responses.
 
 ## Current Execution Process
@@ -61,11 +61,17 @@
    - Current Modal URL: `https://dracufeuer--dota2tuned-ui.modal.run`
 6. Verify Modal runtime artifacts.
    - `uv run dota2tuned modal-smoke`
-   - Expected: Gradio `Blocks`, 11 Parquet files, RAG index present, SFT examples present.
+   - Expected: Gradio `Blocks`, 14 Parquet files, RAG index present, SFT examples present.
 7. Train the QLoRA adapter on Modal.
-   - `uv run dota2tuned modal-train`
-   - Completed training call: `fc-01KV2GTE604BCRND3M6AH3GGT1`.
-   - Output repo: `build-small-hackathon/dota2tuned-qwen3-4b-2507-lora`.
+   - Tiny: `uv run dota2tuned modal-train --profile qwen3_4b_2507`
+   - Balanced: `uv run dota2tuned modal-train --profile minicpm4_1_8b`
+   - Quality: `uv run dota2tuned modal-train --profile qwen3_30b_a3b_2507`
+   - Initial Tiny call: `fc-01KV2GTE604BCRND3M6AH3GGT1`.
+   - Current refreshed Tiny call: `fc-01KV6SE7YRK1P0JC0NYS0FPBPP`.
+   - Completed Balanced call: `fc-01KV6S4FD9JQ6K5TCA42MHM9RC`.
+   - Superseded Quality A100 call: `fc-01KV6S4FC8PZHBR6Y9QPFQSNFQ`, failed on A100 80GB OOM during k-bit preparation.
+   - Current Quality H200 call: `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
+   - Output repos: `build-small-hackathon/dota2tuned-qwen3-4b-2507-lora`, `build-small-hackathon/dota2tuned-minicpm4-1-8b-lora`, and `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora`.
    - Expected files: `adapter_model.safetensors`, `adapter_config.json`, tokenizer files, `training_args.bin`.
 8. Verify fine-tuned adapter inference.
    - `uv run dota2tuned modal-ask "Suggest one mid hero against Phantom Assassin and Witch Doctor. Include one caveat."`
@@ -193,6 +199,14 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 14:34: refined Tuned Model pending state again: neutralized Gradio's greyed `pending` opacity on the assistant HTML output, expanded the remaining Evidence `Thinking | time` tracker to cover its full parent block, and slowed the loader status randomizer to one letter per timed step with a longer red/gold settle pulse.
 - 2026-06-15 14:40: retuned the loader status animation to be 50% faster than the previous slow pass while keeping the left-to-right one-letter randomizer behavior and a shorter red/gold settle pulse.
 - 2026-06-15 14:45: merged the `origin/Builds` branch into `main`. The merge adds OpenDota ability constants, ability-upgrade normalization, per-role item build buckets, skill-build order artifacts, refreshed Builds page role filtering, core-item highlights, and larger item/ability icon presentation while preserving `AGENTS.md`.
+- 2026-06-15 16:10: rebuilt the refreshed pro/tournament data artifacts after the latest STRATZ expansion: 16,000 OpenDota match details, 1,950 raw STRATZ match details, 15,784 normalized matches, 159,998 player-match rows, 292,124 draft pick/ban rows, 3,432,956 item-purchase rows, 95,519 skill-build rows, 1,786 normalized STRATZ match docs, and predictor metrics `roc_auc=0.5241`, `log_loss=0.7022`, `brier=0.2542`.
+- 2026-06-15 16:10: rebuilt RAG and SFT with STRATZ, item, and skill evidence. Current RAG has 15,508 documents: 7,094 Valve patch notes, 3,000 item timing docs, 3,000 skill-build docs, 1,786 STRATZ match docs, 501 item constants, and 127 hero stat cards. Current SFT has 942 examples across STRATZ match evidence, pair stats, hero meta, build timing, skill builds, patch notes, item meta, and draft recommendations.
+- 2026-06-15 16:12: merged the latest `origin/Builds` commits again after review, keeping the short sidebar labels and new Ask/Draft/Meta/Builds/Predictor/Data structure while preserving the branch's Draft onboarding guide and dropdown bug fixes.
+- 2026-06-15 16:14: redeployed Modal with the latest model-profile code, STRATZ RAG artifacts, and a Transformers compatibility shim for MiniCPM remote code. Submitted background Modal fine-tunes for Balanced `fc-01KV6S4FD9JQ6K5TCA42MHM9RC` and Quality `fc-01KV6S4FC8PZHBR6Y9QPFQSNFQ`.
+- 2026-06-15 16:18: Balanced MiniCPM4.1 8B training completed successfully and pushed adapter files to `build-small-hackathon/dota2tuned-minicpm4-1-8b-lora`. Submitted a refreshed Tiny Qwen3 4B training call `fc-01KV6SE7YRK1P0JC0NYS0FPBPP` against the same 942-example SFT snapshot to remove ambiguity about whether Tiny reflects the latest STRATZ/item/skill data.
+- 2026-06-15 16:21: audited the latest `origin/Builds` commit `90806fa`, which keeps preview HTML components mounted to avoid Gradio dropping first-selection visibility updates. Fast-forwarded `main`, reapplied local work without conflicts, extended the same preview behavior to the new Meta skill selector, and updated the UI regression test for the new always-mounted preview contract.
+- 2026-06-15 16:26: added `scripts/watch_modal_training.py` and started durable tmux session `dota2tuned_modal_training_watch` so Modal training stays monitored in the background. Current log: `logs/modal-training-watch-tmux-20260615-1632.log`.
+- 2026-06-15 16:29: Quality Qwen3 30B-A3B failed on the original A100 80GB training function with CUDA OOM during `prepare_model_for_kbit_training`. Updated Quality to use a dedicated Modal `train_sft_quality` function on `H200`, set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, reduced Quality LoRA/context settings for reliability, redeployed Modal, and resubmitted Quality as `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
 
 ## Adapter Eval Notes
 
