@@ -128,7 +128,7 @@ def test_tuned_model_is_first_nav_and_default_view():
     assert 'elem_id="tuned-model-view"' in source
     assert 'elem_classes=["app-view", "assistant-landing", "d2-active"]' in source
     assert 'elem_id="draft-coach-view", elem_classes=["app-view"]' in source
-    assert len(ASSISTANT_EXAMPLE_PROMPTS) >= 4
+    assert len(ASSISTANT_EXAMPLE_PROMPTS) >= 8
     assert ".assistant-shell" in APP_CSS
     assert "width: 100%" in APP_CSS
     assert "justify-content: flex-start" in APP_CSS
@@ -223,6 +223,11 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "choiceIcons" in js
     assert "ensureTopbar" not in js
     assert "dota-choice-tag" in js
+    assert "dota-choice-icon" in js
+    assert "dota-choice-check" in js
+    assert "dota-option-selected" in js
+    assert "selectedLabelsForDropdown" in js
+    assert "scheduleTextAnimations" in js
     assert "openFromChevron" in js
     assert "removeSelectedHero" in js
     assert "syncSidebarView" in js
@@ -233,6 +238,17 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "dota-selected-field-icon" in js
     assert "dota-selected-token-icon" in js
     assert "selectedInputLabel" in js
+    assert "isHeroDropdown" in js
+    assert "isHiddenValueDropdown" in js
+    assert "isSingleHiddenValueDropdown" in js
+    assert "collapseSelectedToken" in js
+    assert "d2-collapsed-selected-token" in js
+    assert "previewLabelsForDropdown" in js
+    assert "siblingCards.indexOf(button)" in js
+    assert 'querySelector(".token-remove:not(.remove-all)")' in js
+    assert "comparableHeroName(selectedTokenLabel(candidate))" in js
+    assert "syncStatusTrackers" in js
+    assert '"Thinking"' in js
     assert "dota2tunedRevealWhenReady" in js
 
 
@@ -261,8 +277,22 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
     assert ".dota-selected-field-icon" in APP_CSS
     assert ".d2-has-selected-icon" in APP_CSS
     assert ".dota-selected-token" in APP_CSS
+    assert ".d2-collapsed-selected-token" in APP_CSS
     assert ".hero-strip:empty" in APP_CSS
     assert ".item-strip:empty" in APP_CSS
+    assert ".icon-button-wrapper.top-panel.hide-top-corner" in APP_CSS
+    assert ".app-main .icon-button-wrapper.top-panel.hide-top-corner button" in APP_CSS
+    assert "background: inherit !important" in APP_CSS
+    assert "border: 0 !important" in APP_CSS
+    assert "border-left: 0 !important" in APP_CSS
+    assert ".d2-preview-output:has(.prose:empty)" in APP_CSS
+    assert ".dota-option-selected" in APP_CSS
+    assert ".dota-choice-check" in APP_CSS
+    assert '[role="option"].dota-choice-option > .inner-item' in APP_CSS
+    assert ".dota-decorated-rich > .inner-item" in APP_CSS
+    assert ".d2-hide-selected-text" in APP_CSS
+    assert "d2-caret-pulse" in APP_CSS
+    assert ".d2-text-glitch" in APP_CSS
 
 
 def test_css_promotes_open_dropdown_stack_for_safari():
@@ -378,6 +408,9 @@ def test_builds_page_does_not_render_redundant_hero_preview_html():
 
     assert "build_hero_preview" not in source
     assert "outputs=[build_hero_preview]" not in source
+    assert 'elem_id="builds-hero-dropdown"' in source
+    assert 'elem_id="meta-hero-dropdown"' in source
+    assert 'elem_id="meta-item-dropdown"' in source
 
 
 def test_gradio_primary_backgrounds_use_action_red():
@@ -442,7 +475,9 @@ def test_dropdown_js_decorates_without_deleting_svelte_nodes():
     # Root cause of the red Error toast: we used to wipe Gradio/Svelte-owned nodes.
     assert 'option.textContent = ""' not in js
     assert "dota-decorated-rich" in js
+    assert "option.prepend(check, img)" in js
     assert "decorateOption" in js
+    assert "dota-option-native-selected" in js
     # Stale Gradio-5 selectors removed.
     assert "svelte-select-list" not in js
     # Perf: debounced observer + throttled scroll; no blanket keyup re-decorate.
@@ -459,6 +494,8 @@ def test_dropdown_js_refreshes_reused_search_option_nodes():
     assert "readOptionLabel" in js
     assert "resetOptionDecoration" in js
     assert "dotaChoiceLabel" in js
+    assert "optionHasNativeCheck" in js
+    assert "choiceLabelsMatch" in js
     assert 'attributeFilter: ["aria-label"]' in js
     assert "characterData: true" in js
 
@@ -549,12 +586,40 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert "video.defaultMuted = true" not in CRITICAL_HEAD
 
 
-def test_code_outputs_use_accordion_sections():
+def test_code_outputs_use_plain_code_sections():
     source = Path("src/dota2tuned/ui/gradio_app.py").read_text()
 
-    assert 'gr.Accordion("Retrieved Evidence", open=False)' in source
-    assert 'gr.Accordion("Evidence", open=False)' in source
-    assert 'gr.Accordion("Prediction", open=False)' in source
+    assert 'gr.Accordion("Retrieved Evidence", open=False)' not in source
+    assert 'gr.Accordion("Evidence", open=False)' not in source
+    assert 'gr.Accordion("Prediction", open=False)' not in source
+    assert 'gr.Code(label="Evidence", language="json", value="[]")' in source
+    assert 'gr.Code(label="Evidence", language="json")' in source
+    assert 'gr.Code(label="Prediction", language="json")' in source
+
+
+def test_dynamic_outputs_have_stable_animation_classes():
+    source = Path("src/dota2tuned/ui/gradio_app.py").read_text()
+
+    assert 'elem_classes=["d2-preview-output"]' in source
+    assert 'elem_classes=["d2-dynamic-output"]' in source
+    assert "visible=bool(ally_preview_html)" in source
+    assert "visible=bool(meta_item_preview_html)" in source
+    assert "return gr.update(value=html, visible=bool(html))" in source
+
+
+def test_module_intro_copy_replaces_static_status_strips():
+    source = Path("src/dota2tuned/ui/gradio_app.py").read_text()
+
+    assert '[data-testid="status-tracker"]:not(.d2-module-status)' not in APP_CSS
+    assert "def _module_status_html" not in source
+    assert "d2-module-status" not in source
+    assert "def _module_intro_html" in source
+    assert "Draft Coach recommends heroes" in source
+    assert "Hero Meta searches patch" in source
+    assert "Match Predictor estimates Radiant win chance" in source
+    assert "Builds summarizes observed hero item timings" in source
+    assert "Draft Lab turns the recommendation engine" in source
+    assert "Data Freshness lists the normalized Parquet artifacts" in source
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():
