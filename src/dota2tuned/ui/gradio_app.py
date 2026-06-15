@@ -1120,7 +1120,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     const target = event?.target;
     if (!(target instanceof Element)) return false;
     return Boolean(
-      closestElement(target, '.dota-dropdown .options, .dota-dropdown [role="listbox"]')
+      closestElement(target, '.options, [role="listbox"]')
     );
   }};
   const syncDropdownMenus = () => {{
@@ -1850,7 +1850,12 @@ def build_app() -> gr.Blocks:
         hero_ids, _ = _parse_heroes(value, hero_name_lookup)
         return hero_ids[:max_count] if max_count is not None else hero_ids
 
-    def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str:
+    def has_transient_null_selection(value: object) -> bool:
+        return isinstance(value, list) and any(item is None for item in value)
+
+    def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str | dict:
+        if has_transient_null_selection(hero_ids):
+            return gr.skip()
         return _selected_hero_html(clean_hero_values(hero_ids), hero_metadata, target)
 
     def hero_preview_for(target: str):
@@ -2044,6 +2049,11 @@ def build_app() -> gr.Blocks:
                     )
 
                     def update_choices(allies_val, enemies_val, bans_val):
+                        if any(
+                            has_transient_null_selection(value)
+                            for value in (allies_val, enemies_val, bans_val)
+                        ):
+                            return gr.skip(), gr.skip(), gr.skip()
                         allied_ids = clean_hero_values(allies_val, max_count=5)
                         enemy_ids = clean_hero_values(enemies_val, max_count=5)
                         banned_ids = clean_hero_values(bans_val)
@@ -2054,9 +2064,9 @@ def build_app() -> gr.Blocks:
                             return [c for c in hero_choices if c[1] not in excl]
 
                         return (
-                            gr.update(choices=filtered(allied_ids), value=allied_ids),
-                            gr.update(choices=filtered(enemy_ids), value=enemy_ids),
-                            gr.update(choices=filtered(banned_ids), value=banned_ids),
+                            gr.update(choices=filtered(allied_ids)),
+                            gr.update(choices=filtered(enemy_ids)),
+                            gr.update(choices=filtered(banned_ids)),
                         )
 
                     for dd in (allies, enemies, bans):
