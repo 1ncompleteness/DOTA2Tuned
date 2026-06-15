@@ -128,9 +128,9 @@ SCOPE_OPTIONS = [
 ]
 
 NAV_OPTIONS = [
+    "Tuned Model",
     "Draft Coach",
     "Hero Meta",
-    "Tuned Model",
     "Match Predictor",
     "Builds",
     "Draft Lab",
@@ -138,6 +138,15 @@ NAV_OPTIONS = [
 ]
 
 NAV_ICON_BODIES = {
+    "Tuned Model": (
+        "#9fc7ff",
+        (
+            "<path d='M10 12a6 6 0 0112 0v8a4 4 0 01-4 4h-4a4 4 0 01-4-4z'/>",
+            "<path d='M13 10v14'/>",
+            "<path d='M19 10v14'/>",
+            "<path d='M8 16h16'/>",
+        ),
+    ),
     "Draft Coach": (
         "#d9b166",
         (
@@ -151,15 +160,6 @@ NAV_ICON_BODIES = {
         "#e08a62",
         (
             "<path d='M16 5l3.2 6.5 7.2 1-5.2 5 1.2 7.1L16 21.2l-6.4 3.4 1.2-7.1-5.2-5 7.2-1z'/>",
-        ),
-    ),
-    "Tuned Model": (
-        "#9fc7ff",
-        (
-            "<path d='M10 12a6 6 0 0112 0v8a4 4 0 01-4 4h-4a4 4 0 01-4-4z'/>",
-            "<path d='M13 10v14'/>",
-            "<path d='M19 10v14'/>",
-            "<path d='M8 16h16'/>",
         ),
     ),
     "Match Predictor": (
@@ -324,6 +324,13 @@ COMMON_HERO_ALIASES = {
 }
 
 AMBIGUOUS_GENERATED_ALIASES = {"NS", "VS"}
+
+ASSISTANT_EXAMPLE_PROMPTS = [
+    "Suggest a mid hero into Phantom Assassin and Witch Doctor with one caveat.",
+    "What changed in patch 7.41 for the current pro meta?",
+    "Give me a safe support pick with synergy notes and evidence.",
+    "Which items should I think about for Shadow Fiend, and what evidence is missing?",
+]
 
 APP_CSS = """
 @font-face {
@@ -669,6 +676,174 @@ __NAV_ICON_CSS__
    visible= toggle, which left freshly-selected tabs blank until re-selected. */
 .app-view:not(.d2-active) {
   display: none !important;
+}
+.assistant-landing {
+  min-height: auto;
+  display: flex !important;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.assistant-shell {
+  width: 100%;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0;
+  box-sizing: border-box;
+}
+.assistant-composer {
+  flex: 0 0 auto !important;
+  border: 1px solid rgba(235, 207, 135, 0.34);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(35, 38, 46, 0.86), rgba(12, 13, 17, 0.90));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.30);
+  padding: 12px;
+}
+.assistant-composer .form,
+.assistant-composer .block,
+.assistant-composer .input-container,
+.assistant-composer textarea {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.assistant-input textarea {
+  min-height: 96px !important;
+  resize: vertical;
+  font-size: 15px !important;
+  line-height: 22px !important;
+}
+.assistant-actions {
+  align-items: center;
+}
+.assistant-examples {
+  display: grid !important;
+  flex: 0 0 auto !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  align-items: start;
+  gap: 8px;
+}
+.app-main .assistant-chip,
+.app-main .assistant-chip button {
+  align-self: start !important;
+  height: auto !important;
+  min-height: 58px !important;
+  justify-content: flex-start !important;
+  padding: 8px 10px !important;
+  border-color: rgba(235, 207, 135, 0.32) !important;
+  background: rgba(18, 19, 23, 0.62) !important;
+  color: var(--d2-fg) !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 17px !important;
+  text-align: left !important;
+  white-space: normal !important;
+}
+.app-main .assistant-chip:hover,
+.app-main .assistant-chip button:hover {
+  border-color: rgba(255, 96, 70, 0.58) !important;
+  background: rgba(255, 96, 70, 0.12) !important;
+  transform: none !important;
+}
+.assistant-result {
+  border: 1px solid rgba(103, 112, 123, 0.42);
+  border-radius: 4px;
+  background: rgba(10, 11, 14, 0.72);
+  padding: 16px;
+}
+.assistant-answer-text {
+  color: var(--d2-fg);
+  font-size: 14px;
+  line-height: 22px;
+  white-space: pre-wrap;
+}
+.assistant-answer-text strong {
+  color: #f6f3e9;
+}
+.assistant-answer-text code {
+  color: var(--d2-gold-soft);
+  background: rgba(235, 207, 135, 0.10);
+  border: 1px solid rgba(235, 207, 135, 0.24);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.assistant-entity-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.assistant-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 220px;
+  min-height: 38px;
+  padding: 5px 8px;
+  border: 1px solid rgba(235, 207, 135, 0.30);
+  border-radius: 3px;
+  background: rgba(22, 22, 24, 0.76);
+  color: var(--d2-fg);
+}
+.assistant-entity img {
+  width: 34px;
+  height: 26px;
+  flex: 0 0 34px;
+  object-fit: contain;
+  border-radius: 2px;
+  background: transparent;
+}
+.assistant-entity.assistant-item img {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+.assistant-entity span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 15px;
+}
+.assistant-references {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.assistant-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(103, 112, 123, 0.42);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(35, 38, 46, 0.74), rgba(14, 15, 19, 0.76));
+}
+.assistant-reference a {
+  color: var(--d2-gold-soft);
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 16px;
+}
+.assistant-reference a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.assistant-reference span {
+  color: var(--d2-fg-muted);
+  font-size: 11px;
+  line-height: 14px;
+}
+.assistant-reference p {
+  margin: 0;
+  color: var(--d2-fg);
+  font-size: 12px;
+  line-height: 17px;
 }
 .dota-dropdown {
   position: relative;
@@ -1193,6 +1368,7 @@ document.documentElement.classList.add("d2-loading");
 <style>
 :root {
   --d2-red: #ff6046;
+  --d2-gold: #d9b166;
 }
 @keyframes d2-logo-red-flash {
   0%, 100% {
@@ -1233,7 +1409,13 @@ html:not(.d2-ready) body::before {
   inset: 0;
   z-index: 2147483645;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    radial-gradient(
+      circle 22rem at 50% 50%,
+      rgba(255, 96, 70, 0.28) 0%,
+      rgba(255, 96, 70, 0.20) 24%,
+      rgba(217, 177, 102, 0.15) 52%,
+      rgba(217, 177, 102, 0.00) 74%
+    ),
     linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
 }
 html:not(.d2-ready) body::after {
@@ -1264,7 +1446,13 @@ html:not(.d2-ready) body::after {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    radial-gradient(
+      circle 22rem at 50% 50%,
+      rgba(255, 96, 70, 0.28) 0%,
+      rgba(255, 96, 70, 0.20) 24%,
+      rgba(217, 177, 102, 0.15) 52%,
+      rgba(217, 177, 102, 0.00) 74%
+    ),
     linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
   color: #efe5bb;
   opacity: 1;
@@ -1393,7 +1581,13 @@ html:not(.d2-ready) body::before {
   inset: 0;
   z-index: 2147483645;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    radial-gradient(
+      circle 22rem at 50% 50%,
+      rgba(255, 96, 70, 0.28) 0%,
+      rgba(255, 96, 70, 0.20) 24%,
+      rgba(217, 177, 102, 0.15) 52%,
+      rgba(217, 177, 102, 0.00) 74%
+    ),
     linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
 }
 html:not(.d2-ready) body::after {
@@ -1478,9 +1672,9 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     return target.closest(selector);
   }};
   const navViews = {{
+    "Tuned Model": "tuned-model-view",
     "Draft Coach": "draft-coach-view",
     "Hero Meta": "hero-meta-view",
-    "Tuned Model": "tuned-model-view",
     "Match Predictor": "match-predictor-view",
     "Builds": "builds-view",
     "Draft Lab": "draft-lab-view",
@@ -1535,7 +1729,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     if (!nav) return;
     const checked = nav.querySelector('input[type="radio"]:checked');
     const label = checked ? closestElement(checked, "label") : null;
-    const selected = cleanLabel(label?.textContent || checked?.value || "Draft Coach");
+    const selected = cleanLabel(label?.textContent || checked?.value || "Tuned Model");
     Object.entries(navViews).forEach(([name, id]) => {{
       const view = document.getElementById(id);
       if (!view) return;
@@ -2231,6 +2425,169 @@ def _format_recs(recs: list) -> str:
     return "\n".join(lines)
 
 
+def _doc_source_url(doc: dict[str, object]) -> str:
+    source = str(doc.get("source") or "")
+    doc_id = str(doc.get("id") or "")
+    patch = str(doc.get("patch") or "")
+    if source == "Valve patch notes" and patch:
+        return f"https://www.dota2.com/patches/{patch}"
+    if doc_id.startswith("hero:"):
+        hero_id = doc_id.split(":", 1)[1]
+        if hero_id.isdigit():
+            return f"https://www.opendota.com/heroes/{hero_id}"
+    if source.startswith("OpenDota"):
+        return "https://www.opendota.com/"
+    if source.startswith("STRATZ"):
+        return "https://stratz.com/"
+    return ""
+
+
+def _answer_markdown_to_html(answer: str) -> str:
+    escaped = _html_escape(answer)
+    escaped = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
+    return escaped
+
+
+def _text_mentions(text: str, phrase: str) -> bool:
+    if not phrase:
+        return False
+    pattern = rf"(?<![A-Za-z0-9]){re.escape(phrase)}(?![A-Za-z0-9])"
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _mentioned_hero_ids(
+    text: str,
+    docs: list[dict[str, object]],
+    hero_metadata: dict[int, dict[str, object]],
+    limit: int = 8,
+) -> list[int]:
+    hero_ids: list[int] = []
+    seen: set[int] = set()
+
+    def add(hero_id: int) -> None:
+        if hero_id in hero_metadata and hero_id not in seen and len(hero_ids) < limit:
+            hero_ids.append(hero_id)
+            seen.add(hero_id)
+
+    for doc in docs:
+        doc_id = str(doc.get("id") or "")
+        if doc_id.startswith("hero:"):
+            hero_ref = doc_id.split(":", 1)[1]
+            if hero_ref.isdigit():
+                add(int(hero_ref))
+
+    combined = " ".join([text, *(str(doc.get("text") or "") for doc in docs)])
+    for hero_id, row in hero_metadata.items():
+        names = [str(row.get("name") or "")]
+        aliases = [part.strip() for part in str(row.get("aliases") or "").split(",")]
+        if any(_text_mentions(combined, name) for name in [*names, *aliases] if name):
+            add(hero_id)
+    return hero_ids
+
+
+def _mentioned_item_keys(
+    text: str,
+    docs: list[dict[str, object]],
+    item_metadata: dict[str, dict[str, object]],
+    limit: int = 8,
+) -> list[str]:
+    item_keys: list[str] = []
+    seen: set[str] = set()
+    combined = " ".join([text, *(str(doc.get("text") or "") for doc in docs)])
+    for key, row in item_metadata.items():
+        if key.startswith("recipe_"):
+            continue
+        name = str(row.get("name") or key.replace("_", " ").title())
+        if _text_mentions(combined, name) and key not in seen:
+            item_keys.append(key)
+            seen.add(key)
+            if len(item_keys) >= limit:
+                break
+    return item_keys
+
+
+def _assistant_entities_html(
+    answer: str,
+    docs: list[dict[str, object]],
+    hero_metadata: dict[int, dict[str, object]],
+    item_metadata: dict[str, dict[str, object]],
+) -> str:
+    hero_ids = _mentioned_hero_ids(answer, docs, hero_metadata)
+    item_keys = _mentioned_item_keys(answer, docs, item_metadata)
+    chips = []
+    for hero_id in hero_ids:
+        row = hero_metadata.get(hero_id, {})
+        name = _html_escape(row.get("name") or f"Hero {hero_id}")
+        icon = _html_escape(row.get("icon") or "")
+        img = f"<img src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+        chips.append(f"<div class='assistant-entity assistant-hero'>{img}<span>{name}</span></div>")
+    for item_key in item_keys:
+        row = item_metadata.get(item_key, {})
+        name = _html_escape(row.get("name") or item_key.replace("_", " ").title())
+        icon = _html_escape(_item_icon_url(item_key))
+        chips.append(
+            f"<div class='assistant-entity assistant-item'>"
+            f"<img src='{icon}' alt='{name}' loading='lazy'><span>{name}</span></div>"
+        )
+    if not chips:
+        return ""
+    return "<div class='assistant-entity-strip'>" + "".join(chips) + "</div>"
+
+
+def _assistant_references_html(docs: list[dict[str, object]]) -> str:
+    if not docs:
+        return ""
+    cards = []
+    for index, doc in enumerate(docs, start=1):
+        source = _html_escape(doc.get("source") or "Retrieved source")
+        score = _html_escape(doc.get("score") or "")
+        kind = _html_escape(doc.get("kind") or "")
+        patch = _html_escape(doc.get("patch") or "")
+        text = _html_escape(str(doc.get("text") or "")[:260])
+        url = _doc_source_url(doc)
+        label = f"{index}. {source}"
+        if url:
+            title = (
+                f"<a href='{_html_escape(url)}' target='_blank' rel='noopener noreferrer'>"
+                f"{_html_escape(label)}</a>"
+            )
+        else:
+            title = f"<a>{_html_escape(label)}</a>"
+        meta = " · ".join(part for part in [kind, f"patch {patch}" if patch else "", score] if part)
+        cards.append(
+            "<div class='assistant-reference'>"
+            f"{title}<span>{meta}</span><p>{text}</p>"
+            "</div>"
+        )
+    return "<div class='assistant-references'>" + "".join(cards) + "</div>"
+
+
+def _render_tuned_answer_html(
+    answer: str,
+    docs: list[dict[str, object]],
+    hero_metadata: dict[int, dict[str, object]],
+    item_metadata: dict[str, dict[str, object]],
+) -> str:
+    text = answer.strip() or "No answer returned."
+    return (
+        "<div class='assistant-result'>"
+        f"<div class='assistant-answer-text'>{_answer_markdown_to_html(text)}</div>"
+        f"{_assistant_entities_html(text, docs, hero_metadata, item_metadata)}"
+        f"{_assistant_references_html(docs)}"
+        "</div>"
+    )
+
+
+def _assistant_empty_state_html() -> str:
+    return (
+        "<div class='assistant-result'>"
+        "<div class='assistant-answer-text'>Ask DOTA2Tuned about drafts, counters, "
+        "synergies, builds, patch changes, or match prediction.</div>"
+        "</div>"
+    )
+
+
 def _call_tuned_model(settings, question: str, context: str, max_new_tokens: int = 384) -> str:
     if not question.strip():
         return "Enter a question."
@@ -2334,16 +2691,15 @@ def build_app() -> gr.Blocks:
             return "No retrieval index is available yet. Run `dota2tuned build-rag` first."
         return "\n\n".join(f"**{doc['source']}** `{doc['score']}`\n{doc['text']}" for doc in docs)
 
-    def tuned_model(question: str, context: str, max_new_tokens: int) -> tuple[str, str]:
-        docs = []
-        evidence = context.strip()
-        if not evidence:
-            docs = retriever.search(question or "current meta", patch="current", limit=5)
-            evidence = "\n\n".join(
-                f"{doc['source']} score={doc['score']}\n{doc['text']}" for doc in docs
-            )
-        answer = _call_tuned_model(settings, question, evidence, max_new_tokens)
-        return answer, json.dumps(docs, indent=2)
+    def tuned_model(question: str) -> tuple[str, str]:
+        question = (question or "").strip()
+        docs = retriever.search(question or "current meta", patch="current", limit=6)
+        evidence = "\n\n".join(
+            f"{doc['source']} score={doc['score']}\n{doc['text']}" for doc in docs
+        )
+        answer = _call_tuned_model(settings, question, evidence, 384)
+        html = _render_tuned_answer_html(answer, docs, hero_metadata, item_metadata)
+        return html, json.dumps(docs, indent=2)
 
     def data_status() -> str:
         files = []
@@ -2428,7 +2784,7 @@ def build_app() -> gr.Blocks:
             with gr.Column(elem_classes=["app-sidebar-nav-section"]):
                 gr.Radio(
                     choices=NAV_OPTIONS,
-                    value="Draft Coach",
+                    value="Tuned Model",
                     show_label=False,
                     container=False,
                     # Force interactive: the nav drives view switching purely in JS
@@ -2437,8 +2793,61 @@ def build_app() -> gr.Blocks:
                     elem_classes=["app-nav"],
                 )
         with gr.Column(elem_classes=["app-main"]):
+            with gr.Column(  # noqa: SIM117 - Gradio siblings remain under app-main after this view.
+                visible=True,
+                elem_id="tuned-model-view",
+                elem_classes=["app-view", "assistant-landing", "d2-active"],
+            ):
+                with gr.Column(elem_classes=["assistant-shell"]):
+                    assistant_output = gr.HTML(_assistant_empty_state_html())
+                    with gr.Column(elem_classes=["assistant-composer"]):
+                        tuned_question = gr.Textbox(
+                            show_label=False,
+                            placeholder=(
+                                "Ask about a draft, hero matchup, item build, "
+                                "patch note, or prediction..."
+                            ),
+                            lines=3,
+                            max_lines=8,
+                            elem_classes=["assistant-input"],
+                        )
+                        with gr.Row(elem_classes=["assistant-actions"]):
+                            tuned_button = gr.Button("Ask DOTA2Tuned", variant="primary")
+                            tuned_clear = gr.Button("Clear")
+                        with gr.Column(elem_classes=["assistant-examples"]):
+                            for sample_prompt in ASSISTANT_EXAMPLE_PROMPTS:
+                                sample_button = gr.Button(
+                                    sample_prompt,
+                                    size="sm",
+                                    elem_classes=["assistant-chip"],
+                                )
+                                sample_button.click(
+                                    lambda prompt=sample_prompt: prompt,
+                                    outputs=[tuned_question],
+                                    api_visibility="private",
+                                    queue=False,
+                                )
+                    with gr.Accordion("Retrieved Evidence", open=False):
+                        tuned_evidence = gr.Code(label="Evidence", language="json", value="[]")
+                    tuned_button.click(
+                        tuned_model,
+                        inputs=[tuned_question],
+                        outputs=[assistant_output, tuned_evidence],
+                    )
+                    tuned_question.submit(
+                        tuned_model,
+                        inputs=[tuned_question],
+                        outputs=[assistant_output, tuned_evidence],
+                    )
+                    tuned_clear.click(
+                        lambda: ("", _assistant_empty_state_html(), "[]"),
+                        outputs=[tuned_question, assistant_output, tuned_evidence],
+                        api_visibility="private",
+                        queue=False,
+                    )
+
             with gr.Column(
-                visible=True, elem_id="draft-coach-view", elem_classes=["app-view", "d2-active"]
+                visible=True, elem_id="draft-coach-view", elem_classes=["app-view"]
             ):
                 with gr.Row():
                     allies = gr.Dropdown(
@@ -2588,37 +2997,6 @@ def build_app() -> gr.Blocks:
                     hero_meta,
                     inputs=[query, meta_hero, meta_item],
                     outputs=[meta_output],
-                )
-
-            with gr.Column(
-                visible=True, elem_id="tuned-model-view", elem_classes=["app-view"]
-            ):
-                tuned_question = gr.Textbox(
-                    label="Question",
-                    value=(
-                        "Suggest one mid hero against Phantom Assassin and Witch Doctor, "
-                        "and include one caveat."
-                    ),
-                )
-                tuned_context = gr.Textbox(
-                    label="Optional evidence",
-                    lines=5,
-                    placeholder="Leave blank to retrieve local patch/stat evidence automatically.",
-                )
-                tuned_tokens = gr.Slider(
-                    minimum=64,
-                    maximum=768,
-                    value=256,
-                    step=32,
-                    label="Max response tokens",
-                )
-                tuned_button = gr.Button("Ask Tuned Model")
-                tuned_output = gr.Markdown()
-                tuned_evidence = gr.Code(label="Retrieved Evidence", language="json")
-                tuned_button.click(
-                    tuned_model,
-                    inputs=[tuned_question, tuned_context, tuned_tokens],
-                    outputs=[tuned_output, tuned_evidence],
                 )
 
             with gr.Column(

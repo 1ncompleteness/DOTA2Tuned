@@ -7,14 +7,19 @@ import polars as pl
 from dota2tuned.ui.gradio_app import (
     APP_CSS,
     APP_HEAD,
+    ASSISTANT_EXAMPLE_PROMPTS,
     CRITICAL_HEAD,
+    NAV_OPTIONS,
+    _assistant_references_html,
     _CriticalHeadMiddleware,
+    _doc_source_url,
     _dropdown_js,
     _format_item_time,
     _hero_aliases,
     _hero_choices,
     _hero_lookup,
     _parse_heroes,
+    _render_tuned_answer_html,
     _selected_hero_html,
     build_app,
     launch_app_kwargs,
@@ -106,6 +111,87 @@ def test_selected_hero_preview_ignores_transient_null_values():
     assert "<strong>Anti-Mage</strong>" in html
     assert "Hero None" not in html
     assert "Hero bad" not in html
+
+
+def test_tuned_model_is_first_nav_and_default_view():
+    source = inspect.getsource(build_app)
+
+    assert NAV_OPTIONS[0] == "Tuned Model"
+    assert 'value="Tuned Model"' in source
+    assert 'elem_id="tuned-model-view"' in source
+    assert 'elem_classes=["app-view", "assistant-landing", "d2-active"]' in source
+    assert 'elem_id="draft-coach-view", elem_classes=["app-view"]' in source
+    assert len(ASSISTANT_EXAMPLE_PROMPTS) >= 4
+    assert ".assistant-shell" in APP_CSS
+    assert "width: 100%" in APP_CSS
+    assert "justify-content: flex-start" in APP_CSS
+    assert "padding: 0;" in APP_CSS
+
+
+def test_assistant_references_link_patch_and_hero_sources():
+    docs = [
+        {
+            "id": "patch:7.41d:12",
+            "kind": "patch_change",
+            "patch": "7.41d",
+            "source": "Valve patch notes",
+            "score": "0.42",
+            "text": "Patch 7.41d Heroes: example.",
+        },
+        {
+            "id": "hero:44",
+            "kind": "stat_card",
+            "patch": "current",
+            "source": "OpenDota heroStats",
+            "score": "0.31",
+            "text": "Phantom Assassin current pro stat card.",
+        },
+    ]
+
+    html = _assistant_references_html(docs)
+
+    assert _doc_source_url(docs[0]) == "https://www.dota2.com/patches/7.41d"
+    assert _doc_source_url(docs[1]) == "https://www.opendota.com/heroes/44"
+    assert "assistant-reference" in html
+    assert "https://www.dota2.com/patches/7.41d" in html
+    assert "https://www.opendota.com/heroes/44" in html
+
+
+def test_assistant_output_includes_hero_and_item_icons():
+    docs = [
+        {
+            "id": "hero:44",
+            "kind": "stat_card",
+            "patch": "current",
+            "source": "OpenDota heroStats",
+            "score": "0.31",
+            "text": "Phantom Assassin current pro stat card.",
+        }
+    ]
+    hero_metadata = {
+        44: {
+            "name": "Phantom Assassin",
+            "icon": "https://example.test/pa.png",
+            "aliases": "PA",
+        }
+    }
+    item_metadata = {"black_king_bar": {"name": "Black King Bar"}}
+
+    html = _render_tuned_answer_html(
+        "**Phantom Assassin** should consider `Black King Bar`.",
+        docs,
+        hero_metadata,
+        item_metadata,
+    )
+
+    assert "assistant-result" in html
+    assert "<strong>Phantom Assassin</strong>" in html
+    assert "<code>Black King Bar</code>" in html
+    assert "assistant-hero" in html
+    assert "https://example.test/pa.png" in html
+    assert "assistant-item" in html
+    assert "black_king_bar.png" in html
+    assert "assistant-reference" in html
 
 
 def test_hero_multiselect_tolerates_gradio_scroll_null_payload():
@@ -201,6 +287,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "html.d2-ready .gradio-container" in APP_HEAD
     assert "html:not(.d2-ready) body::before" in APP_HEAD
     assert "html:not(.d2-ready) body::after" in APP_HEAD
+    assert "circle 22rem at 50% 50%" in APP_HEAD
+    assert "circle at 50% 42%" not in APP_HEAD
+    assert "rgba(255, 96, 70, 0.28) 0%" in APP_HEAD
+    assert "rgba(217, 177, 102, 0.15) 52%" in APP_HEAD
     assert "waitForMountedImages" in APP_HEAD
     assert "document.fonts?.ready" in APP_HEAD
     assert "25%, 75%" in logo_keyframes
@@ -330,6 +420,9 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert 'id="d2-critical"' in CRITICAL_HEAD
     assert "html:not(.d2-ready) .gradio-container" in CRITICAL_HEAD
     assert "visibility: hidden !important" in CRITICAL_HEAD
+    assert "circle 22rem at 50% 50%" in CRITICAL_HEAD
+    assert "circle at 50% 42%" not in CRITICAL_HEAD
+    assert "rgba(217, 177, 102, 0.15) 52%" in CRITICAL_HEAD
     assert 'classList.add("d2-loading")' in CRITICAL_HEAD
     assert "DOTA2Tuned" in CRITICAL_HEAD
 
