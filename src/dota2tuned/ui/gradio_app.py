@@ -19,6 +19,7 @@ from dota2tuned.train_predictor import predict_draft_win
 
 ASSET_BASE_URL = "https://cdn.cloudflare.steamstatic.com"
 DOTA_LOGO_URL = f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/global/dota2_logo_symbol.png"
+TALENT_TREE_ICON_URL = f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/icons/talent_tree_icon.png"
 STEAM_STATIC_BASE_URL = "https://cdn.steamstatic.com"
 TRAJAN_REGULAR_FONT_URL = (
     f"{STEAM_STATIC_BASE_URL}/apps/dota2/fonts/goudytrajan-regular-pro-webfont.woff"
@@ -1549,11 +1550,12 @@ __NAV_ICON_CSS__
   background: rgba(255, 96, 70, 0.10);
 }
 .build-item img {
-  width: 38px;
+  width: 52px;
   height: 38px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 3px;
-  flex: 0 0 38px;
+  flex: 0 0 52px;
+  background: rgba(5, 6, 10, 0.4);
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.32);
 }
 .build-item-order {
@@ -1618,9 +1620,9 @@ __NAV_ICON_CSS__
   gap: 10px;
 }
 .build-item-highlight img {
-  width: 48px;
+  width: 66px;
   height: 48px;
-  flex: 0 0 48px;
+  flex: 0 0 66px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 .skill-order-row {
@@ -1641,12 +1643,21 @@ __NAV_ICON_CSS__
   grid-column: span 2;
   width: 100%;
   height: 64px;
-  justify-content: center;
-  text-align: center;
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
   border: 1px solid rgba(235, 207, 135, 0.32);
   border-radius: 4px;
   background: rgba(255, 217, 140, 0.06);
   overflow: hidden;
+}
+.skill-order-talent img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  object-fit: contain;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.32);
 }
 .skill-order-talent-label {
   font-size: 10px;
@@ -3525,6 +3536,7 @@ def _build_skill_order_html(
             items_html.append(
                 f"<div class='build-item skill-order-item skill-order-talent' title='{name}'>"
                 f"<span class='build-item-order'>{pick_order}</span>"
+                f"<img src='{TALENT_TREE_ICON_URL}' alt='Talent' loading='lazy'>"
                 f"<span class='skill-order-talent-label'>{name}</span>"
                 "</div>"
             )
