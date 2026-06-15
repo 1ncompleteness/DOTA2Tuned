@@ -71,16 +71,19 @@ def test_hero_choice_labels_do_not_show_single_letter_aliases():
     ]
 
 
-def test_selected_hero_preview_is_image_only_card():
+def test_selected_hero_preview_has_text_tags_and_remove_button():
     html = _selected_hero_html(
         [1],
         {1: {"name": "Anti-Mage", "icon": "https://example.test/am.png", "roles": "Carry"}},
+        "draft-allies-dropdown",
     )
 
     assert "hero-card" in html
     assert "<img" in html
-    assert "<strong>" not in html
-    assert "entity-tag" not in html
+    assert "<strong>Anti-Mage</strong>" in html
+    assert "entity-tag" in html
+    assert "hero-card-remove" in html
+    assert "data-dota-target='draft-allies-dropdown'" in html
 
 
 def test_dropdown_js_does_not_reinject_topbar():
@@ -89,12 +92,18 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "choiceIcons" in js
     assert "ensureTopbar" not in js
     assert "dota-choice-tag" in js
+    assert "openFromChevron" in js
+    assert "removeSelectedHero" in js
+    assert "syncSidebarView" in js
+    assert "closestElement" in js
 
 
-def test_css_uses_dota_font_without_global_red_buttons():
-    assert 'font-family: "Radiance", "Noto Sans", sans-serif' in APP_CSS
+def test_css_uses_trajan_font_without_global_red_buttons():
+    assert 'font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif' in APP_CSS
     assert ".gradio-container button {" not in APP_CSS
     assert ".app-main button {" in APP_CSS
+    assert "text-transform: uppercase" in APP_CSS
+    assert ".hero-dropdown .token" in APP_CSS
 
 
 def test_parse_heroes_accepts_dropdown_values():

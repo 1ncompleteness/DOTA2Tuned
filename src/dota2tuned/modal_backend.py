@@ -133,9 +133,16 @@ if modal is not None and settings.modal_enabled:
         from fastapi import FastAPI
         from gradio.routes import mount_gradio_app
 
-        from dota2tuned.ui.gradio_app import build_app
+        from dota2tuned.ui.gradio_app import APP_CSS, build_app
 
-        return mount_gradio_app(app=FastAPI(), blocks=build_app(), path="/")
+        demo = build_app()
+        return mount_gradio_app(
+            app=FastAPI(),
+            blocks=demo,
+            path="/",
+            css=APP_CSS,
+            js=getattr(demo, "dota2tuned_js", None),
+        )
 
     @app.function(
         image=train_image,

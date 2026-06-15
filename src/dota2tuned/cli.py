@@ -200,8 +200,10 @@ def eval() -> None:
 
 @app.command()
 def serve() -> None:
+    from dota2tuned.ui.gradio_app import APP_CSS
+
     demo = build_app()
-    demo.launch()
+    demo.launch(css=APP_CSS, js=getattr(demo, "dota2tuned_js", None))
 
 
 @app.command("modal-deploy")

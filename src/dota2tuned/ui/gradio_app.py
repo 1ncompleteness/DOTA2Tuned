@@ -308,20 +308,26 @@ AMBIGUOUS_GENERATED_ALIASES = {"NS", "VS"}
 
 APP_CSS = """
 @font-face {
-  font-family: "Radiance";
-  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance.woff") format("woff");
+  font-family: "Trajan Pro";
+  src:
+    url("https://cdn.steamstatic.com/apps/dota2/fonts/goudytrajan-regular-pro-webfont.woff")
+    format("woff");
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
-  font-family: "Radiance";
-  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance-semibold.woff") format("woff");
+  font-family: "Trajan Pro";
+  src:
+    url("https://cdn.steamstatic.com/apps/dota2/fonts/goudytrajan-medium-pro-webfont.woff")
+    format("woff");
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
-  font-family: "Radiance";
-  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance-bold.woff") format("woff");
+  font-family: "Trajan Pro";
+  src:
+    url("https://cdn.steamstatic.com/apps/dota2/fonts/goudytrajan-bold-pro-webfont.woff")
+    format("woff");
   font-weight: 900;
   font-style: normal;
 }
@@ -331,7 +337,7 @@ APP_CSS = """
   padding-left: 0 !important;
   padding-right: 0 !important;
   color: #dcdedf;
-  font-family: "Radiance", "Noto Sans", sans-serif !important;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif !important;
   background:
     radial-gradient(circle at 18% -8%, rgba(255, 96, 70, 0.18), transparent 32rem),
     radial-gradient(circle at 92% 3%, rgba(171, 140, 59, 0.13), transparent 28rem),
@@ -344,7 +350,7 @@ APP_CSS = """
   width: 100% !important;
 }
 .gradio-container * {
-  font-family: "Radiance", "Noto Sans", sans-serif !important;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif !important;
   letter-spacing: 0 !important;
 }
 .gradio-container label,
@@ -474,6 +480,7 @@ APP_CSS = """
   color: #dcdedf !important;
   font-size: 13px !important;
   line-height: 16px !important;
+  text-transform: uppercase !important;
   cursor: pointer !important;
 }
 .app-sidebar .app-nav label::before {
@@ -555,6 +562,11 @@ __NAV_ICON_CSS__
   flex: 0 0 22px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.22);
 }
+.dota-choice-option .dota-choice-icon,
+.dota-choice-label,
+.dota-choice-label * {
+  pointer-events: none !important;
+}
 .dota-choice-option.dota-hero-option {
   align-items: flex-start !important;
 }
@@ -590,10 +602,25 @@ __NAV_ICON_CSS__
   font-size: 10px;
   line-height: 13px;
 }
-.hero-strip, .item-strip {
+.hero-dropdown .token,
+.hero-dropdown .token-remove.remove-all {
+  display: none !important;
+}
+.hero-dropdown .secondary-wrap {
+  width: 100% !important;
+}
+.hero-dropdown input[autocomplete="off"] {
+  min-width: 100% !important;
+}
+.hero-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 56px);
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+.item-strip {
+  display: grid;
+  gap: 8px;
   margin-top: 6px;
   pointer-events: none;
 }
@@ -617,20 +644,55 @@ __NAV_ICON_CSS__
   border-radius: 5px;
 }
 .hero-card {
-  min-height: 38px;
-  padding: 3px;
-  justify-content: center;
+  position: relative;
+  min-height: 62px;
+  padding: 8px 34px 8px 8px;
+  align-items: center;
+  overflow: hidden;
 }
 .hero-card img {
-  width: 100%;
-  height: 32px;
+  width: 48px;
+  height: 36px;
+  flex: 0 0 48px;
   object-fit: cover;
   border-radius: 2px;
+}
+.hero-card-body {
+  min-width: 0;
+}
+.app-main .hero-card-remove {
+  position: absolute !important;
+  top: 6px;
+  right: 6px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(235, 207, 135, 0.34) !important;
+  border-radius: 50% !important;
+  background: rgba(5, 6, 10, 0.72) !important;
+  color: #efe5bb !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+  cursor: pointer !important;
+}
+.app-main .hero-card-remove:hover {
+  border-color: rgba(255, 96, 70, 0.82) !important;
+  background: rgba(96, 32, 28, 0.92) !important;
+  color: #fff !important;
+  transform: none;
 }
 .entity-chip strong {
   display: block;
   font-size: 13px;
   line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .entity-tags {
   display: flex;
@@ -649,6 +711,14 @@ __NAV_ICON_CSS__
   color: #efe5bb;
   font-size: 11px;
   line-height: 14px;
+}
+.entity-tag .role-icon {
+  width: 12px !important;
+  height: 12px !important;
+  flex: 0 0 12px;
+  margin-right: 3px;
+  padding: 0;
+  border-radius: 50%;
 }
 .role-icon {
   width: 17px;
@@ -676,6 +746,37 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     return f"""
 () => {{
   const choiceIcons = {json.dumps(choice_icon_by_label)};
+  const cleanLabel = (value) => (value || "").trim().replace(/\\s+/g, " ");
+  const closestElement = (target, selector) => {{
+    if (!(target instanceof Element)) return null;
+    return target.closest(selector);
+  }};
+  const navViews = {{
+    "Draft Coach": "draft-coach-view",
+    "Hero Meta": "hero-meta-view",
+    "Tuned Model": "tuned-model-view",
+    "Match Predictor": "match-predictor-view",
+    "Builds": "builds-view",
+    "Draft Lab": "draft-lab-view",
+    "Data Freshness": "data-freshness-view"
+  }};
+  const comparableHeroName = (value) =>
+    cleanLabel(value).split(" · ", 1)[0].replace(/\\s+\\([^)]*\\)\\s*$/, "");
+  const syncSidebarView = () => {{
+    const nav = document.querySelector(".app-nav");
+    if (!nav) return;
+    const checked = nav.querySelector('input[type="radio"]:checked');
+    const label = checked ? closestElement(checked, "label") : null;
+    const selected = cleanLabel(label?.textContent || checked?.value || "Draft Coach");
+    Object.entries(navViews).forEach(([name, id]) => {{
+      const view = document.getElementById(id);
+      if (!view) return;
+      const visible = name === selected;
+      view.hidden = !visible;
+      view.style.display = visible ? "" : "none";
+      view.setAttribute("aria-hidden", visible ? "false" : "true");
+    }});
+  }};
   const decorate = () => {{
     const optionSelector = [
       '[role="option"]',
@@ -687,7 +788,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     const options = document.querySelectorAll(optionSelector);
     options.forEach((option) => {{
       if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") return;
-      const label = (option.textContent || "").trim().replace(/\\s+/g, " ");
+      const label = cleanLabel(option.textContent);
       const icon = choiceIcons[label];
       if (!icon || !icon.src) return;
       option.classList.add("dota-choice-option");
@@ -722,11 +823,84 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
     }});
   }};
+  const openDropdown = (dropdown) => {{
+    const input = dropdown?.querySelector(
+      'input[autocomplete="off"], input[role="combobox"], input'
+    );
+    if (!input) return false;
+    input.focus();
+    input.dispatchEvent(new FocusEvent("focus", {{ bubbles: true }}));
+    input.dispatchEvent(new MouseEvent(
+      "mousedown",
+      {{ bubbles: true, cancelable: true, view: window }}
+    ));
+    input.click();
+    return true;
+  }};
+  const openFromChevron = (event) => {{
+    const icon = closestElement(event.target, ".dota-dropdown .icon-wrap");
+    if (!icon) return;
+    const dropdown = icon.closest(".dota-dropdown");
+    if (!dropdown) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openDropdown(dropdown);
+    setTimeout(decorate, 0);
+  }};
+  const removeSelectedHero = (event) => {{
+    const button = closestElement(event.target, ".hero-card-remove");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const dropdown = document.getElementById(button.dataset.dotaTarget || "");
+    if (!dropdown) return;
+    const wantedName = comparableHeroName(button.dataset.dotaHeroName || "");
+    const token = Array.from(dropdown.querySelectorAll(".token")).find((candidate) => {{
+      const tokenName = comparableHeroName(candidate.textContent || "");
+      return tokenName === wantedName || tokenName.startsWith(wantedName);
+    }});
+    const removeButton = token?.querySelector(".token-remove:not(.remove-all)");
+    if (removeButton) {{
+      removeButton.click();
+      setTimeout(decorate, 0);
+      return;
+    }}
+    if (!openDropdown(dropdown)) return;
+    setTimeout(() => {{
+      const option = Array.from(document.querySelectorAll(
+        '[role="option"], .option, .dropdown-option, li[data-index]'
+      )).find((candidate) => {{
+        const optionName = comparableHeroName(candidate.textContent || "");
+        return optionName === wantedName || optionName.startsWith(wantedName);
+      }});
+      option?.dispatchEvent(new MouseEvent(
+        "mousedown",
+        {{ bubbles: true, cancelable: true, view: window }}
+      ));
+      setTimeout(decorate, 0);
+    }}, 0);
+  }};
+  const activateSidebarNav = (event) => {{
+    const label = closestElement(event.target, ".app-nav label");
+    if (!label) return;
+    const input = label.querySelector('input[type="radio"]');
+    if (input && !input.checked) {{
+      input.checked = true;
+      input.dispatchEvent(new Event("input", {{ bubbles: true }}));
+      input.dispatchEvent(new Event("change", {{ bubbles: true }}));
+    }}
+    setTimeout(syncSidebarView, 0);
+  }};
   const observer = new MutationObserver(decorate);
   observer.observe(document.body, {{ childList: true, subtree: true }});
+  document.addEventListener("mousedown", openFromChevron, true);
+  document.addEventListener("click", activateSidebarNav, true);
+  document.addEventListener("change", syncSidebarView, true);
+  document.addEventListener("click", removeSelectedHero, true);
   document.addEventListener("click", () => setTimeout(decorate, 0), true);
   document.addEventListener("keyup", () => setTimeout(decorate, 0), true);
   decorate();
+  syncSidebarView();
 }}
 """
 
@@ -952,8 +1126,7 @@ def _sidebar_brand_html() -> str:
     return (
         "<div class='app-sidebar-brand'>"
         f"<img src='{logo}' alt='Dota 2' loading='eager'>"
-        "<div class='app-title'><strong>DOTA2Tuned</strong>"
-        "<span>Draft, meta, counters, builds, and match prediction</span></div>"
+        "<div class='app-title'><strong>DOTA2Tuned</strong></div>"
         "</div>"
     )
 
@@ -973,7 +1146,9 @@ def _item_choices(items: pl.DataFrame) -> list[tuple[str, str]]:
     return sorted(choices, key=lambda item: item[0])
 
 
-def _selected_hero_html(hero_ids: object, metadata: dict[int, dict[str, str]]) -> str:
+def _selected_hero_html(
+    hero_ids: object, metadata: dict[int, dict[str, str]], target: str | None = None
+) -> str:
     if not isinstance(hero_ids, list) or not hero_ids:
         return "<div class='hero-strip'></div>"
     chips = []
@@ -982,11 +1157,20 @@ def _selected_hero_html(hero_ids: object, metadata: dict[int, dict[str, str]]) -
         row = metadata.get(hero_id, {})
         name = _html_escape(row.get("name") or f"Hero {hero_id}")
         icon = _html_escape(row.get("icon") or "")
-        if icon:
-            chips.append(
-                f"<div class='entity-chip hero-card' title='{name}'>"
-                f"<img src='{icon}' alt='{name}' loading='lazy'></div>"
+        img = f"<img src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+        remove = ""
+        if target:
+            remove = (
+                "<button type='button' class='hero-card-remove' "
+                f"data-dota-target='{_html_escape(target)}' "
+                f"data-dota-hero-id='{hero_id}' data-dota-hero-name='{name}' "
+                f"aria-label='Remove {name}' title='Remove {name}'>x</button>"
             )
+        chips.append(
+            f"<div class='entity-chip hero-card' title='{name}' data-dota-hero-id='{hero_id}'>"
+            f"{img}<div class='hero-card-body'><strong>{name}</strong>"
+            f"{_role_tags_html(row.get('roles'))}</div>{remove}</div>"
+        )
     return "<div class='hero-strip'>" + "".join(chips) + "</div>"
 
 
@@ -1066,8 +1250,11 @@ def build_app() -> gr.Blocks:
     item_table = read_parquet(settings.parquet_dir / "dim_item.parquet")
     item_choices = _item_choices(item_table)
 
-    def hero_preview(hero_ids: list[int] | None) -> str:
-        return _selected_hero_html(hero_ids or [], hero_metadata)
+    def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str:
+        return _selected_hero_html(hero_ids or [], hero_metadata, target)
+
+    def hero_preview_for(target: str):
+        return lambda hero_ids: hero_preview(hero_ids, target)
 
     def hero_single_preview(hero_id: int | None) -> str:
         return hero_preview([hero_id] if hero_id else [])
@@ -1219,7 +1406,6 @@ def build_app() -> gr.Blocks:
         return tuple(gr.update(visible=label == selected) for label in NAV_OPTIONS)
 
     with gr.Blocks(title="DOTA2Tuned") as demo:
-        gr.HTML(f"<style>{APP_CSS}</style>")
         with gr.Sidebar(open=True, width=238, position="left", elem_classes=["app-sidebar"]):
             gr.HTML(_sidebar_brand_html())
             with gr.Column(elem_classes=["app-sidebar-nav-section"]):
@@ -1231,7 +1417,9 @@ def build_app() -> gr.Blocks:
                     elem_classes=["app-nav"],
                 )
         with gr.Column(elem_classes=["app-main"]):
-            with gr.Column(visible=True, elem_classes=["app-view"]) as draft_view:
+            with gr.Column(
+                visible=True, elem_id="draft-coach-view", elem_classes=["app-view"]
+            ) as draft_view:
                 with gr.Row():
                     allies = gr.Dropdown(
                         choices=hero_choices,
@@ -1239,6 +1427,7 @@ def build_app() -> gr.Blocks:
                         multiselect=True,
                         filterable=True,
                         max_choices=5,
+                        elem_id="draft-allies-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                     enemies = gr.Dropdown(
@@ -1248,6 +1437,7 @@ def build_app() -> gr.Blocks:
                         multiselect=True,
                         filterable=True,
                         max_choices=5,
+                        elem_id="draft-enemies-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                     bans = gr.Dropdown(
@@ -1255,6 +1445,7 @@ def build_app() -> gr.Blocks:
                         label="Banned heroes",
                         multiselect=True,
                         filterable=True,
+                        elem_id="draft-bans-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
 
@@ -1280,11 +1471,12 @@ def build_app() -> gr.Blocks:
                             update_choices,
                             inputs=[allies, enemies, bans],
                             outputs=[allies, enemies, bans],
+                            api_visibility="private",
                         )
                 with gr.Row():
-                    ally_preview = gr.HTML(hero_preview([]))
-                    enemy_preview = gr.HTML(hero_preview([44, 30]))
-                    ban_preview = gr.HTML(hero_preview([]))
+                    ally_preview = gr.HTML(hero_preview([], "draft-allies-dropdown"))
+                    enemy_preview = gr.HTML(hero_preview([44, 30], "draft-enemies-dropdown"))
+                    ban_preview = gr.HTML(hero_preview([], "draft-bans-dropdown"))
                 with gr.Row():
                     role = gr.Dropdown(
                         choices=ROLE_OPTIONS,
@@ -1301,16 +1493,33 @@ def build_app() -> gr.Blocks:
                 run = gr.Button("Recommend")
                 rec_output = gr.Markdown()
                 evidence_output = gr.Code(label="Evidence", language="json")
-                allies.change(hero_preview, inputs=[allies], outputs=[ally_preview])
-                enemies.change(hero_preview, inputs=[enemies], outputs=[enemy_preview])
-                bans.change(hero_preview, inputs=[bans], outputs=[ban_preview])
+                allies.change(
+                    hero_preview_for("draft-allies-dropdown"),
+                    inputs=[allies],
+                    outputs=[ally_preview],
+                    api_visibility="private",
+                )
+                enemies.change(
+                    hero_preview_for("draft-enemies-dropdown"),
+                    inputs=[enemies],
+                    outputs=[enemy_preview],
+                    api_visibility="private",
+                )
+                bans.change(
+                    hero_preview_for("draft-bans-dropdown"),
+                    inputs=[bans],
+                    outputs=[ban_preview],
+                    api_visibility="private",
+                )
                 run.click(
                     draft_coach,
                     inputs=[allies, enemies, bans, role, scope],
                     outputs=[rec_output, evidence_output],
                 )
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as hero_meta_view:
+            with gr.Column(
+                visible=False, elem_id="hero-meta-view", elem_classes=["app-view"]
+            ) as hero_meta_view:
                 with gr.Row():
                     meta_hero = gr.Dropdown(
                         choices=hero_choices,
@@ -1334,15 +1543,23 @@ def build_app() -> gr.Blocks:
                     hero_single_preview,
                     inputs=[meta_hero],
                     outputs=[meta_hero_preview],
+                    api_visibility="private",
                 )
-                meta_item.change(item_preview, inputs=[meta_item], outputs=[meta_item_preview])
+                meta_item.change(
+                    item_preview,
+                    inputs=[meta_item],
+                    outputs=[meta_item_preview],
+                    api_visibility="private",
+                )
                 meta_button.click(
                     hero_meta,
                     inputs=[query, meta_hero, meta_item],
                     outputs=[meta_output],
                 )
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as tuned_model_view:
+            with gr.Column(
+                visible=False, elem_id="tuned-model-view", elem_classes=["app-view"]
+            ) as tuned_model_view:
                 tuned_question = gr.Textbox(
                     label="Question",
                     value=(
@@ -1371,7 +1588,9 @@ def build_app() -> gr.Blocks:
                     outputs=[tuned_output, tuned_evidence],
                 )
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as match_predictor_view:
+            with gr.Column(
+                visible=False, elem_id="match-predictor-view", elem_classes=["app-view"]
+            ) as match_predictor_view:
                 with gr.Row():
                     radiant = gr.Dropdown(
                         choices=hero_choices,
@@ -1380,6 +1599,7 @@ def build_app() -> gr.Blocks:
                         multiselect=True,
                         filterable=True,
                         max_choices=5,
+                        elem_id="predict-radiant-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                     dire = gr.Dropdown(
@@ -1389,22 +1609,39 @@ def build_app() -> gr.Blocks:
                         multiselect=True,
                         filterable=True,
                         max_choices=5,
+                        elem_id="predict-dire-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                 with gr.Row():
-                    radiant_preview = gr.HTML(hero_preview([1, 2, 3, 25, 5]))
-                    dire_preview = gr.HTML(hero_preview([14, 74, 6, 26, 18]))
+                    radiant_preview = gr.HTML(
+                        hero_preview([1, 2, 3, 25, 5], "predict-radiant-dropdown")
+                    )
+                    dire_preview = gr.HTML(
+                        hero_preview([14, 74, 6, 26, 18], "predict-dire-dropdown")
+                    )
                 predict_button = gr.Button("Predict")
                 predict_output = gr.Code(label="Prediction", language="json")
-                radiant.change(hero_preview, inputs=[radiant], outputs=[radiant_preview])
-                dire.change(hero_preview, inputs=[dire], outputs=[dire_preview])
+                radiant.change(
+                    hero_preview_for("predict-radiant-dropdown"),
+                    inputs=[radiant],
+                    outputs=[radiant_preview],
+                    api_visibility="private",
+                )
+                dire.change(
+                    hero_preview_for("predict-dire-dropdown"),
+                    inputs=[dire],
+                    outputs=[dire_preview],
+                    api_visibility="private",
+                )
                 predict_button.click(
                     match_predictor,
                     inputs=[radiant, dire],
                     outputs=[predict_output],
                 )
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as builds_view:
+            with gr.Column(
+                visible=False, elem_id="builds-view", elem_classes=["app-view"]
+            ) as builds_view:
                 with gr.Row():
                     hero = gr.Dropdown(
                         choices=hero_choices,
@@ -1428,11 +1665,19 @@ def build_app() -> gr.Blocks:
                     hero_single_preview,
                     inputs=[hero],
                     outputs=[build_hero_preview],
+                    api_visibility="private",
                 )
-                build_item.change(item_preview, inputs=[build_item], outputs=[build_item_preview])
+                build_item.change(
+                    item_preview,
+                    inputs=[build_item],
+                    outputs=[build_item_preview],
+                    api_visibility="private",
+                )
                 builds_button.click(hero_builds, inputs=[hero, build_item], outputs=[builds_output])
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as draft_lab_view:
+            with gr.Column(
+                visible=False, elem_id="draft-lab-view", elem_classes=["app-view"]
+            ) as draft_lab_view:
                 lab_enemies = gr.Dropdown(
                     choices=hero_choices,
                     label="Enemy heroes",
@@ -1440,9 +1685,10 @@ def build_app() -> gr.Blocks:
                     multiselect=True,
                     filterable=True,
                     max_choices=5,
+                    elem_id="lab-enemies-dropdown",
                     elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
-                lab_enemy_preview = gr.HTML(hero_preview([44, 30]))
+                lab_enemy_preview = gr.HTML(hero_preview([44, 30], "lab-enemies-dropdown"))
                 lab_role = gr.Dropdown(
                     choices=ROLE_OPTIONS,
                     label="Role",
@@ -1457,14 +1703,21 @@ def build_app() -> gr.Blocks:
                 )
                 lab_button = gr.Button("Generate Draft Lab Card")
                 lab_output = gr.Markdown()
-                lab_enemies.change(hero_preview, inputs=[lab_enemies], outputs=[lab_enemy_preview])
+                lab_enemies.change(
+                    hero_preview_for("lab-enemies-dropdown"),
+                    inputs=[lab_enemies],
+                    outputs=[lab_enemy_preview],
+                    api_visibility="private",
+                )
                 lab_button.click(
                     draft_lab,
                     inputs=[lab_enemies, lab_role, lab_twist],
                     outputs=[lab_output],
                 )
 
-            with gr.Column(visible=False, elem_classes=["app-view"]) as data_freshness_view:
+            with gr.Column(
+                visible=False, elem_id="data-freshness-view", elem_classes=["app-view"]
+            ) as data_freshness_view:
                 status_button = gr.Button("Refresh")
                 status_output = gr.Markdown()
                 status_button.click(data_status, outputs=[status_output])
@@ -1483,5 +1736,7 @@ def build_app() -> gr.Blocks:
             api_visibility="private",
         )
 
+    demo.css = APP_CSS
     demo.dota2tuned_js = _dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata))
+    demo.js = demo.dota2tuned_js
     return demo
