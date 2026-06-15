@@ -30,6 +30,9 @@ SCHEMAS: dict[str, dict[str, pl.DataType]] = {
         "secret_shop": pl.Boolean,
         "side_shop": pl.Boolean,
         "recipe": pl.Boolean,
+        "attrib": pl.Utf8,
+        "notes": pl.Utf8,
+        "lore": pl.Utf8,
     },
     "dim_patch": {
         "patch_id": pl.Int64,
@@ -144,6 +147,38 @@ def normalize_hero_stats(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return output
 
 
+def _format_attrib(attrib: Any) -> str | None:
+    if not isinstance(attrib, list):
+        return None
+    parts = []
+    for entry in attrib:
+        if not isinstance(entry, dict):
+            continue
+        header = str(entry.get("header") or "").replace("%", "").strip()
+        value = entry.get("value")
+        footer = str(entry.get("footer") or "").strip()
+        if not header:
+            continue
+        if isinstance(value, list):
+            value_text = "/".join(str(item) for item in value)
+        else:
+            value_text = str(value) if value is not None else ""
+        text = header.replace("{value}", value_text) if "{value}" in header else f"{header} {value_text}".strip()
+        if footer:
+            text = f"{text} {footer}"
+        parts.append(text.strip())
+    return "; ".join(part for part in parts if part) or None
+
+
+def _format_notes(notes: Any) -> str | None:
+    if isinstance(notes, list):
+        cleaned = [str(note).strip() for note in notes if str(note).strip()]
+        return " | ".join(cleaned) or None
+    if isinstance(notes, str) and notes.strip():
+        return notes.strip()
+    return None
+
+
 def normalize_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     for row in rows:
@@ -161,6 +196,9 @@ def normalize_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "secret_shop": row.get("secret_shop"),
                 "side_shop": row.get("side_shop"),
                 "recipe": row.get("recipe"),
+                "attrib": _format_attrib(row.get("attrib")),
+                "notes": _format_notes(row.get("notes")),
+                "lore": str(row.get("lore")).strip() if row.get("lore") else None,
             }
         )
     return output
