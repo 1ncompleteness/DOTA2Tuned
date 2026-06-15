@@ -6,14 +6,14 @@ from typing import Any
 from dota2tuned.config import Settings
 
 JOB_DEPENDENCIES = [
-    "datasets",
-    "transformers",
-    "trl",
-    "peft",
-    "bitsandbytes",
-    "accelerate",
-    "huggingface_hub",
-    "hf-transfer",
+    "datasets>=5.0.0",
+    "transformers>=5.12.0",
+    "trl>=1.6.0",
+    "peft>=0.19.1",
+    "bitsandbytes>=0.49.2",
+    "accelerate>=1.14.0",
+    "huggingface-hub>=1.19.0",
+    "hf-transfer>=0.1.9",
 ]
 
 JOB_ENV = {
@@ -26,13 +26,14 @@ JOB_ENV = {
 
 TRAIN_SCRIPT = """# /// script
 # dependencies = [
-#   "datasets",
-#   "transformers",
-#   "trl",
-#   "peft",
-#   "bitsandbytes",
-#   "accelerate",
-#   "huggingface_hub",
+#   "datasets>=5.0.0",
+#   "transformers>=5.12.0",
+#   "trl>=1.6.0",
+#   "peft>=0.19.1",
+#   "bitsandbytes>=0.49.2",
+#   "accelerate>=1.14.0",
+#   "huggingface-hub>=1.19.0",
+#   "hf-transfer>=0.1.9",
 # ]
 # ///
 import torch

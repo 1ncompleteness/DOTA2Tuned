@@ -126,3 +126,36 @@ def test_recommendations_use_player_match_samples_for_confidence(tmp_path: Path)
     assert recs[0].sample_size == 150
     assert recs[0].confidence == "medium"
     assert "normalized player matches" in recs[0].sources
+
+
+def test_pair_lift_matches_filter_aggregate_semantics(tmp_path: Path):
+    write_parquet(
+        tmp_path / "dim_hero.parquet",
+        [{"hero_id": 1, "hero_name": "Anti-Mage", "roles": "Carry", "pro_pick": 10, "pro_win": 6}],
+    )
+    write_parquet(
+        tmp_path / "fact_hero_pair_stats.parquet",
+        [
+            {"hero_id": 1, "other_hero_id": 9, "relation": "enemy", "win_rate": 0.6, "games": 100},
+            {"hero_id": 1, "other_hero_id": 8, "relation": "enemy", "win_rate": 0.4, "games": 50},
+            {"hero_id": 1, "other_hero_id": 7, "relation": "ally", "win_rate": 0.7, "games": 30},
+        ],
+    )
+    rec = DraftRecommender(tmp_path)
+
+    # mean(0.6, 0.4) = 0.5 -> (0.5 - 0.5) * 0.25 = 0.0 ; games summed across matches
+    assert rec._pair_lift(1, [9, 8], "enemy") == (0.0, 150)
+    # single match: (0.6 - 0.5) * 0.25 = 0.025
+    lift, games = rec._pair_lift(1, [9], "enemy")
+    assert games == 100
+    assert round(lift, 6) == 0.025
+    # ally relation is indexed separately from enemy
+    lift, games = rec._pair_lift(1, [7], "ally")
+    assert games == 30
+    assert round(lift, 6) == 0.05
+    # duplicates behave like is_in membership, not double counting
+    assert rec._pair_lift(1, [9, 9], "enemy") == rec._pair_lift(1, [9], "enemy")
+    # misses, empty input, and wrong relation all yield (0.0, 0)
+    assert rec._pair_lift(1, [999], "enemy") == (0.0, 0)
+    assert rec._pair_lift(1, [], "enemy") == (0.0, 0)
+    assert rec._pair_lift(1, [7], "enemy") == (0.0, 0)

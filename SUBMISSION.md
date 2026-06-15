@@ -31,6 +31,7 @@ Do not claim the Off the Grid or Local-first badges. The app uses Modal for the 
 - [x] Modal adapter inference passed.
 - [x] Fine-tuned adapter is published on Hugging Face.
 - [x] Compact serving artifacts are uploaded with the Space.
+- [x] Expanded sample artifacts include 1,604 enriched match details and 16,040 player-match rows.
 - [x] Dataset card is prepared for the Hub dataset.
 - [x] Repository license is declared as Apache-2.0.
 - [x] GitHub `main` is pushed and clean.

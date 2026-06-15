@@ -141,6 +141,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 18:07: removed the sidebar brand subtitle and added client-side sidebar navigation synchronization with stable view IDs so page content switches on the first click while the Gradio backend visibility callback catches up.
 - 2026-06-14 18:08: tightened role icon sizing inside hero-card tag pills so tag icons fit the allocated pill height instead of inheriting larger card image dimensions.
 - 2026-06-14 18:30: constrained Gradio dropdown overlays to the trigger/viewport width, scoped listbox CSS to `.dota-dropdown`, hid horizontal overflow, and added a runtime clamp that repositions fixed dropdown menus on open, scroll, and resize so long hero labels no longer push menus outside the field.
+- 2026-06-14 21:20: resolved the GitHub merge conflict in `src/dota2tuned/ui/gradio_app.py` by keeping the new Builds page while preserving the JS-only sidebar switching and dropdown clamp fixes. Refreshed direct dependency minimums and `uv.lock` to the latest resolved set, including Gradio `6.18.0`, FastAPI `0.137.0`, Transformers `5.12.0`, Torch `2.12.0`, Datasets `5.0.0`, and matching Modal/HF training dependency lists. Validation passed with `uv lock --check`, `uv run ruff check app.py src tests`, `uv run pytest -q`, and a Gradio app-construction smoke check.
 
 ## Adapter Eval Notes
 

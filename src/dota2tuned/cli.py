@@ -200,10 +200,18 @@ def eval() -> None:
 
 @app.command()
 def serve() -> None:
-    from dota2tuned.ui.gradio_app import APP_CSS
+    import gradio as gr
+
+    from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD
 
     demo = build_app()
-    demo.launch(css=APP_CSS, js=getattr(demo, "dota2tuned_js", None))
+    # Load JS is attached inside build_app via demo.load(); launch(js=) does not
+    # run on page load in Gradio 6.18.
+    demo.launch(
+        css=APP_CSS,
+        head=APP_HEAD,
+        theme=gr.themes.Soft(),
+    )
 
 
 @app.command("modal-deploy")

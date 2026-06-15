@@ -163,7 +163,10 @@ def _format_attrib(attrib: Any) -> str | None:
             value_text = "/".join(str(item) for item in value)
         else:
             value_text = str(value) if value is not None else ""
-        text = header.replace("{value}", value_text) if "{value}" in header else f"{header} {value_text}".strip()
+        if "{value}" in header:
+            text = header.replace("{value}", value_text)
+        else:
+            text = f"{header} {value_text}".strip()
         if footer:
             text = f"{text} {footer}"
         parts.append(text.strip())

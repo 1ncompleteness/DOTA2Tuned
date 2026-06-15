@@ -58,6 +58,7 @@ class DraftRecommender:
         self.pairs = read_parquet(parquet_dir / "fact_hero_pair_stats.parquet")
         self.players = read_parquet(parquet_dir / "fact_player_match.parquet")
         self.hero_samples = self._load_hero_samples()
+        self._pair_index = self._build_pair_index()
 
     def ready(self) -> bool:
         return not self.heroes.is_empty()
@@ -127,17 +128,48 @@ class DraftRecommender:
             for row in grouped.iter_rows(named=True)
         }
 
+    def _build_pair_index(
+        self,
+    ) -> dict[tuple[str, int], dict[int, list[tuple[float | None, int]]]]:
+        """Index pair stats by (relation, hero_id) -> other_hero_id -> [(win_rate, games)].
+
+        Precomputed once so ``_pair_lift`` is a handful of dict lookups instead of a
+        full ``pairs`` scan per candidate hero. Results match the previous
+        filter+aggregate exactly (mean ignores null win_rate; games sum treats
+        null as 0).
+        """
+        index: dict[tuple[str, int], dict[int, list[tuple[float | None, int]]]] = {}
+        if self.pairs.is_empty():
+            return index
+        for row in self.pairs.iter_rows(named=True):
+            relation = str(row.get("relation") or "")
+            hero_id = int(row["hero_id"])
+            other_id = int(row["other_hero_id"])
+            win_rate = row.get("win_rate")
+            games = int(row.get("games") or 0)
+            bucket = index.setdefault((relation, hero_id), {})
+            bucket.setdefault(other_id, []).append(
+                (float(win_rate) if win_rate is not None else None, games)
+            )
+        return index
+
     def _pair_lift(self, hero_id: int, others: list[int], relation: str) -> tuple[float, int]:
-        if self.pairs.is_empty() or not others:
+        if not others:
             return 0.0, 0
-        subset = self.pairs.filter(
-            (pl.col("hero_id") == hero_id)
-            & (pl.col("other_hero_id").is_in(others))
-            & (pl.col("relation") == relation)
-        )
-        if subset.is_empty():
+        bucket = self._pair_index.get((relation, hero_id))
+        if not bucket:
             return 0.0, 0
-        avg = subset.select(pl.col("win_rate").mean()).item()
-        games = subset.select(pl.col("games").sum()).item()
+        win_rates: list[float] = []
+        games = 0
+        matched = False
+        for other_id in set(others):
+            for win_rate, pair_games in bucket.get(other_id, ()):
+                matched = True
+                games += pair_games
+                if win_rate is not None:
+                    win_rates.append(win_rate)
+        if not matched:
+            return 0.0, 0
+        avg = sum(win_rates) / len(win_rates) if win_rates else None
         lift = float(avg - 0.5) * 0.25 if avg is not None else 0.0
-        return lift, int(games or 0)
+        return lift, int(games)

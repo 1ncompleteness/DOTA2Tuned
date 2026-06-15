@@ -21,31 +21,31 @@ REMOTE_CACHE = Path("/cache")
 REMOTE_OUTPUTS = Path("/outputs")
 
 CORE_DEPS = [
-    "duckdb>=1.1.0",
-    "fastapi[standard]>=0.115.0",
-    "gradio>=5.0.0",
-    "httpx>=0.27.0",
-    "huggingface-hub>=1.0.0",
-    "joblib>=1.4.0",
-    "numpy>=1.26.0",
-    "polars>=1.0.0",
-    "pyarrow>=16.0.0",
-    "pydantic>=2.8.0",
-    "python-dotenv>=1.0.0",
-    "scikit-learn>=1.5.0",
-    "tenacity>=8.3.0",
+    "duckdb>=1.5.3",
+    "fastapi[standard]>=0.137.0",
+    "gradio>=6.18.0",
+    "httpx>=0.28.1",
+    "huggingface-hub>=1.19.0",
+    "joblib>=1.5.3",
+    "numpy>=2.4.6",
+    "polars>=1.41.2",
+    "pyarrow>=24.0.0",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "scikit-learn>=1.9.0",
+    "tenacity>=9.1.4",
 ]
 
 TRAIN_DEPS = [
     *CORE_DEPS,
-    "accelerate>=1.0.0",
-    "bitsandbytes>=0.44.0",
-    "datasets>=3.0.0",
+    "accelerate>=1.14.0",
+    "bitsandbytes>=0.49.2",
+    "datasets>=5.0.0",
     "hf-transfer>=0.1.9",
-    "peft>=0.13.0",
-    "torch>=2.4.0",
-    "transformers>=4.51.0",
-    "trl>=0.25.0",
+    "peft>=0.19.1",
+    "torch>=2.12.0",
+    "transformers>=5.12.0",
+    "trl>=1.6.0",
 ]
 
 REMOTE_ENV = {
@@ -133,7 +133,7 @@ if modal is not None and settings.modal_enabled:
         from fastapi import FastAPI
         from gradio.routes import mount_gradio_app
 
-        from dota2tuned.ui.gradio_app import APP_CSS, build_app
+        from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD, build_app
 
         demo = build_app()
         return mount_gradio_app(
@@ -141,7 +141,7 @@ if modal is not None and settings.modal_enabled:
             blocks=demo,
             path="/",
             css=APP_CSS,
-            js=getattr(demo, "dota2tuned_js", None),
+            head=APP_HEAD,
         )
 
     @app.function(

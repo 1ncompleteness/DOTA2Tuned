@@ -332,6 +332,7 @@ APP_CSS = """
     format("woff");
   font-weight: 400;
   font-style: normal;
+  font-display: swap;
 }
 @font-face {
   font-family: "Trajan Pro";
@@ -340,6 +341,7 @@ APP_CSS = """
     format("woff");
   font-weight: 700;
   font-style: normal;
+  font-display: swap;
 }
 @font-face {
   font-family: "Trajan Pro";
@@ -348,6 +350,53 @@ APP_CSS = """
     format("woff");
   font-weight: 900;
   font-style: normal;
+  font-display: swap;
+}
+/* Dark palette: single source of truth (app is dark-only, WCAG 2.2 AA). */
+:root {
+  --d2-bg: #0d0f13;
+  --d2-fg: #dcdedf;
+  --d2-fg-strong: #f1f3f4;
+  --d2-fg-muted: #9ba2aa;
+  --d2-gold: #d9b166;
+  --d2-gold-soft: #efe5bb;
+  --d2-red: #ff6046;
+  --d2-red-strong: #c2452f;
+  --d2-focus: #ff7a63;
+  --d2-border: #7d8893;
+  --d2-border-menu: #8a96a3;
+  --d2-scroll-thumb: #8a96a3;
+}
+/* Single dark palette, applied unconditionally (no ?__theme=dark redirect).
+   Map Gradio's semantic theme variables to their dark values so every built-in
+   component renders dark regardless of system preference or the .dark body
+   class. Set on .gradio-container so the subtree inherits these over body.dark
+   and :root. Branded surfaces are further styled by the !important rules below. */
+.gradio-container,
+.gradio-container.dark {
+  color-scheme: dark;
+  --background-fill-primary: var(--neutral-950);
+  --background-fill-secondary: var(--neutral-900);
+  --body-background-fill: var(--neutral-950);
+  --body-text-color: var(--neutral-100);
+  --body-text-color-subdued: var(--neutral-400);
+  --border-color-primary: var(--neutral-700);
+  --border-color-accent: var(--neutral-600);
+  --block-background-fill: var(--neutral-800);
+  --block-border-color: var(--neutral-700);
+  --block-label-background-fill: var(--primary-600);
+  --block-label-text-color: #fff;
+  --block-title-text-color: #fff;
+  --panel-background-fill: var(--neutral-900);
+  --panel-border-color: var(--neutral-700);
+  --input-background-fill: var(--neutral-700);
+  --input-border-color: var(--neutral-700);
+  --input-placeholder-color: var(--neutral-500);
+  --code-background-fill: var(--neutral-800);
+  --table-even-background-fill: var(--neutral-950);
+  --table-odd-background-fill: var(--neutral-900);
+  --table-border-color: var(--neutral-700);
+  --color-accent-soft: var(--neutral-700);
 }
 .gradio-container {
   max-width: none !important;
@@ -367,7 +416,17 @@ APP_CSS = """
   max-width: none !important;
   width: 100% !important;
 }
-.gradio-container * {
+.gradio-container button,
+.gradio-container input,
+.gradio-container textarea,
+.gradio-container select,
+.gradio-container label,
+.gradio-container .prose,
+.gradio-container .markdown,
+.gradio-container h1,
+.gradio-container h2,
+.gradio-container h3,
+.gradio-container h4 {
   font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif !important;
   letter-spacing: 0 !important;
 }
@@ -386,13 +445,18 @@ APP_CSS = """
 .gradio-container textarea,
 .gradio-container input,
 .gradio-container .wrap-inner {
-  border-color: rgba(103, 112, 123, 0.42) !important;
+  border-color: var(--d2-border) !important;
   background: rgba(22, 22, 24, 0.70) !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035) !important;
 }
 .gradio-container textarea,
 .gradio-container input {
-  color: #efe5bb !important;
+  color: var(--d2-gold-soft) !important;
+}
+.gradio-container :focus-visible {
+  outline: 2px solid var(--d2-focus) !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
 }
 .app-main button {
   border: 1px solid rgba(255, 96, 70, 0.42) !important;
@@ -406,7 +470,7 @@ APP_CSS = """
 .app-main button:hover {
   border-color: rgba(255, 96, 70, 0.74) !important;
   background:
-    linear-gradient(180deg, rgba(234, 105, 83, 0.98), rgba(126, 43, 34, 0.98)) !important;
+    linear-gradient(180deg, var(--d2-red-strong), rgba(126, 43, 34, 0.98)) !important;
   transform: translateY(-1px);
 }
 .app-main button:active {
@@ -449,7 +513,7 @@ APP_CSS = """
   min-height: 62px;
   padding: 8px 4px 16px;
   margin: 0 0 10px;
-  border-bottom: 1px solid rgba(235, 207, 135, 0.18);
+  border-bottom: 1px solid rgba(235, 207, 135, 0.60);
 }
 .app-sidebar-brand img {
   width: 34px;
@@ -466,7 +530,7 @@ APP_CSS = """
 }
 .app-sidebar-brand span {
   display: block;
-  color: #8b929a;
+  color: var(--d2-fg-muted);
   font-size: 12px;
   line-height: 15px;
 }
@@ -482,7 +546,16 @@ APP_CSS = """
   gap: 2px !important;
 }
 .app-sidebar .app-nav input[type="radio"] {
-  display: none !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
 }
 .app-sidebar .app-nav label {
   display: flex !important;
@@ -512,12 +585,18 @@ APP_CSS = """
   opacity: 0.72;
 }
 .app-sidebar .app-nav label:has(input:checked) {
-  background: transparent !important;
-  color: #ff6046 !important;
+  background: rgba(255, 96, 70, 0.10) !important;
+  color: var(--d2-red) !important;
+  box-shadow: inset 3px 0 0 var(--d2-red) !important;
+  font-weight: 900 !important;
 }
 .app-sidebar .app-nav label:has(input:checked)::before {
   opacity: 1;
   filter: drop-shadow(0 0 8px rgba(255, 96, 70, 0.45));
+}
+.app-sidebar .app-nav label:has(input:focus-visible) {
+  outline: 2px solid var(--d2-focus) !important;
+  outline-offset: -2px !important;
 }
 __NAV_ICON_CSS__
 .app-main {
@@ -537,6 +616,12 @@ __NAV_ICON_CSS__
 .app-view > .block {
   width: 100%;
 }
+/* All views stay mounted (visible=True); JS toggles .d2-active to switch tabs.
+   This keeps view visibility fully under our control instead of Gradio's
+   visible= toggle, which left freshly-selected tabs blank until re-selected. */
+.app-view:not(.d2-active) {
+  display: none !important;
+}
 .dota-dropdown {
   position: relative;
   z-index: 20;
@@ -544,10 +629,8 @@ __NAV_ICON_CSS__
 .dota-dropdown:focus-within {
   z-index: 2500;
 }
-.dota-dropdown [role="listbox"],
-.dota-dropdown .options,
-.dota-dropdown .dropdown-options,
-.dota-dropdown .svelte-select-list {
+.dota-dropdown ul[role="listbox"],
+.dota-dropdown .options {
   z-index: 4000 !important;
   pointer-events: auto !important;
   min-width: 0 !important;
@@ -555,24 +638,48 @@ __NAV_ICON_CSS__
   overflow-x: hidden !important;
   overscroll-behavior: contain;
   box-sizing: border-box !important;
-  border: 1px solid rgba(103, 112, 123, 0.55) !important;
+  border: 1px solid var(--d2-border-menu) !important;
   background: linear-gradient(180deg, #36363e 0%, #23262e 100%) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.58) !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--d2-scroll-thumb) transparent;
 }
-.dota-dropdown [role="option"],
-.dota-dropdown .option,
-.dota-dropdown .dropdown-option,
-.dota-dropdown .svelte-select-list div {
-  color: #dcdedf !important;
+.dota-dropdown ul[role="listbox"]::-webkit-scrollbar,
+.dota-dropdown .options::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.dota-dropdown ul[role="listbox"]::-webkit-scrollbar-track,
+.dota-dropdown .options::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dota-dropdown ul[role="listbox"]::-webkit-scrollbar-thumb,
+.dota-dropdown .options::-webkit-scrollbar-thumb {
+  background: var(--d2-scroll-thumb);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+.dota-dropdown [role="option"] {
+  color: var(--d2-fg) !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
 }
-.dota-dropdown [role="option"]:hover,
-.dota-dropdown .option:hover,
-.dota-dropdown .dropdown-option:hover,
-.dota-dropdown .svelte-select-list div:hover {
+.dota-dropdown [role="option"]:hover {
   background: rgba(255, 96, 70, 0.16) !important;
   color: #fff !important;
+}
+/* Rich option rendering is additive: we inject an icon + label as new child
+   nodes and collapse Gradio's own text node/checkmark with font-size:0 instead
+   of deleting them, so Svelte's reconciliation never touches removed nodes. */
+.dota-dropdown li[role="option"].dota-decorated-rich {
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+.dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-icon,
+.dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-label {
+  font-size: 13px;
+  line-height: 1.25;
 }
 .dota-choice-option {
   display: flex !important;
@@ -704,7 +811,7 @@ __NAV_ICON_CSS__
   height: 20px !important;
   min-width: 20px !important;
   padding: 0 !important;
-  border: 1px solid rgba(235, 207, 135, 0.34) !important;
+  border: 1px solid rgba(235, 207, 135, 0.70) !important;
   border-radius: 50% !important;
   background: rgba(5, 6, 10, 0.72) !important;
   color: #efe5bb !important;
@@ -768,7 +875,7 @@ __NAV_ICON_CSS__
   border-radius: 50%;
 }
 .empty-strip {
-  color: #8b929a;
+  color: var(--d2-fg-muted);
   font-size: 13px;
   padding: 7px 0;
 }
@@ -952,15 +1059,37 @@ __NAV_ICON_CSS__
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 @media (max-width: 720px) {
-  .dota-dropdown .options[role="listbox"],
-  .dota-dropdown [role="listbox"] {
+  .dota-dropdown .options,
+  .dota-dropdown ul[role="listbox"] {
     left: 8px !important;
     right: 8px !important;
     width: calc(100vw - 16px) !important;
     max-width: calc(100vw - 16px) !important;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .gradio-container *,
+  .gradio-container *::before,
+  .gradio-container *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .app-main button:hover {
+    transform: none !important;
+  }
+}
 """.replace("__NAV_ICON_CSS__", NAV_ICON_CSS)
+
+
+# Injected into <head>. Preconnect to the asset CDNs. Dark mode is a single CSS
+# palette (see the .gradio-container theme-variable overrides in APP_CSS), so no
+# ?__theme=dark redirect is needed.
+APP_HEAD = """
+<link rel="preconnect" href="https://cdn.steamstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com" crossorigin>
+"""
 
 
 def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
@@ -982,16 +1111,21 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     "Data Freshness": "data-freshness-view"
   }};
   const comparableHeroName = (value) =>
-    cleanLabel(value).split(" · ", 1)[0].replace(/\\s+\\([^)]*\\)\\s*$/, "");
+    cleanLabel(value)
+      .split(" · ", 1)[0]
+      .replace(/\\([^)]*\\)/g, " ")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
   const syncDropdownMenus = () => {{
     const margin = 8;
+    if (!document.querySelector('.dota-dropdown .options, .dota-dropdown ul[role="listbox"]')) {{
+      return;
+    }}
     document.querySelectorAll(".dota-dropdown").forEach((dropdown) => {{
       const input = dropdown.querySelector(
         'input[autocomplete="off"], input[role="combobox"], input'
       );
-      const listbox = dropdown.querySelector(
-        '.options[role="listbox"], [role="listbox"], .dropdown-options, .svelte-select-list'
-      );
+      const listbox = dropdown.querySelector('.options, ul[role="listbox"]');
       if (!input || !listbox) return;
       const rect = input.closest(".wrap, .wrap-inner, .input-container")?.getBoundingClientRect()
         || input.getBoundingClientRect();
@@ -1011,6 +1145,9 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     }});
   }};
   const syncSidebarView = () => {{
+    // Views are always rendered; we own visibility via the .d2-active class
+    // (CSS hides the rest). We never set inline display/hidden, which would
+    // fight Svelte and leave a freshly-selected tab blank until re-selected.
     const nav = document.querySelector(".app-nav");
     if (!nav) return;
     const checked = nav.querySelector('input[type="radio"]:checked');
@@ -1019,58 +1156,70 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     Object.entries(navViews).forEach(([name, id]) => {{
       const view = document.getElementById(id);
       if (!view) return;
-      const visible = name === selected;
-      view.hidden = !visible;
-      view.style.display = visible ? "" : "none";
-      view.setAttribute("aria-hidden", visible ? "false" : "true");
+      const active = name === selected;
+      view.classList.toggle("d2-active", active);
+      view.setAttribute("aria-hidden", active ? "false" : "true");
     }});
   }};
+  const decorateOption = (option) => {{
+    if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") return;
+    // Gradio 6.18 prefixes option text with a "✓" checkmark glyph; the clean
+    // choice label lives in aria-label, which is what choiceIcons is keyed on.
+    const label = cleanLabel(option.getAttribute("aria-label") || option.textContent);
+    const icon = choiceIcons[label];
+    if (!icon || !icon.src) return;
+    option.classList.add("dota-choice-option");
+    if (icon.kind) option.classList.add(`dota-${{icon.kind}}-option`);
+    const img = document.createElement("img");
+    img.className = "dota-choice-icon";
+    img.src = icon.src;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (icon.kind === "hero" && label.includes(" · ")) {{
+      const [name, tagsText] = label.split(" · ", 2);
+      const labelWrap = document.createElement("span");
+      labelWrap.className = "dota-choice-label";
+      const nameEl = document.createElement("span");
+      nameEl.className = "dota-choice-name";
+      nameEl.textContent = name;
+      const tagsEl = document.createElement("span");
+      tagsEl.className = "dota-choice-tags";
+      tagsText.split(",").map((tag) => tag.trim()).filter(Boolean).forEach((tag) => {{
+        const tagEl = document.createElement("span");
+        tagEl.className = "dota-choice-tag";
+        tagEl.textContent = tag;
+        tagsEl.append(tagEl);
+      }});
+      labelWrap.append(nameEl, tagsEl);
+      // Additive only: never delete Gradio/Svelte-owned nodes (textContent="").
+      // CSS (.dota-decorated-rich) collapses the original text node + checkmark,
+      // so Svelte's per-option reactive effect never reconciles a removed node.
+      option.prepend(img);
+      option.append(labelWrap);
+      option.classList.add("dota-decorated-rich");
+    }} else {{
+      option.prepend(img);
+    }}
+    if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
+  }};
   const decorate = () => {{
-    const optionSelector = [
-      '[role="option"]',
-      '.option',
-      '.dropdown-option',
-      'li',
-      '.svelte-select-list div'
-    ].join(', ');
-    const options = document.querySelectorAll(optionSelector);
-    options.forEach((option) => {{
-      if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") return;
-      const label = cleanLabel(option.textContent);
-      const icon = choiceIcons[label];
-      if (!icon || !icon.src) return;
-      option.classList.add("dota-choice-option");
-      if (icon.kind) option.classList.add(`dota-${{icon.kind}}-option`);
-      const img = document.createElement("img");
-      img.className = "dota-choice-icon";
-      img.src = icon.src;
-      img.alt = "";
-      img.loading = "lazy";
-      img.decoding = "async";
-      if (icon.kind === "hero" && label.includes(" · ")) {{
-        const [name, tagsText] = label.split(" · ", 2);
-        const labelWrap = document.createElement("span");
-        labelWrap.className = "dota-choice-label";
-        const nameEl = document.createElement("span");
-        nameEl.className = "dota-choice-name";
-        nameEl.textContent = name;
-        const tagsEl = document.createElement("span");
-        tagsEl.className = "dota-choice-tags";
-        tagsText.split(",").map((tag) => tag.trim()).filter(Boolean).forEach((tag) => {{
-          const tagEl = document.createElement("span");
-          tagEl.className = "dota-choice-tag";
-          tagEl.textContent = tag;
-          tagsEl.append(tagEl);
-        }});
-        option.textContent = "";
-        option.append(img, labelWrap);
-        labelWrap.append(nameEl, tagsEl);
-      }} else {{
-        option.prepend(img);
-      }}
-      if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
-    }});
+    const options = document.querySelectorAll('li[role="option"], [role="option"]');
+    if (options.length) {{
+      observer.disconnect();
+      options.forEach(decorateOption);
+      observer.observe(document.body, {{ childList: true, subtree: true }});
+    }}
     syncDropdownMenus();
+  }};
+  let decorateScheduled = false;
+  const scheduleDecorate = () => {{
+    if (decorateScheduled) return;
+    decorateScheduled = true;
+    requestAnimationFrame(() => {{
+      decorateScheduled = false;
+      decorate();
+    }});
   }};
   const openDropdown = (dropdown) => {{
     const input = dropdown?.querySelector(
@@ -1095,8 +1244,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     event.stopPropagation();
     openDropdown(dropdown);
     setTimeout(() => {{
-      decorate();
-      syncDropdownMenus();
+      scheduleDecorate();
     }}, 0);
   }};
   const removeSelectedHero = (event) => {{
@@ -1143,16 +1291,23 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     }}
     setTimeout(syncSidebarView, 0);
   }};
-  const observer = new MutationObserver(decorate);
+  const observer = new MutationObserver(scheduleDecorate);
   observer.observe(document.body, {{ childList: true, subtree: true }});
+  let syncScheduled = false;
+  const scheduleSync = () => {{
+    if (syncScheduled) return;
+    syncScheduled = true;
+    requestAnimationFrame(() => {{
+      syncScheduled = false;
+      syncDropdownMenus();
+    }});
+  }};
   document.addEventListener("mousedown", openFromChevron, true);
   document.addEventListener("click", activateSidebarNav, true);
   document.addEventListener("change", syncSidebarView, true);
   document.addEventListener("click", removeSelectedHero, true);
-  document.addEventListener("click", () => setTimeout(decorate, 0), true);
-  document.addEventListener("keyup", () => setTimeout(decorate, 0), true);
-  window.addEventListener("resize", syncDropdownMenus, true);
-  window.addEventListener("scroll", syncDropdownMenus, true);
+  window.addEventListener("resize", scheduleSync, {{ passive: true }});
+  window.addEventListener("scroll", scheduleSync, {{ passive: true, capture: true }});
   decorate();
   syncSidebarView();
 }}
@@ -1285,6 +1440,7 @@ def _html_escape(value: object) -> str:
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace('"', "&quot;")
+        .replace("'", "&#39;")
     )
 
 
@@ -1453,7 +1609,11 @@ def _build_hero_header_html(hero_id: int, metadata: dict[int, dict[str, object]]
     pro_pick = row.get("pro_pick") or 0
     if pro_pick:
         pills.append(f"<span class='build-stat-pill'>{pro_pick:,} pro picks</span>")
-    icon_html = f"<img class='build-hero-icon' src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+    icon_html = (
+        f"<img class='build-hero-icon' src='{icon}' alt='{name}' loading='lazy'>"
+        if icon
+        else ""
+    )
     style = f" style=\"background-image: url('{image}')\"" if image else ""
     return (
         f"<div class='build-hero-header'{style}>"
@@ -1516,7 +1676,10 @@ def _build_columns_html(
     top_n: int = 8,
 ) -> str:
     if build_stats.is_empty():
-        return "<div class='empty-strip'>No build table is available yet. Run match enrichment and normalization first.</div>"
+        return (
+            "<div class='empty-strip'>No build table is available yet. "
+            "Run match enrichment and normalization first.</div>"
+        )
     filtered = build_stats.filter(
         (pl.col("hero_id") == hero_id) & ~pl.col("item_key").str.starts_with("recipe_")
     )
@@ -1553,7 +1716,8 @@ def _build_columns_html(
             )
         columns.append(
             "<div class='build-column'>"
-            f"<div class='build-column-title'>{_html_escape(TIME_BUCKET_LABELS.get(bucket, bucket))}</div>"
+            "<div class='build-column-title'>"
+            f"{_html_escape(TIME_BUCKET_LABELS.get(bucket, bucket))}</div>"
             f"<div class='build-item-list'>{''.join(items_html)}</div>"
             "</div>"
         )
@@ -1763,7 +1927,8 @@ def build_app() -> gr.Blocks:
     def hero_builds(hero_id: int | None) -> str:
         hero_ids, unknown = _parse_heroes([hero_id] if hero_id else [], hero_name_lookup)
         if unknown:
-            return f"<div class='empty-strip'>Unrecognized hero: {_html_escape(', '.join(unknown))}</div>"
+            unknown_text = _html_escape(", ".join(unknown))
+            return f"<div class='empty-strip'>Unrecognized hero: {unknown_text}</div>"
         if not hero_ids:
             return "<div class='empty-strip'>Select a hero.</div>"
         header = _build_hero_header_html(hero_ids[0], hero_metadata)
@@ -1809,24 +1974,24 @@ def build_app() -> gr.Blocks:
             "- Rule: if the evidence is thin, say so before giving the pick."
         )
 
-    def switch_view(selected: str):
-        return tuple(gr.update(visible=label == selected) for label in NAV_OPTIONS)
-
     with gr.Blocks(title="DOTA2Tuned") as demo:
         with gr.Sidebar(open=True, width=238, position="left", elem_classes=["app-sidebar"]):
             gr.HTML(_sidebar_brand_html())
             with gr.Column(elem_classes=["app-sidebar-nav-section"]):
-                nav = gr.Radio(
+                gr.Radio(
                     choices=NAV_OPTIONS,
                     value="Draft Coach",
                     show_label=False,
                     container=False,
+                    # Force interactive: the nav drives view switching purely in JS
+                    # (no server event), so without this Gradio renders it disabled.
+                    interactive=True,
                     elem_classes=["app-nav"],
                 )
         with gr.Column(elem_classes=["app-main"]):
             with gr.Column(
-                visible=True, elem_id="draft-coach-view", elem_classes=["app-view"]
-            ) as draft_view:
+                visible=True, elem_id="draft-coach-view", elem_classes=["app-view", "d2-active"]
+            ):
                 with gr.Row():
                     allies = gr.Dropdown(
                         choices=hero_choices,
@@ -1925,8 +2090,8 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=False, elem_id="hero-meta-view", elem_classes=["app-view"]
-            ) as hero_meta_view:
+                visible=True, elem_id="hero-meta-view", elem_classes=["app-view"]
+            ):
                 with gr.Row():
                     meta_hero = gr.Dropdown(
                         choices=hero_choices,
@@ -1965,8 +2130,8 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=False, elem_id="tuned-model-view", elem_classes=["app-view"]
-            ) as tuned_model_view:
+                visible=True, elem_id="tuned-model-view", elem_classes=["app-view"]
+            ):
                 tuned_question = gr.Textbox(
                     label="Question",
                     value=(
@@ -1996,8 +2161,8 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=False, elem_id="match-predictor-view", elem_classes=["app-view"]
-            ) as match_predictor_view:
+                visible=True, elem_id="match-predictor-view", elem_classes=["app-view"]
+            ):
                 with gr.Row():
                     radiant = gr.Dropdown(
                         choices=hero_choices,
@@ -2047,8 +2212,8 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=False, elem_id="builds-view", elem_classes=["app-view"]
-            ) as builds_view:
+                visible=True, elem_id="builds-view", elem_classes=["app-view"]
+            ):
                 hero = gr.Dropdown(
                     choices=hero_choices,
                     label="Hero",
@@ -2067,8 +2232,8 @@ def build_app() -> gr.Blocks:
                 hero.change(hero_builds, inputs=[hero], outputs=[builds_output])
 
             with gr.Column(
-                visible=False, elem_id="draft-lab-view", elem_classes=["app-view"]
-            ) as draft_lab_view:
+                visible=True, elem_id="draft-lab-view", elem_classes=["app-view"]
+            ):
                 lab_enemies = gr.Dropdown(
                     choices=hero_choices,
                     label="Enemy heroes",
@@ -2107,27 +2272,19 @@ def build_app() -> gr.Blocks:
                 )
 
             with gr.Column(
-                visible=False, elem_id="data-freshness-view", elem_classes=["app-view"]
-            ) as data_freshness_view:
+                visible=True, elem_id="data-freshness-view", elem_classes=["app-view"]
+            ):
                 status_button = gr.Button("Refresh")
                 status_output = gr.Markdown()
                 status_button.click(data_status, outputs=[status_output])
-        nav.change(
-            switch_view,
-            inputs=[nav],
-            outputs=[
-                draft_view,
-                hero_meta_view,
-                tuned_model_view,
-                match_predictor_view,
-                builds_view,
-                draft_lab_view,
-                data_freshness_view,
-            ],
-            api_visibility="private",
-        )
 
-    demo.css = APP_CSS
-    demo.dota2tuned_js = _dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata))
-    demo.js = demo.dota2tuned_js
+        # Gradio 6.18 runs client JS only via the load EVENT — launch(js=) and
+        # Blocks(js=) do not fire on page load. Attach the script here so dropdown
+        # icons, sidebar nav switching, and hero-card removal actually work.
+        demo.load(
+            None,
+            None,
+            None,
+            js=_dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata)),
+        )
     return demo

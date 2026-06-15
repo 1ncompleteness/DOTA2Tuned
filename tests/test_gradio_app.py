@@ -2,6 +2,7 @@ import polars as pl
 
 from dota2tuned.ui.gradio_app import (
     APP_CSS,
+    APP_HEAD,
     _dropdown_js,
     _format_item_time,
     _hero_aliases,
@@ -132,3 +133,61 @@ def test_parse_heroes_reports_unknown_names():
 def test_format_item_time_labels_pre_game_buys():
     assert _format_item_time(-90) == "pre-game"
     assert _format_item_time(180) == "3.0 min"
+
+
+def test_css_has_dark_accessibility_and_perf_hardening():
+    # Palette is a single source of truth; app is dark-only and AA-targeted.
+    assert ":root {" in APP_CSS
+    assert "--d2-fg" in APP_CSS
+    # WCAG 2.2: visible focus + reduced motion.
+    assert ":focus-visible" in APP_CSS
+    assert "prefers-reduced-motion" in APP_CSS
+    # Dark scrollbar is styled for both engines.
+    assert "scrollbar-color:" in APP_CSS
+    assert "::-webkit-scrollbar-thumb" in APP_CSS
+    # Perf: webfonts no longer block first paint; no whole-tree font recalc.
+    assert "font-display: swap" in APP_CSS
+    assert ".gradio-container * {" not in APP_CSS
+
+
+def test_dropdown_js_decorates_without_deleting_svelte_nodes():
+    js = _dropdown_js(
+        {"Anti-Mage · Carry": {"src": "https://example.test/am.png", "kind": "hero"}}
+    )
+    # Root cause of the red Error toast: we used to wipe Gradio/Svelte-owned nodes.
+    assert 'option.textContent = ""' not in js
+    assert "dota-decorated-rich" in js
+    assert "decorateOption" in js
+    # Stale Gradio-5 selectors removed.
+    assert "svelte-select-list" not in js
+    # Perf: debounced observer + throttled scroll; no blanket keyup re-decorate.
+    assert "requestAnimationFrame" in js
+    assert "scheduleDecorate" in js
+    assert '"keyup"' not in js
+
+
+def test_app_head_preconnects_without_theme_redirect():
+    assert "preconnect" in APP_HEAD
+    assert "cdn.steamstatic.com" in APP_HEAD
+    # Dark mode is a single CSS palette now; no ?__theme=dark URL redirect.
+    assert "__theme" not in APP_HEAD
+
+
+def test_css_forces_single_dark_palette():
+    # Gradio's semantic theme vars are pinned to dark values unconditionally.
+    assert "color-scheme: dark" in APP_CSS
+    assert "--background-fill-primary: var(--neutral-950)" in APP_CSS
+    assert "--body-text-color: var(--neutral-100)" in APP_CSS
+
+
+def test_sidebar_js_toggles_view_class_without_inline_display():
+    js = _dropdown_js({})
+    # Views are always rendered; JS toggles the .d2-active class (CSS hides the
+    # rest). It must NOT set inline display/hidden, which fought Svelte and left
+    # a freshly-selected tab blank until it was re-selected.
+    assert "view.style.display" not in js
+    assert "view.hidden" not in js
+    assert 'classList.toggle("d2-active"' in js
+    assert 'setAttribute("aria-hidden"' in js
+    # CSS owns hiding the inactive views.
+    assert ".app-view:not(.d2-active)" in APP_CSS
