@@ -1186,6 +1186,9 @@ __NAV_ICON_CSS__
 APP_HEAD = """
 <link rel="preconnect" href="https://cdn.steamstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com" crossorigin>
+<script>
+document.documentElement.classList.add("d2-loading");
+</script>
 <style>
 :root {
   --d2-red: #ff6046;
@@ -1210,8 +1213,47 @@ APP_HEAD = """
       drop-shadow(0 0 16px rgba(255, 96, 70, 0.62));
   }
 }
-html.d2-loading .gradio-container {
+html:not(.d2-ready) .gradio-container {
   opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+html.d2-ready .gradio-container {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: opacity 0.24s ease;
+}
+html:not(.d2-ready) body {
+  background: #05060a !important;
+}
+html:not(.d2-ready) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
+}
+html:not(.d2-ready) body::after {
+  content: "DOTA2Tuned";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 2147483646;
+  min-height: 48px;
+  padding-left: 62px;
+  color: #efe5bb;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  font-size: 24px;
+  line-height: 48px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background-image: url("__DOTA_LOGO_URL__");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 48px 48px;
+  transform: translate(-50%, -50%);
 }
 #d2-startup-loader {
   position: fixed;
@@ -1279,13 +1321,49 @@ html.d2-loading .gradio-container {
     loader.classList.add("d2-loader-exit");
     window.setTimeout(() => loader.remove(), 460);
   };
+  const waitForFrames = (count = 2) => new Promise((resolve) => {
+    const step = () => {
+      count -= 1;
+      if (count <= 0) {
+        resolve();
+      } else {
+        requestAnimationFrame(step);
+      }
+    };
+    requestAnimationFrame(step);
+  });
+  const waitForMountedImages = () => {
+    const images = Array.from(document.querySelectorAll(".gradio-container img"));
+    if (!images.length) return Promise.resolve();
+    return Promise.allSettled(images.map((img) => {
+      if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+      return new Promise((resolve) => {
+        const done = () => resolve();
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+      });
+    }));
+  };
+  window.dota2tunedRevealWhenReady = () => {
+    if (window.__dota2tunedRevealScheduled) return;
+    window.__dota2tunedRevealScheduled = true;
+    const fontsReady = document.fonts?.ready || Promise.resolve();
+    const ready = Promise.allSettled([fontsReady, waitForMountedImages(), waitForFrames(3)]);
+    Promise.race([
+      ready,
+      new Promise((resolve) => window.setTimeout(resolve, 6500))
+    ]).then(() => {
+      window.setTimeout(() => window.dota2tunedHideLoader?.(), 180);
+    });
+  };
   if (document.body) {
     ensureLoader();
   } else {
     document.addEventListener("DOMContentLoaded", ensureLoader, { once: true });
   }
   window.addEventListener("load", () => {
-    window.setTimeout(() => window.dota2tunedHideLoader?.(), 12000);
+    window.setTimeout(() => window.dota2tunedRevealWhenReady?.(), 0);
+    window.setTimeout(() => window.dota2tunedHideLoader?.(), 20000);
   }, { once: true });
 })();
 </script>
@@ -1565,7 +1643,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   window.addEventListener("scroll", scheduleSync, {{ passive: true, capture: true }});
   decorate();
   syncSidebarView();
-  window.setTimeout(() => window.dota2tunedHideLoader?.(), 120);
+  window.dota2tunedRevealWhenReady?.();
 }}
 """
 

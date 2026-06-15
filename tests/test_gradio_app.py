@@ -128,6 +128,7 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "closestElement" in js
     assert "syncDropdownMenus" in js
     assert "isDropdownMenuScroll" in js
+    assert "dota2tunedRevealWhenReady" in js
 
 
 def test_css_uses_trajan_font_without_global_red_buttons():
@@ -164,15 +165,23 @@ def test_css_shows_full_selected_hero_cards():
 
 def test_loader_and_sidebar_logo_use_shared_red_flash():
     logo_keyframes = APP_HEAD.split("@keyframes d2-logo-red-flash", 1)[1].split(
-        "html.d2-loading", 1
+        "html:not(.d2-ready)", 1
     )[0]
 
     assert "d2-logo-red-flash" in APP_HEAD
     assert "#d2-startup-loader" in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
+    assert "dota2tunedRevealWhenReady" in APP_HEAD
     assert "DOTA2Tuned" in APP_HEAD
     assert "4.2s ease-in-out infinite" in APP_HEAD
-    assert "html.d2-loading .gradio-container" in APP_HEAD
+    assert APP_HEAD.index('classList.add("d2-loading")') < APP_HEAD.index("<style>")
+    assert "html:not(.d2-ready) .gradio-container" in APP_HEAD
+    assert "visibility: hidden !important" in APP_HEAD
+    assert "html.d2-ready .gradio-container" in APP_HEAD
+    assert "html:not(.d2-ready) body::before" in APP_HEAD
+    assert "html:not(.d2-ready) body::after" in APP_HEAD
+    assert "waitForMountedImages" in APP_HEAD
+    assert "document.fonts?.ready" in APP_HEAD
     assert "25%, 75%" in logo_keyframes
     assert "sepia(0%)" in logo_keyframes
     assert "sepia(95%)" in logo_keyframes

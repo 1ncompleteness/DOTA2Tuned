@@ -151,6 +151,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 22:59: added an early startup loader in `APP_HEAD` so the app shows the DOTA2Tuned brand and Dota symbol while Gradio mounts instead of briefly exposing bare elements. The Dota symbol pulses from white to the palette red `#ff6046` and back over a 4.2 second cycle, and the sidebar brand icon uses the same animation after the loader exits.
 - 2026-06-14 23:15: removed the remaining Gradio blue primary backgrounds by routing primary/theme variables, block labels, selected radio/checkbox labels, and range accents through the same red action fill used by the Recommend button. This covers Allied heroes, Enemy heroes, Banned heroes, Role, Scope, and equivalent labeled inputs across all mounted app views.
 - 2026-06-14 23:21: made selected hero-card portrait backgrounds transparent and smoothed the Dota symbol pulse for both the startup loader and sidebar brand by using matching filter functions across all keyframes, with intermediate 25%/75% stops inside the existing 4.2 second white-red-white cycle.
+- 2026-06-14 23:39: hardened the startup loader against first-paint flashes by hiding `.gradio-container` by default until `html.d2-ready`, adding a CSS-only `body::before/after` branded fallback before the JS loader div can mount, and revealing the app only after the Gradio load hook waits for fonts, currently-mounted images, and paint frames, with a timeout fallback.
 
 ## Adapter Eval Notes
 
