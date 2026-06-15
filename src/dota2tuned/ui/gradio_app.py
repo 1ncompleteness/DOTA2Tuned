@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 import gradio as gr
 import polars as pl
+from starlette.middleware import Middleware
 
 from dota2tuned.config import get_settings
 from dota2tuned.rag import Retriever
@@ -1368,6 +1369,103 @@ html:not(.d2-ready) body::after {
 })();
 </script>
 """.replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
+
+
+# Gradio 6.18 stores `head=` inside window.gradio_config; the frontend bundle injects
+# it only AFTER it begins mounting components, so head-based styling cannot stop a flash
+# of bare elements on first paint. CRITICAL_HEAD is injected into the REAL served <head>
+# (parse-time, before the bundle) by _CriticalHeadMiddleware: it hides the app and paints
+# the dark splash until `d2-ready` (set by the full loader in APP_HEAD). Keep visually in
+# sync with the html:not(.d2-ready) rules in APP_HEAD.
+CRITICAL_HEAD = """
+<style id="d2-critical">
+html:not(.d2-ready) .gradio-container {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+html:not(.d2-ready) body {
+  background: #05060a !important;
+}
+html:not(.d2-ready) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 96, 70, 0.16), transparent 22rem),
+    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
+}
+html:not(.d2-ready) body::after {
+  content: "DOTA2Tuned";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 2147483646;
+  min-height: 48px;
+  padding-left: 62px;
+  color: #efe5bb;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  font-size: 24px;
+  line-height: 48px;
+  white-space: nowrap;
+  background-image: url("__DOTA_LOGO_URL__");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 48px 48px;
+  transform: translate(-50%, -50%);
+}
+</style>
+<script>document.documentElement.classList.add("d2-loading");</script>
+""".replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
+
+_CRITICAL_HEAD_BYTES = CRITICAL_HEAD.encode("utf-8")
+
+
+class _CriticalHeadMiddleware:
+    """Inject CRITICAL_HEAD into the real served <head> so the loader is active at first
+    paint. Only text/html responses are rewritten; SSE/queue/static pass through.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+        is_html = False
+
+        async def send_wrapper(message):
+            nonlocal is_html
+            if message["type"] == "http.response.start":
+                headers = message.get("headers", [])
+                content_type = b""
+                for key, value in headers:
+                    if key.lower() == b"content-type":
+                        content_type = value
+                        break
+                is_html = content_type.startswith(b"text/html")
+                if is_html:
+                    # Body length changes; drop content-length so the server re-frames it.
+                    headers = [(k, v) for (k, v) in headers if k.lower() != b"content-length"]
+                    message = {**message, "headers": headers}
+                await send(message)
+            elif is_html and message["type"] == "http.response.body":
+                body = message.get("body", b"")
+                if b"<head>" in body and b'id="d2-critical"' not in body:
+                    body = body.replace(b"<head>", b"<head>" + _CRITICAL_HEAD_BYTES, 1)
+                    message = {**message, "body": body}
+                await send(message)
+            else:
+                await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+def launch_app_kwargs() -> dict:
+    """app_kwargs for demo.launch() that wires the critical-head FOUC fix."""
+    return {"middleware": [Middleware(_CriticalHeadMiddleware)]}
 
 
 def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:

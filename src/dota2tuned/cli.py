@@ -202,15 +202,17 @@ def eval() -> None:
 def serve() -> None:
     import gradio as gr
 
-    from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD
+    from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD, launch_app_kwargs
 
     demo = build_app()
     # Load JS is attached inside build_app via demo.load(); launch(js=) does not
-    # run on page load in Gradio 6.18.
+    # run on page load in Gradio 6.18. app_kwargs wires the critical-head middleware
+    # that prevents the bare-element flash before the loader.
     demo.launch(
         css=APP_CSS,
         head=APP_HEAD,
         theme=gr.themes.Soft(),
+        app_kwargs=launch_app_kwargs(),
     )
 
 

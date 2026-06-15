@@ -6,6 +6,8 @@ import polars as pl
 from dota2tuned.ui.gradio_app import (
     APP_CSS,
     APP_HEAD,
+    CRITICAL_HEAD,
+    _CriticalHeadMiddleware,
     _dropdown_js,
     _format_item_time,
     _hero_aliases,
@@ -14,6 +16,7 @@ from dota2tuned.ui.gradio_app import (
     _parse_heroes,
     _selected_hero_html,
     build_app,
+    launch_app_kwargs,
 )
 
 
@@ -304,3 +307,78 @@ def test_sidebar_js_toggles_view_class_without_inline_display():
     assert 'setAttribute("aria-hidden"' in js
     # CSS owns hiding the inactive views.
     assert ".app-view:not(.d2-active)" in APP_CSS
+
+
+def test_critical_head_hides_app_before_bundle_mounts():
+    # Injected into the real served <head> at parse time (Gradio puts head= in
+    # window.gradio_config and injects it only after mount, too late to stop FOUC).
+    assert 'id="d2-critical"' in CRITICAL_HEAD
+    assert "html:not(.d2-ready) .gradio-container" in CRITICAL_HEAD
+    assert "visibility: hidden !important" in CRITICAL_HEAD
+    assert 'classList.add("d2-loading")' in CRITICAL_HEAD
+    assert "DOTA2Tuned" in CRITICAL_HEAD
+
+
+def test_launch_app_kwargs_wires_critical_head_middleware():
+    middleware = launch_app_kwargs()["middleware"]
+    assert any(getattr(m, "cls", None) is _CriticalHeadMiddleware for m in middleware)
+
+
+def _drive_middleware(downstream):
+    import asyncio
+
+    async def run():
+        sent = []
+
+        async def send(message):
+            sent.append(message)
+
+        async def receive():
+            return {"type": "http.request"}
+
+        await _CriticalHeadMiddleware(downstream)({"type": "http"}, receive, send)
+        return sent
+
+    return asyncio.run(run())
+
+
+def test_critical_head_middleware_injects_into_html_head():
+    async def html_app(scope, receive, send):
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [
+                    (b"content-type", b"text/html; charset=utf-8"),
+                    (b"content-length", b"13"),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": b"<head></head>"})
+
+    sent = _drive_middleware(html_app)
+    start = next(m for m in sent if m["type"] == "http.response.start")
+    body = next(m for m in sent if m["type"] == "http.response.body")["body"]
+
+    # content-length dropped so the server re-frames the larger body
+    assert all(k.lower() != b"content-length" for k, _ in start["headers"])
+    assert b'id="d2-critical"' in body
+    assert body.index(b'id="d2-critical"') < body.index(b"</head>")
+    assert b'classList.add("d2-loading")' in body
+
+
+def test_critical_head_middleware_passes_through_non_html():
+    async def sse_app(scope, receive, send):
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"content-type", b"text/event-stream")],
+            }
+        )
+        await send({"type": "http.response.body", "body": b"data: x\n\n"})
+
+    sent = _drive_middleware(sse_app)
+    body = next(m for m in sent if m["type"] == "http.response.body")["body"]
+    assert body == b"data: x\n\n"
+    assert b"d2-critical" not in body
