@@ -309,6 +309,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "muted" in APP_HEAD
     assert "loop" in APP_HEAD
     assert "playsinline" in APP_HEAD
+    assert "webkit-playsinline" in APP_HEAD
+    assert 'src="${montageMp4Url}"' in APP_HEAD
+    assert "video.defaultMuted = true" in APP_HEAD
+    assert 'video.setAttribute("webkit-playsinline", "webkit-playsinline")' in APP_HEAD
     assert "video.play?.().catch" in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "dota2tunedRevealWhenReady" in APP_HEAD
@@ -389,8 +393,12 @@ def test_css_has_dark_accessibility_and_perf_hardening():
     assert ":focus-visible" in APP_CSS
     assert "prefers-reduced-motion" in APP_CSS
     # Dark scrollbar is styled for both engines.
+    assert "--d2-scroll-track: #05060a" in APP_CSS
     assert "scrollbar-color:" in APP_CSS
+    assert "scrollbar-color: var(--d2-scroll-thumb) var(--d2-scroll-track)" in APP_CSS
+    assert "width: 8px;" in APP_CSS
     assert "::-webkit-scrollbar-thumb" in APP_CSS
+    assert "border: 2px solid var(--d2-scroll-track)" in APP_CSS
     # Perf: webfonts no longer block first paint; no whole-tree font recalc.
     assert "font-display: swap" in APP_CSS
     assert ".gradio-container * {" not in APP_CSS
@@ -462,6 +470,27 @@ def test_sidebar_js_toggles_view_class_without_inline_display():
     assert 'setAttribute("aria-hidden"' in js
     # CSS owns hiding the inactive views.
     assert ".app-view:not(.d2-active)" in APP_CSS
+
+
+def test_css_compacts_sidebar_on_mobile_viewports():
+    mobile_sidebar_css = APP_CSS.split("@media (max-width: 820px)", 1)[1].split(
+        "@media (max-width: 720px)", 1
+    )[0]
+
+    assert ".app-sidebar.sidebar.open" in mobile_sidebar_css
+    assert "position: sticky !important" in mobile_sidebar_css
+    assert "width: 100% !important" in mobile_sidebar_css
+    assert "height: auto !important" in mobile_sidebar_css
+    assert "max-height: none !important" in mobile_sidebar_css
+    assert "transform: none !important" in mobile_sidebar_css
+    assert "translate: none !important" in mobile_sidebar_css
+    assert "flex-direction: row !important" in mobile_sidebar_css
+    assert "overflow-x: auto !important" in mobile_sidebar_css
+    assert "min-width: max-content !important" in mobile_sidebar_css
+    assert ".gradio-container > .main.fillable" in APP_HEAD
+    assert ".gradio-container > .main.fillable" in CRITICAL_HEAD
+    assert "padding: 0 !important" in APP_HEAD
+    assert "padding: 0 !important" in CRITICAL_HEAD
 
 
 def test_critical_head_hides_app_before_bundle_mounts():

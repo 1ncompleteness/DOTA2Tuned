@@ -392,7 +392,9 @@ APP_CSS = """
   --d2-focus: #ff7a63;
   --d2-border: #7d8893;
   --d2-border-menu: #8a96a3;
-  --d2-scroll-thumb: #8a96a3;
+  --d2-scroll-track: #05060a;
+  --d2-scroll-thumb: #7d8893;
+  --d2-scroll-thumb-hover: #ff6046;
 }
 /* Single dark palette, applied unconditionally (no ?__theme=dark redirect).
    Map Gradio's semantic theme variables to their dark values so every built-in
@@ -469,6 +471,43 @@ APP_CSS = """
 .gradio-container .main {
   max-width: none !important;
   width: 100% !important;
+}
+html,
+body,
+.gradio-container,
+.gradio-container :where(*) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--d2-scroll-thumb) var(--d2-scroll-track);
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.gradio-container::-webkit-scrollbar,
+.gradio-container :where(*)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.gradio-container::-webkit-scrollbar-track,
+.gradio-container :where(*)::-webkit-scrollbar-track {
+  background: var(--d2-scroll-track);
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.gradio-container::-webkit-scrollbar-thumb,
+.gradio-container :where(*)::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 2px solid var(--d2-scroll-track);
+  border-radius: 8px;
+  background: var(--d2-scroll-thumb);
+  background-clip: padding-box;
+}
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.gradio-container::-webkit-scrollbar-thumb:hover,
+.gradio-container :where(*)::-webkit-scrollbar-thumb:hover {
+  background: var(--d2-scroll-thumb-hover);
+  background-clip: padding-box;
 }
 .gradio-container button,
 .gradio-container input,
@@ -942,21 +981,21 @@ __NAV_ICON_CSS__
   background: linear-gradient(180deg, #36363e 0%, #23262e 100%) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.58) !important;
   scrollbar-width: thin;
-  scrollbar-color: var(--d2-scroll-thumb) transparent;
+  scrollbar-color: var(--d2-scroll-thumb) var(--d2-scroll-track);
 }
 .dota-dropdown ul[role="listbox"]::-webkit-scrollbar,
 .dota-dropdown .options::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 }
 .dota-dropdown ul[role="listbox"]::-webkit-scrollbar-track,
 .dota-dropdown .options::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--d2-scroll-track);
 }
 .dota-dropdown ul[role="listbox"]::-webkit-scrollbar-thumb,
 .dota-dropdown .options::-webkit-scrollbar-thumb {
   background: var(--d2-scroll-thumb);
-  border: 3px solid transparent;
+  border: 2px solid var(--d2-scroll-track);
   background-clip: padding-box;
   border-radius: 8px;
 }
@@ -1361,6 +1400,82 @@ __NAV_ICON_CSS__
   flex: 0 0 48px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
+@media (max-width: 820px) {
+  .app-sidebar.sidebar,
+  .app-sidebar.sidebar.open {
+    position: sticky !important;
+    top: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    flex: 0 0 auto !important;
+    padding: 8px 10px 7px !important;
+    transform: none !important;
+    translate: none !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(235, 207, 135, 0.28) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32) !important;
+    box-sizing: border-box !important;
+    z-index: 1800 !important;
+  }
+  .app-sidebar-brand {
+    min-height: 36px;
+    padding: 0 0 7px;
+    margin: 0 0 6px;
+  }
+  .app-sidebar-brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .app-sidebar-brand strong {
+    font-size: 14px;
+    line-height: 16px;
+  }
+  .app-sidebar-nav-section {
+    padding-top: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--d2-scroll-thumb) var(--d2-scroll-track);
+  }
+  .app-sidebar .app-nav .wrap,
+  .app-sidebar .app-nav .options,
+  .app-sidebar .app-nav .radio-group {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  .app-sidebar .app-nav label {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: max-content !important;
+    min-height: 34px !important;
+    padding: 6px 8px !important;
+    gap: 7px !important;
+    font-size: 11px !important;
+    line-height: 14px !important;
+    white-space: nowrap !important;
+  }
+  .app-sidebar .app-nav label::before {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+  }
+  .app-main,
+  .app-view,
+  .assistant-shell {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
 @media (max-width: 720px) {
   .dota-dropdown .options,
   .dota-dropdown ul[role="listbox"] {
@@ -1452,6 +1567,17 @@ document.documentElement.classList.add("d2-loading");
 :root {
   --d2-red: #ff6046;
   --d2-gold: #d9b166;
+}
+@media (max-width: 820px) {
+  .gradio-container > .main.fillable,
+  .gradio-container .sidebar-parent,
+  .gradio-container main.contain {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
 }
 @keyframes d2-logo-red-flash {
   0%, 100% {
@@ -1618,6 +1744,8 @@ html:not(.d2-ready) body::after {
 <script>
 (() => {
   const logoUrl = "__DOTA_LOGO_URL__";
+  const montageMp4Url = "__DOTA_MONTAGE_MP4_URL__";
+  const montageWebmUrl = "__DOTA_MONTAGE_WEBM_URL__";
   const loaderFonts = [
     '400 24px "Trajan Pro"',
     '700 24px "Trajan Pro"',
@@ -1636,17 +1764,19 @@ html:not(.d2-ready) body::after {
     loader.innerHTML = `
       <video
         class="d2-loader-video"
-        autoplay
-        muted
-        loop
-        playsinline
+        src="${montageMp4Url}"
+        autoplay="autoplay"
+        muted="muted"
+        loop="loop"
+        playsinline="playsinline"
+        webkit-playsinline="webkit-playsinline"
         preload="auto"
         fetchpriority="high"
         aria-hidden="true"
         tabindex="-1"
       >
-        <source type="video/mp4" src="__DOTA_MONTAGE_MP4_URL__">
-        <source type="video/webm" src="__DOTA_MONTAGE_WEBM_URL__">
+        <source type="video/mp4" src="${montageMp4Url}">
+        <source type="video/webm" src="${montageWebmUrl}">
       </video>
       <div class="d2-loader-brand">
         <img
@@ -1662,9 +1792,18 @@ html:not(.d2-ready) body::after {
     document.body.prepend(loader);
     const video = loader.querySelector(".d2-loader-video");
     if (video) {
+      video.autoplay = true;
+      video.defaultMuted = true;
       video.muted = true;
+      video.loop = true;
       video.playsInline = true;
+      video.setAttribute("autoplay", "autoplay");
+      video.setAttribute("muted", "muted");
+      video.setAttribute("loop", "loop");
+      video.setAttribute("playsinline", "playsinline");
+      video.setAttribute("webkit-playsinline", "webkit-playsinline");
       video.setAttribute("fetchpriority", "high");
+      video.disableRemotePlayback = true;
       video.load?.();
       video.play?.().catch(() => {});
     }
@@ -1750,6 +1889,17 @@ html:not(.d2-ready) .gradio-container {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+@media (max-width: 820px) {
+  .gradio-container > .main.fillable,
+  .gradio-container .sidebar-parent,
+  .gradio-container main.contain {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
 }
 html:not(.d2-ready) body {
   background: #05060a !important;

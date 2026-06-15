@@ -168,6 +168,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 04:34: enabled Gradio `share=True` in both Space and CLI launch paths, added a narrow startup warning filter for Gradio's deprecated Starlette 422 constant, and added root `agents.md` with Space/API instructions for coding agents.
 - 2026-06-15 04:50: fixed the HF Space startup log regression from `share=True`: Gradio sharing is now enabled only for local runs, while HF Space containers use `share=False` and `quiet=True` because Spaces are already public and Gradio does not support share tunnels there.
 - 2026-06-15 04:59: raised loader asset priority by preloading Trajan font weights, the Dota logo, and the MP4 montage in `APP_HEAD`; declared critical Trajan font faces before the loader CSS; added eager/fetch-priority hints to the logo/video elements; and explicitly warmed loader fonts plus the video in startup JS.
+- 2026-06-15 05:07: fixed the mobile responsiveness breakpoint where Gradio expanded the open sidebar to the full viewport width. Below `820px`, the sidebar now becomes a compact sticky top navigation bar with horizontal scrolling tabs, while an unscoped head override removes Gradio's outer mobile padding so the active page content keeps the full mobile viewport width below it.
+- 2026-06-15 05:12: standardized scrollbars across the app to use slim dark-track styling with Dota palette thumbs, and hardened the startup loader video for Safari by using the MP4 as the direct source plus muted inline autoplay attributes/properties (`defaultMuted`, `playsinline`, and `webkit-playsinline`) before playback.
 
 ## Adapter Eval Notes
 
