@@ -34,6 +34,7 @@ DOTA_MONTAGE_WEBM_URL = (
 DOTA_MONTAGE_MP4_URL = (
     f"{STEAM_STATIC_BASE_URL}/apps/dota2/videos/dota_react/homepage/dota_montage_02.mp4"
 )
+LOADER_DESCRIPTION = "Draft intelligence for heroes, counters, builds, and match prediction"
 
 
 def _svg_data_uri(svg: str) -> str:
@@ -1637,7 +1638,7 @@ html:not(.d2-ready) body::after {
   background-repeat: no-repeat;
   background-position: left center;
   background-size: 48px 48px;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateY(-84px);
 }
 #d2-startup-loader {
   position: fixed;
@@ -1708,23 +1709,22 @@ html:not(.d2-ready) body::after {
   transform: translateY(118px) !important;
 }
 .d2-loader-content {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
   pointer-events: none;
 }
 .d2-loader-brand {
-  position: relative;
+  position: absolute;
+  top: calc(50% - 84px);
+  left: 50%;
   z-index: 4;
   display: flex;
   align-items: center;
   gap: 14px;
   font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+  transform: translate(-50%, -50%);
 }
 .d2-loader-brand img {
   width: 48px;
@@ -1738,6 +1738,50 @@ html:not(.d2-ready) body::after {
   font-size: 24px;
   line-height: 28px;
   letter-spacing: 0;
+}
+.d2-loader-description {
+  position: absolute;
+  top: calc(50% + 178px);
+  left: 50%;
+  z-index: 4;
+  width: min(38rem, calc(100vw - 40px));
+  margin: 0;
+  color: rgba(239, 229, 187, 0.92);
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+  transform: translateX(-50%);
+}
+@media (max-width: 560px) {
+  .d2-loader-brand {
+    top: calc(50% - 78px);
+    gap: 10px;
+  }
+  .d2-loader-brand img {
+    width: 42px;
+    height: 42px;
+  }
+  .d2-loader-brand strong {
+    font-size: 20px;
+    line-height: 24px;
+  }
+  .d2-loader-description {
+    top: calc(50% + 166px);
+    width: calc(100vw - 32px);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+@media (max-height: 560px) {
+  .d2-loader-brand {
+    top: calc(50% - 70px);
+  }
+  .d2-loader-description {
+    top: calc(50% + 146px);
+  }
 }
 </style>
 <script>
@@ -1831,6 +1875,9 @@ html:not(.d2-ready) body::after {
           >
           <strong>DOTA2Tuned</strong>
         </div>
+        <p class="d2-loader-description">
+          __LOADER_DESCRIPTION__
+        </p>
       </div>
     `;
     document.body.prepend(loader);
@@ -1902,17 +1949,57 @@ html:not(.d2-ready) body::after {
     "__DOTA_MONTAGE_WEBM_URL__", DOTA_MONTAGE_WEBM_URL
 ).replace(
     "__DOTA_MONTAGE_MP4_URL__", DOTA_MONTAGE_MP4_URL
+).replace(
+    "__LOADER_DESCRIPTION__", LOADER_DESCRIPTION
 )
 
 
-# Gradio 6.18 stores `head=` inside window.gradio_config; the frontend bundle injects
-# it only AFTER it begins mounting components, so head-based styling cannot stop a flash
-# of bare elements on first paint. CRITICAL_HEAD and CRITICAL_LOADER_BODY are injected
-# into the REAL served HTML (parse-time, before the bundle) by _CriticalHeadMiddleware:
-# they hide the app and paint the video loader until `d2-ready` (set by APP_HEAD).
-# Keep visually in sync with the html:not(.d2-ready) rules in APP_HEAD.
+# Gradio stores `head=` inside window.gradio_config; the frontend bundle injects it only
+# after mounting starts. This parse-time critical head keeps the app hidden and starts
+# high-priority asset fetches, while the real video loader remains in APP_HEAD.
 CRITICAL_HEAD = """
+<link rel="preconnect" href="https://cdn.steamstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com" crossorigin>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_REGULAR_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_MEDIUM_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_BOLD_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link rel="preload" as="image" href="__DOTA_LOGO_URL__" fetchpriority="high">
+<link
+  rel="preload"
+  as="video"
+  href="__DOTA_MONTAGE_MP4_URL__"
+  type="video/mp4"
+  fetchpriority="high"
+>
 <style id="d2-critical">
+@font-face {
+  font-family: "Trajan Pro";
+  src: url("__TRAJAN_REGULAR_FONT_URL__") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 html:not(.d2-ready) .gradio-container {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -1956,204 +2043,27 @@ html:not(.d2-ready) body::after {
   background-repeat: no-repeat;
   background-position: left center;
   background-size: 48px 48px;
-  transform: translate(-50%, -50%);
-}
-#d2-startup-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 2147483647;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #05060a;
-  color: #efe5bb;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.42s ease, visibility 0.42s ease;
-}
-#d2-startup-loader::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(5, 6, 10, 0.34) 0%,
-      rgba(17, 19, 24, 0.16) 56%,
-      rgba(9, 10, 13, 0.46) 100%
-    );
-  pointer-events: none;
-}
-#d2-startup-loader::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(5, 6, 10, 0.30),
-      rgba(5, 6, 10, 0.08),
-      rgba(5, 6, 10, 0.30)
-    ),
-    linear-gradient(
-      180deg,
-      rgba(5, 6, 10, 0.36),
-      rgba(5, 6, 10, 0.10) 44%,
-      rgba(5, 6, 10, 0.54)
-    );
-  pointer-events: none;
-}
-#d2-startup-loader.d2-loader-exit {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-.d2-loader-video {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.72;
-  filter: saturate(1.1) contrast(1.06) brightness(0.78);
-  pointer-events: auto;
-}
-.d2-loader-video::-webkit-media-controls-start-playback-button {
-  -webkit-transform: translateY(118px) !important;
-  transform: translateY(118px) !important;
-}
-.d2-loader-content {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  pointer-events: none;
-}
-.d2-loader-brand {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
-}
-.d2-loader-brand img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-  animation: d2-logo-red-flash 4.2s ease-in-out infinite;
-}
-.d2-loader-brand strong {
-  display: block;
-  color: #efe5bb;
-  font-size: 24px;
-  line-height: 28px;
+  transform: translate(-50%, -50%) translateY(-84px);
 }
 </style>
 <script>document.documentElement.classList.add("d2-loading");</script>
-""".replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
-
-_CRITICAL_HEAD_BYTES = CRITICAL_HEAD.encode("utf-8")
-
-CRITICAL_LOADER_BODY = """
-<div id="d2-startup-loader" role="status" aria-live="polite" data-critical-loader="true">
-  <video
-    class="d2-loader-video"
-    src="__DOTA_MONTAGE_MP4_URL__"
-    autoplay="autoplay"
-    muted="muted"
-    loop="loop"
-    playsinline="playsinline"
-    webkit-playsinline="webkit-playsinline"
-    preload="auto"
-    fetchpriority="high"
-    aria-hidden="true"
-    tabindex="-1"
-    disableRemotePlayback
-  >
-    <source type="video/mp4" src="__DOTA_MONTAGE_MP4_URL__">
-    <source type="video/webm" src="__DOTA_MONTAGE_WEBM_URL__">
-  </video>
-  <div class="d2-loader-content">
-    <div class="d2-loader-brand">
-      <img
-        src="__DOTA_LOGO_URL__"
-        alt="Dota 2"
-        decoding="async"
-        loading="eager"
-        fetchpriority="high"
-      >
-      <strong>DOTA2Tuned</strong>
-    </div>
-  </div>
-</div>
-<script>
-(() => {
-  const primeLoaderVideo = window.dota2tunedPrimeLoaderVideo || ((video) => {
-    if (!video) return;
-    video.autoplay = true;
-    video.defaultMuted = true;
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.setAttribute("autoplay", "autoplay");
-    video.setAttribute("muted", "muted");
-    video.setAttribute("loop", "loop");
-    video.setAttribute("playsinline", "playsinline");
-    video.setAttribute("webkit-playsinline", "webkit-playsinline");
-    video.setAttribute("fetchpriority", "high");
-    video.disableRemotePlayback = true;
-    const tryPlay = () => {
-      const promise = video.play?.();
-      promise?.then?.(() => {
-        delete video.dataset.playBlocked;
-      });
-      promise?.catch?.((error) => {
-        if (!video.paused && video.currentTime > 0) {
-          delete video.dataset.playBlocked;
-          return;
-        }
-        video.dataset.playBlocked = error?.name || "blocked";
-      });
-    };
-    video.addEventListener("loadeddata", tryPlay, { once: true });
-    video.addEventListener("canplay", tryPlay, { once: true });
-    video.load?.();
-    if (document.visibilityState === "visible") {
-      tryPlay();
-    } else {
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") tryPlay();
-      }, { once: true });
-    }
-  });
-  window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
-  const loader = document.querySelector("#d2-startup-loader");
-  primeLoaderVideo(loader?.querySelector(".d2-loader-video"));
-})();
-</script>
 """.replace(
     "__DOTA_LOGO_URL__", DOTA_LOGO_URL
 ).replace(
-    "__DOTA_MONTAGE_WEBM_URL__", DOTA_MONTAGE_WEBM_URL
+    "__TRAJAN_REGULAR_FONT_URL__", TRAJAN_REGULAR_FONT_URL
+).replace(
+    "__TRAJAN_MEDIUM_FONT_URL__", TRAJAN_MEDIUM_FONT_URL
+).replace(
+    "__TRAJAN_BOLD_FONT_URL__", TRAJAN_BOLD_FONT_URL
 ).replace(
     "__DOTA_MONTAGE_MP4_URL__", DOTA_MONTAGE_MP4_URL
 )
 
-_CRITICAL_LOADER_BODY_BYTES = CRITICAL_LOADER_BODY.encode("utf-8")
-_BODY_OPEN_RE = re.compile(br"(<body\b[^>]*>)", re.IGNORECASE)
+_CRITICAL_HEAD_BYTES = CRITICAL_HEAD.encode("utf-8")
 
 
 class _CriticalHeadMiddleware:
-    """Inject critical loader HTML so the loader is active at first paint.
+    """Inject critical head assets/styles before Gradio hydrates.
 
     Only text/html responses are rewritten; SSE/queue/static pass through.
     """
@@ -2186,16 +2096,6 @@ class _CriticalHeadMiddleware:
                 body = message.get("body", b"")
                 if b"<head>" in body and b'id="d2-critical"' not in body:
                     body = body.replace(b"<head>", b"<head>" + _CRITICAL_HEAD_BYTES, 1)
-                    message = {**message, "body": body}
-                if (
-                    b'id="d2-startup-loader"' not in body
-                    and (body_match := _BODY_OPEN_RE.search(body))
-                ):
-                    body = (
-                        body[: body_match.end()]
-                        + _CRITICAL_LOADER_BODY_BYTES
-                        + body[body_match.end() :]
-                    )
                     message = {**message, "body": body}
                 await send(message)
             else:

@@ -10,7 +10,6 @@ from dota2tuned.ui.gradio_app import (
     APP_HEAD,
     ASSISTANT_EXAMPLE_PROMPTS,
     CRITICAL_HEAD,
-    CRITICAL_LOADER_BODY,
     NAV_OPTIONS,
     _assistant_references_html,
     _CriticalHeadMiddleware,
@@ -291,6 +290,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "#d2-startup-loader" in APP_HEAD
     assert "d2-loader-video" in APP_HEAD
     assert "d2-loader-content" in APP_HEAD
+    assert "d2-loader-description" in APP_HEAD
+    assert "top: calc(50% - 84px)" in APP_HEAD
+    assert "top: calc(50% + 178px)" in APP_HEAD
+    assert "Draft intelligence for heroes, counters, builds, and match prediction" in APP_HEAD
     assert "::-webkit-media-controls-start-playback-button" in APP_HEAD
     assert "translateY(118px)" in APP_HEAD
     assert "pointer-events: auto" in APP_HEAD
@@ -515,28 +518,18 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert "rgba(217, 177, 102, 0.15) 52%" not in CRITICAL_HEAD
     assert 'classList.add("d2-loading")' in CRITICAL_HEAD
     assert "DOTA2Tuned" in CRITICAL_HEAD
-    assert "#d2-startup-loader" in CRITICAL_HEAD
-    assert ".d2-loader-video" in CRITICAL_HEAD
-    assert ".d2-loader-content" in CRITICAL_HEAD
+    assert 'as="font"' in CRITICAL_HEAD
+    assert 'as="video"' in CRITICAL_HEAD
+    assert 'as="image"' in CRITICAL_HEAD
+    assert 'fetchpriority="high"' in CRITICAL_HEAD
+    assert "dota_montage_02.mp4" in CRITICAL_HEAD
+    assert "goudytrajan-regular-pro-webfont.woff" in CRITICAL_HEAD
+    assert "transform: translate(-50%, -50%) translateY(-84px)" in CRITICAL_HEAD
+    assert "#d2-startup-loader" not in CRITICAL_HEAD
+    assert ".d2-loader-video" not in CRITICAL_HEAD
     assert ".d2-loader-play" not in CRITICAL_HEAD
-    assert "::-webkit-media-controls-start-playback-button" in CRITICAL_HEAD
-    assert "translateY(118px)" in CRITICAL_HEAD
-
-
-def test_critical_loader_body_contains_safari_hardened_video():
-    assert 'id="d2-startup-loader"' in CRITICAL_LOADER_BODY
-    assert 'data-critical-loader="true"' in CRITICAL_LOADER_BODY
-    assert 'class="d2-loader-content"' in CRITICAL_LOADER_BODY
-    assert 'class="d2-loader-play"' not in CRITICAL_LOADER_BODY
-    assert "<span>Play</span>" not in CRITICAL_LOADER_BODY
-    assert "Play Video" not in CRITICAL_LOADER_BODY
-    assert "dota_montage_02.mp4" in CRITICAL_LOADER_BODY
-    assert 'muted="muted"' in CRITICAL_LOADER_BODY
-    assert 'playsinline="playsinline"' in CRITICAL_LOADER_BODY
-    assert 'webkit-playsinline="webkit-playsinline"' in CRITICAL_LOADER_BODY
-    assert "video.defaultMuted = true" in CRITICAL_LOADER_BODY
-    assert "promise?.catch?." in CRITICAL_LOADER_BODY
-    assert "dota2tunedWireLoaderPlayButton" not in CRITICAL_LOADER_BODY
+    assert "<video" not in CRITICAL_HEAD
+    assert "video.defaultMuted = true" not in CRITICAL_HEAD
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():
@@ -595,14 +588,17 @@ def test_critical_head_middleware_injects_into_html_head():
     assert b'id="d2-critical"' in body
     assert body.index(b'id="d2-critical"') < body.index(b"</head>")
     assert b'classList.add("d2-loading")' in body
-    assert b'id="d2-startup-loader"' in body
-    assert b'data-critical-loader="true"' in body
-    assert body.index(b'id="d2-startup-loader"') < body.index(b"<main>app</main>")
+    assert b'rel="preload"' in body
+    assert b'as="video"' in body
+    assert b"dota_montage_02.mp4" in body
+    assert b'id="d2-startup-loader"' not in body
+    assert b'data-critical-loader="true"' not in body
+    assert b"<video" not in body
     assert b'class="d2-loader-play"' not in body
     assert b"<span>Play</span>" not in body
     assert b"Play Video" not in body
-    assert b"webkit-playsinline" in body
-    assert b"video.defaultMuted = true" in body
+    assert b"webkit-playsinline" not in body
+    assert b"video.defaultMuted = true" not in body
 
 
 def test_critical_head_middleware_passes_through_non_html():
