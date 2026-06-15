@@ -1751,12 +1751,55 @@ html:not(.d2-ready) body::after {
     '700 24px "Trajan Pro"',
     '900 24px "Trajan Pro"'
   ];
+  const primeLoaderVideo = window.dota2tunedPrimeLoaderVideo || ((video) => {
+    if (!video) return;
+    video.autoplay = true;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute("autoplay", "autoplay");
+    video.setAttribute("muted", "muted");
+    video.setAttribute("loop", "loop");
+    video.setAttribute("playsinline", "playsinline");
+    video.setAttribute("webkit-playsinline", "webkit-playsinline");
+    video.setAttribute("fetchpriority", "high");
+    video.disableRemotePlayback = true;
+    const tryPlay = () => {
+      const promise = video.play?.();
+      promise?.then?.(() => {
+        delete video.dataset.playBlocked;
+      });
+      promise?.catch?.((error) => {
+        if (!video.paused && video.currentTime > 0) {
+          delete video.dataset.playBlocked;
+          return;
+        }
+        video.dataset.playBlocked = error?.name || "blocked";
+      });
+    };
+    video.addEventListener("loadeddata", tryPlay, { once: true });
+    video.addEventListener("canplay", tryPlay, { once: true });
+    video.load?.();
+    if (document.visibilityState === "visible") {
+      tryPlay();
+    } else {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") tryPlay();
+      }, { once: true });
+    }
+  });
+  window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
   document.documentElement.classList.add("d2-loading");
   loaderFonts.forEach((font) => {
     document.fonts?.load(font).catch(() => {});
   });
   const ensureLoader = () => {
-    if (document.getElementById("d2-startup-loader")) return;
+    const existingLoader = document.getElementById("d2-startup-loader");
+    if (existingLoader) {
+      primeLoaderVideo(existingLoader.querySelector(".d2-loader-video"));
+      return;
+    }
     const loader = document.createElement("div");
     loader.id = "d2-startup-loader";
     loader.setAttribute("role", "status");
@@ -1790,23 +1833,7 @@ html:not(.d2-ready) body::after {
       </div>
     `;
     document.body.prepend(loader);
-    const video = loader.querySelector(".d2-loader-video");
-    if (video) {
-      video.autoplay = true;
-      video.defaultMuted = true;
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.setAttribute("autoplay", "autoplay");
-      video.setAttribute("muted", "muted");
-      video.setAttribute("loop", "loop");
-      video.setAttribute("playsinline", "playsinline");
-      video.setAttribute("webkit-playsinline", "webkit-playsinline");
-      video.setAttribute("fetchpriority", "high");
-      video.disableRemotePlayback = true;
-      video.load?.();
-      video.play?.().catch(() => {});
-    }
+    primeLoaderVideo(loader.querySelector(".d2-loader-video"));
   };
   window.dota2tunedHideLoader = () => {
     const loader = document.getElementById("d2-startup-loader");
@@ -1879,10 +1906,10 @@ html:not(.d2-ready) body::after {
 
 # Gradio 6.18 stores `head=` inside window.gradio_config; the frontend bundle injects
 # it only AFTER it begins mounting components, so head-based styling cannot stop a flash
-# of bare elements on first paint. CRITICAL_HEAD is injected into the REAL served <head>
-# (parse-time, before the bundle) by _CriticalHeadMiddleware: it hides the app and paints
-# the dark splash until `d2-ready` (set by the full loader in APP_HEAD). Keep visually in
-# sync with the html:not(.d2-ready) rules in APP_HEAD.
+# of bare elements on first paint. CRITICAL_HEAD and CRITICAL_LOADER_BODY are injected
+# into the REAL served HTML (parse-time, before the bundle) by _CriticalHeadMiddleware:
+# they hide the app and paint the video loader until `d2-ready` (set by APP_HEAD).
+# Keep visually in sync with the html:not(.d2-ready) rules in APP_HEAD.
 CRITICAL_HEAD = """
 <style id="d2-critical">
 html:not(.d2-ready) .gradio-container {
@@ -1938,16 +1965,194 @@ html:not(.d2-ready) body::after {
   background-size: 48px 48px;
   transform: translate(-50%, -50%);
 }
+#d2-startup-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #05060a;
+  color: #efe5bb;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s ease, visibility 0.42s ease;
+}
+#d2-startup-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(
+      circle 28.6rem at 50% 50%,
+      rgba(255, 96, 70, 0.28) 0%,
+      rgba(255, 96, 70, 0.20) 24%,
+      rgba(217, 177, 102, 0.15) 52%,
+      rgba(217, 177, 102, 0.00) 74%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(5, 6, 10, 0.34) 0%,
+      rgba(17, 19, 24, 0.16) 56%,
+      rgba(9, 10, 13, 0.46) 100%
+    );
+  pointer-events: none;
+}
+#d2-startup-loader::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 6, 10, 0.30),
+      rgba(5, 6, 10, 0.08),
+      rgba(5, 6, 10, 0.30)
+    ),
+    linear-gradient(
+      180deg,
+      rgba(5, 6, 10, 0.36),
+      rgba(5, 6, 10, 0.10) 44%,
+      rgba(5, 6, 10, 0.54)
+    );
+  pointer-events: none;
+}
+#d2-startup-loader.d2-loader-exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.d2-loader-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+  filter: saturate(1.1) contrast(1.06) brightness(0.78);
+  pointer-events: none;
+}
+.d2-loader-brand {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+}
+.d2-loader-brand img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  animation: d2-logo-red-flash 4.2s ease-in-out infinite;
+}
+.d2-loader-brand strong {
+  display: block;
+  color: #efe5bb;
+  font-size: 24px;
+  line-height: 28px;
+}
 </style>
 <script>document.documentElement.classList.add("d2-loading");</script>
 """.replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
 
 _CRITICAL_HEAD_BYTES = CRITICAL_HEAD.encode("utf-8")
 
+CRITICAL_LOADER_BODY = """
+<div id="d2-startup-loader" role="status" aria-live="polite" data-critical-loader="true">
+  <video
+    class="d2-loader-video"
+    src="__DOTA_MONTAGE_MP4_URL__"
+    autoplay="autoplay"
+    muted="muted"
+    loop="loop"
+    playsinline="playsinline"
+    webkit-playsinline="webkit-playsinline"
+    preload="auto"
+    fetchpriority="high"
+    aria-hidden="true"
+    tabindex="-1"
+    disableRemotePlayback
+  >
+    <source type="video/mp4" src="__DOTA_MONTAGE_MP4_URL__">
+    <source type="video/webm" src="__DOTA_MONTAGE_WEBM_URL__">
+  </video>
+  <div class="d2-loader-brand">
+    <img
+      src="__DOTA_LOGO_URL__"
+      alt="Dota 2"
+      decoding="async"
+      loading="eager"
+      fetchpriority="high"
+    >
+    <strong>DOTA2Tuned</strong>
+  </div>
+</div>
+<script>
+(() => {
+  const primeLoaderVideo = window.dota2tunedPrimeLoaderVideo || ((video) => {
+    if (!video) return;
+    video.autoplay = true;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute("autoplay", "autoplay");
+    video.setAttribute("muted", "muted");
+    video.setAttribute("loop", "loop");
+    video.setAttribute("playsinline", "playsinline");
+    video.setAttribute("webkit-playsinline", "webkit-playsinline");
+    video.setAttribute("fetchpriority", "high");
+    video.disableRemotePlayback = true;
+    const tryPlay = () => {
+      const promise = video.play?.();
+      promise?.then?.(() => {
+        delete video.dataset.playBlocked;
+      });
+      promise?.catch?.((error) => {
+        if (!video.paused && video.currentTime > 0) {
+          delete video.dataset.playBlocked;
+          return;
+        }
+        video.dataset.playBlocked = error?.name || "blocked";
+      });
+    };
+    video.addEventListener("loadeddata", tryPlay, { once: true });
+    video.addEventListener("canplay", tryPlay, { once: true });
+    video.load?.();
+    if (document.visibilityState === "visible") {
+      tryPlay();
+    } else {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") tryPlay();
+      }, { once: true });
+    }
+  });
+  window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
+  primeLoaderVideo(document.querySelector("#d2-startup-loader .d2-loader-video"));
+})();
+</script>
+""".replace(
+    "__DOTA_LOGO_URL__", DOTA_LOGO_URL
+).replace(
+    "__DOTA_MONTAGE_WEBM_URL__", DOTA_MONTAGE_WEBM_URL
+).replace(
+    "__DOTA_MONTAGE_MP4_URL__", DOTA_MONTAGE_MP4_URL
+)
+
+_CRITICAL_LOADER_BODY_BYTES = CRITICAL_LOADER_BODY.encode("utf-8")
+_BODY_OPEN_RE = re.compile(br"(<body\b[^>]*>)", re.IGNORECASE)
+
 
 class _CriticalHeadMiddleware:
-    """Inject CRITICAL_HEAD into the real served <head> so the loader is active at first
-    paint. Only text/html responses are rewritten; SSE/queue/static pass through.
+    """Inject critical loader HTML so the loader is active at first paint.
+
+    Only text/html responses are rewritten; SSE/queue/static pass through.
     """
 
     def __init__(self, app):
@@ -1978,6 +2183,16 @@ class _CriticalHeadMiddleware:
                 body = message.get("body", b"")
                 if b"<head>" in body and b'id="d2-critical"' not in body:
                     body = body.replace(b"<head>", b"<head>" + _CRITICAL_HEAD_BYTES, 1)
+                    message = {**message, "body": body}
+                if (
+                    b'id="d2-startup-loader"' not in body
+                    and (body_match := _BODY_OPEN_RE.search(body))
+                ):
+                    body = (
+                        body[: body_match.end()]
+                        + _CRITICAL_LOADER_BODY_BYTES
+                        + body[body_match.end() :]
+                    )
                     message = {**message, "body": body}
                 await send(message)
             else:

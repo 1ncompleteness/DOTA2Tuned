@@ -10,6 +10,7 @@ from dota2tuned.ui.gradio_app import (
     APP_HEAD,
     ASSISTANT_EXAMPLE_PROMPTS,
     CRITICAL_HEAD,
+    CRITICAL_LOADER_BODY,
     NAV_OPTIONS,
     _assistant_references_html,
     _CriticalHeadMiddleware,
@@ -313,7 +314,9 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert 'src="${montageMp4Url}"' in APP_HEAD
     assert "video.defaultMuted = true" in APP_HEAD
     assert 'video.setAttribute("webkit-playsinline", "webkit-playsinline")' in APP_HEAD
-    assert "video.play?.().catch" in APP_HEAD
+    assert "promise?.catch?." in APP_HEAD
+    assert "loadeddata" in APP_HEAD
+    assert "canplay" in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "dota2tunedRevealWhenReady" in APP_HEAD
     assert "DOTA2Tuned" in APP_HEAD
@@ -504,6 +507,19 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert "rgba(217, 177, 102, 0.15) 52%" in CRITICAL_HEAD
     assert 'classList.add("d2-loading")' in CRITICAL_HEAD
     assert "DOTA2Tuned" in CRITICAL_HEAD
+    assert "#d2-startup-loader" in CRITICAL_HEAD
+    assert ".d2-loader-video" in CRITICAL_HEAD
+
+
+def test_critical_loader_body_contains_safari_hardened_video():
+    assert 'id="d2-startup-loader"' in CRITICAL_LOADER_BODY
+    assert 'data-critical-loader="true"' in CRITICAL_LOADER_BODY
+    assert "dota_montage_02.mp4" in CRITICAL_LOADER_BODY
+    assert 'muted="muted"' in CRITICAL_LOADER_BODY
+    assert 'playsinline="playsinline"' in CRITICAL_LOADER_BODY
+    assert 'webkit-playsinline="webkit-playsinline"' in CRITICAL_LOADER_BODY
+    assert "video.defaultMuted = true" in CRITICAL_LOADER_BODY
+    assert "promise?.catch?." in CRITICAL_LOADER_BODY
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():
@@ -546,7 +562,12 @@ def test_critical_head_middleware_injects_into_html_head():
                 ],
             }
         )
-        await send({"type": "http.response.body", "body": b"<head></head>"})
+        await send(
+            {
+                "type": "http.response.body",
+                "body": b"<html><head></head><body><main>app</main></body></html>",
+            }
+        )
 
     sent = _drive_middleware(html_app)
     start = next(m for m in sent if m["type"] == "http.response.start")
@@ -557,6 +578,11 @@ def test_critical_head_middleware_injects_into_html_head():
     assert b'id="d2-critical"' in body
     assert body.index(b'id="d2-critical"') < body.index(b"</head>")
     assert b'classList.add("d2-loading")' in body
+    assert b'id="d2-startup-loader"' in body
+    assert b'data-critical-loader="true"' in body
+    assert body.index(b'id="d2-startup-loader"') < body.index(b"<main>app</main>")
+    assert b"webkit-playsinline" in body
+    assert b"video.defaultMuted = true" in body
 
 
 def test_critical_head_middleware_passes_through_non_html():
