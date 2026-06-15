@@ -831,15 +831,18 @@ __NAV_ICON_CSS__
   align-items: center;
   overflow: hidden;
 }
-.hero-card img {
+.hero-card > img {
   width: 48px;
   height: 36px;
   flex: 0 0 48px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 2px;
+  background: rgba(5, 6, 10, 0.62);
 }
 .hero-card-body {
   min-width: 0;
+  flex: 1 1 auto;
+  padding-right: 2px;
 }
 .app-main .hero-card-remove {
   position: absolute !important;
@@ -874,6 +877,12 @@ __NAV_ICON_CSS__
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.hero-card strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: normal;
 }
 .entity-tags {
   display: flex;

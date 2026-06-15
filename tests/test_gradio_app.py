@@ -150,6 +150,14 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
     assert "min-width: 100% !important" not in APP_CSS
 
 
+def test_css_shows_full_selected_hero_cards():
+    assert ".hero-card > img" in APP_CSS
+    assert "object-fit: contain" in APP_CSS
+    assert ".hero-card strong" in APP_CSS
+    assert "white-space: normal" in APP_CSS
+    assert "text-overflow: clip" in APP_CSS
+
+
 def test_parse_heroes_accepts_dropdown_values():
     heroes = pl.DataFrame([{"hero_id": 44, "hero_name": "Phantom Assassin"}])
     lookup, _ = _hero_lookup(heroes)
