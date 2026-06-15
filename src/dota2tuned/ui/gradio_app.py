@@ -1199,6 +1199,26 @@ def build_app() -> gr.Blocks:
                         filterable=True,
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
+
+                    def update_choices(allies_val, enemies_val, bans_val):
+                        selected = set(allies_val or []) | set(enemies_val or []) | set(bans_val or [])
+
+                        def filtered(exclude_self):
+                            excl = selected - set(exclude_self or [])
+                            return [c for c in hero_choices if c[1] not in excl]
+
+                        return (
+                            gr.update(choices=filtered(allies_val)),
+                            gr.update(choices=filtered(enemies_val)),
+                            gr.update(choices=filtered(bans_val)),
+                        )
+
+                    for dd in (allies, enemies, bans):
+                        dd.change(
+                            update_choices,
+                            inputs=[allies, enemies, bans],
+                            outputs=[allies, enemies, bans],
+                        )
                 with gr.Row():
                     ally_preview = gr.HTML(hero_preview([]))
                     enemy_preview = gr.HTML(hero_preview([44, 30]))
