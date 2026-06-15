@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from dota2tuned.ui.runtime_hooks import (  # noqa: E402
     close_idle_main_event_loop,
+    gradio_launch_runtime_kwargs,
     install_quiet_unraisablehook,
 )
 
@@ -46,6 +47,6 @@ if __name__ == "__main__":
         head=APP_HEAD,
         theme=gr.themes.Soft(),
         ssr_mode=False,
-        share=True,
+        **gradio_launch_runtime_kwargs(),
         app_kwargs=launch_app_kwargs(),
     )

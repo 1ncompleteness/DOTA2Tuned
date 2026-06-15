@@ -467,8 +467,8 @@ def test_launch_app_kwargs_wires_critical_head_middleware():
 
 
 def test_launch_entrypoints_enable_public_share_links():
-    assert "share=True" in Path("app.py").read_text()
-    assert "share=True" in Path("src/dota2tuned/cli.py").read_text()
+    assert "gradio_launch_runtime_kwargs" in Path("app.py").read_text()
+    assert "gradio_launch_runtime_kwargs" in Path("src/dota2tuned/cli.py").read_text()
 
 
 def _drive_middleware(downstream):

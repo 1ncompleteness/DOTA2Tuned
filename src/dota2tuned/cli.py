@@ -201,6 +201,7 @@ def eval() -> None:
 def serve() -> None:
     from dota2tuned.ui.runtime_hooks import (
         close_idle_main_event_loop,
+        gradio_launch_runtime_kwargs,
         install_quiet_unraisablehook,
     )
 
@@ -226,7 +227,7 @@ def serve() -> None:
         head=APP_HEAD,
         theme=gr.themes.Soft(),
         ssr_mode=False,
-        share=True,
+        **gradio_launch_runtime_kwargs(),
         app_kwargs=launch_app_kwargs(),
     )
 

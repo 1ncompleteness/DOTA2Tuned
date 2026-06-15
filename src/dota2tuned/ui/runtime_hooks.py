@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import traceback
 import warnings
@@ -9,6 +10,7 @@ STARLETTE_422_DEPRECATION_PATTERN = (
     r"'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated\. "
     r"Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead\."
 )
+HF_SPACE_ENV_KEYS = ("SPACE_ID", "SPACE_HOST")
 
 
 def _is_benign_loop_teardown(unraisable) -> bool:
@@ -56,6 +58,20 @@ def install_quiet_unraisablehook() -> None:
 
     hook._dota2tuned_quiet_unraisablehook = True
     sys.unraisablehook = hook
+
+
+def is_huggingface_space_runtime() -> bool:
+    """True when running inside a Hugging Face Space container."""
+    return any(os.getenv(key) for key in HF_SPACE_ENV_KEYS)
+
+
+def gradio_launch_runtime_kwargs() -> dict[str, bool]:
+    """Return Gradio launch flags for local runs vs. Hugging Face Spaces."""
+    is_space_runtime = is_huggingface_space_runtime()
+    return {
+        "share": not is_space_runtime,
+        "quiet": is_space_runtime,
+    }
 
 
 def install_safe_asyncio_loop_del() -> None:

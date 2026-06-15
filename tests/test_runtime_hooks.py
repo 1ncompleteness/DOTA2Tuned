@@ -4,8 +4,10 @@ import warnings
 import pytest
 
 from dota2tuned.ui.runtime_hooks import (
+    gradio_launch_runtime_kwargs,
     install_quiet_starlette_422_warning,
     install_safe_asyncio_loop_del,
+    is_huggingface_space_runtime,
 )
 
 
@@ -50,3 +52,16 @@ def test_install_quiet_starlette_422_warning_suppresses_only_target_message():
         warnings.warn("other warning", UserWarning, stacklevel=2)
 
     assert [str(item.message) for item in caught] == ["other warning"]
+
+
+def test_gradio_launch_runtime_kwargs_switch_for_huggingface_spaces(monkeypatch):
+    monkeypatch.delenv("SPACE_ID", raising=False)
+    monkeypatch.delenv("SPACE_HOST", raising=False)
+
+    assert not is_huggingface_space_runtime()
+    assert gradio_launch_runtime_kwargs() == {"share": True, "quiet": False}
+
+    monkeypatch.setenv("SPACE_ID", "build-small-hackathon/dota2tuned")
+
+    assert is_huggingface_space_runtime()
+    assert gradio_launch_runtime_kwargs() == {"share": False, "quiet": True}

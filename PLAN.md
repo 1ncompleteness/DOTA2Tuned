@@ -166,6 +166,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 04:18: added the official Dota 2 homepage montage video as the startup-loader background, using the Steam WebM/MP4 sources with muted inline autoplay and keeping the red-to-gold radial glow plus dark vignette as an overlay/fallback.
 - 2026-06-15 04:24: fixed the loader video visibility by changing the hydrated loader overlay from an opaque dark linear gradient to translucent RGBA layers and increasing the video layer opacity/brightness, so the montage remains visible behind the brand mark.
 - 2026-06-15 04:34: enabled Gradio `share=True` in both Space and CLI launch paths, added a narrow startup warning filter for Gradio's deprecated Starlette 422 constant, and added root `agents.md` with Space/API instructions for coding agents.
+- 2026-06-15 04:50: fixed the HF Space startup log regression from `share=True`: Gradio sharing is now enabled only for local runs, while HF Space containers use `share=False` and `quiet=True` because Spaces are already public and Gradio does not support share tunnels there.
 
 ## Adapter Eval Notes
 
