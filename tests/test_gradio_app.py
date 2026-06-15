@@ -1,3 +1,5 @@
+import inspect
+
 import gradio as gr
 import polars as pl
 
@@ -11,6 +13,7 @@ from dota2tuned.ui.gradio_app import (
     _hero_lookup,
     _parse_heroes,
     _selected_hero_html,
+    build_app,
 )
 
 
@@ -187,6 +190,13 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "sepia(95%)" in logo_keyframes
     assert ".app-sidebar-brand img" in APP_CSS
     assert "animation: d2-logo-red-flash 4.2s ease-in-out infinite" in APP_CSS
+
+
+def test_builds_page_does_not_render_redundant_hero_preview_html():
+    source = inspect.getsource(build_app)
+
+    assert "build_hero_preview" not in source
+    assert "outputs=[build_hero_preview]" not in source
 
 
 def test_gradio_primary_backgrounds_use_action_red():

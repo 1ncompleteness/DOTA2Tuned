@@ -2588,15 +2588,7 @@ def build_app() -> gr.Blocks:
                     filterable=True,
                     elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
-                build_hero_preview = gr.HTML(hero_preview([1]))
                 builds_output = gr.HTML(hero_builds(1))
-                hero.change(
-                    hero_single_preview,
-                    inputs=[hero],
-                    outputs=[build_hero_preview],
-                    api_visibility="private",
-                    queue=False,
-                )
                 hero.change(hero_builds, inputs=[hero], outputs=[builds_output])
 
             with gr.Column(

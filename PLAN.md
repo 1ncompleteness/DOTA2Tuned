@@ -152,6 +152,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 23:15: removed the remaining Gradio blue primary backgrounds by routing primary/theme variables, block labels, selected radio/checkbox labels, and range accents through the same red action fill used by the Recommend button. This covers Allied heroes, Enemy heroes, Banned heroes, Role, Scope, and equivalent labeled inputs across all mounted app views.
 - 2026-06-14 23:21: made selected hero-card portrait backgrounds transparent and smoothed the Dota symbol pulse for both the startup loader and sidebar brand by using matching filter functions across all keyframes, with intermediate 25%/75% stops inside the existing 4.2 second white-red-white cycle.
 - 2026-06-14 23:39: hardened the startup loader against first-paint flashes by hiding `.gradio-container` by default until `html.d2-ready`, adding a CSS-only `body::before/after` branded fallback before the JS loader div can mount, and revealing the app only after the Gradio load hook waits for fonts, currently-mounted images, and paint frames, with a timeout fallback.
+- 2026-06-14 23:44: removed the redundant Builds page selected-hero preview `gr.HTML` component and its change handler, eliminating the extra generated `html-container` wrapper while keeping the Builds dropdown and actual builds output intact.
 
 ## Adapter Eval Notes
 
