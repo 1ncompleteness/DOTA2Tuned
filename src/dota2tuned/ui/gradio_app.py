@@ -591,6 +591,52 @@ body::-webkit-scrollbar-thumb:hover,
 .gradio-container [data-testid="status-tracker"] {
   color: var(--d2-gold-soft) !important;
 }
+#tuned-model-view .d2-dynamic-output [data-testid="status-tracker"] {
+  display: none !important;
+}
+#tuned-model-view .d2-dynamic-output.pending,
+#tuned-model-view .d2-dynamic-output .html-container.pending,
+#tuned-model-view .d2-dynamic-output .pending {
+  opacity: 1 !important;
+  filter: none !important;
+}
+#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)
+  > [data-testid="status-tracker"]:not(.hide) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  inset: 0 !important;
+  width: 100% !important;
+  min-height: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  padding: 8px 10px !important;
+  overflow: hidden !important;
+  background: rgba(10, 11, 14, 0.68) !important;
+  border: 0 !important;
+  box-sizing: border-box !important;
+}
+#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)
+  > [data-testid="status-tracker"]:not(.hide) .progress-text {
+  margin: 0 !important;
+  color: var(--d2-gold-soft) !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+}
+#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)
+  > [data-testid="status-tracker"]:not(.hide) .eta-bar {
+  height: 100% !important;
+  opacity: 0.22 !important;
+}
+#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)
+  > [data-testid="status-tracker"]:not(.hide) svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)
+  > [data-testid="status-tracker"]:not(.hide) .margin {
+  margin: 0 0 0 8px !important;
+}
 .d2-module-intro {
   margin: 0 0 10px;
 }
@@ -777,6 +823,27 @@ __NAV_ICON_CSS__
 }
 .app-view > .form,
 .app-view > .block {
+  width: 100%;
+}
+.d2-selector-grid {
+  align-items: stretch !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+.d2-selector-stack {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+.d2-selector-stack > .block,
+.d2-selector-stack > .form {
+  width: 100% !important;
+}
+.d2-selector-stack .d2-preview-output {
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+.d2-selector-stack .hero-strip,
+.d2-selector-stack .item-strip {
   width: 100%;
 }
 /* All views stay mounted (visible=True); JS toggles .d2-active to switch tabs.
@@ -1385,6 +1452,21 @@ __NAV_ICON_CSS__
   text-shadow: 1px 0 rgba(255, 96, 70, 0.85), -1px 0 rgba(235, 207, 135, 0.50);
   animation: d2-glitch-skew 0.38s steps(2, end) 1;
 }
+.d2-text-scrambling {
+  position: relative;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.d2-text-scrambling::after {
+  content: attr(data-d2-scramble-text);
+  position: absolute;
+  inset: 0;
+  color: #fff3df;
+  -webkit-text-fill-color: #fff3df;
+  text-shadow: 1px 0 rgba(255, 96, 70, 0.55), -1px 0 rgba(235, 207, 135, 0.34);
+  white-space: inherit;
+  pointer-events: none;
+}
 .d2-text-glitch::before,
 .d2-text-glitch::after {
   content: attr(data-d2-glitch-text);
@@ -1801,6 +1883,46 @@ document.documentElement.classList.add("d2-loading");
       drop-shadow(0 0 16px rgba(255, 96, 70, 0.62));
   }
 }
+@keyframes d2-loader-ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes d2-loader-ring-ready {
+  0%, 100% {
+    box-shadow:
+      0 0 0 rgba(255, 96, 70, 0),
+      0 0 18px rgba(217, 177, 102, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(255, 96, 70, 0.46),
+      0 0 30px rgba(217, 177, 102, 0.24);
+  }
+}
+@keyframes d2-loader-status-glitch {
+  0%, 100% {
+    transform: translateY(0);
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+  }
+  18% {
+    transform: translate(1px, 0);
+    text-shadow:
+      1px 0 rgba(255, 96, 70, 0.82),
+      -1px 0 rgba(217, 177, 102, 0.52);
+  }
+  34% {
+    transform: translate(-1px, 0);
+    text-shadow:
+      -1px 0 rgba(255, 96, 70, 0.78),
+      1px 0 rgba(217, 177, 102, 0.48);
+  }
+  56% {
+    transform: translate(1px, -1px);
+    text-shadow:
+      1px 0 rgba(255, 96, 70, 0.66),
+      -1px 0 rgba(217, 177, 102, 0.42);
+  }
+}
 html:not(.d2-ready) .gradio-container {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -1952,6 +2074,132 @@ html:not(.d2-ready) body::after {
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
   transform: translate(-50%, -50%);
 }
+.d2-loader-control {
+  position: absolute;
+  bottom: 42px;
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 10rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(239, 229, 187, 0.82);
+  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
+  cursor: progress;
+  opacity: 0.92;
+  pointer-events: auto;
+  transform: translateX(-50%);
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+.d2-loader-control:disabled {
+  cursor: progress;
+}
+.d2-loader-control:not(:disabled) {
+  color: #efe5bb;
+  cursor: pointer;
+}
+.d2-loader-control:not(:disabled):hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-1px);
+}
+.d2-loader-ring {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  --d2-loader-progress: 0;
+  --d2-loader-angle: 0deg;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(217, 177, 102, 0.94) 0deg,
+      rgba(255, 96, 70, 0.96) var(--d2-loader-angle),
+      rgba(239, 229, 187, 0.14) var(--d2-loader-angle),
+      rgba(239, 229, 187, 0.14) 360deg
+    );
+  box-shadow: 0 0 18px rgba(217, 177, 102, 0.14);
+  transition: background 0.32s ease, box-shadow 0.32s ease;
+}
+.d2-loader-ring::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(5, 6, 10, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(239, 229, 187, 0.10);
+}
+.d2-loader-percent {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #efe5bb;
+  font-size: 12px;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(255, 96, 70, 0.44), 0 2px 10px rgba(0, 0, 0, 0.72);
+}
+.d2-loader-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #efe5bb;
+  box-shadow: 0 0 12px rgba(255, 96, 70, 0.62);
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--d2-loader-angle))
+    translateY(-27px);
+  transition: transform 0.32s ease;
+}
+.d2-loader-status-text {
+  position: relative;
+  display: inline-block;
+  font-size: 11px;
+  line-height: 15px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+}
+.d2-loader-status-text.d2-loader-status-scrambling {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.d2-loader-status-text.d2-loader-status-scrambling::after {
+  content: attr(data-d2-scramble-text);
+  position: absolute;
+  inset: 0;
+  color: #efe5bb;
+  -webkit-text-fill-color: #efe5bb;
+  text-shadow: 1px 0 rgba(255, 96, 70, 0.55), -1px 0 rgba(217, 177, 102, 0.34);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#d2-startup-loader.d2-loader-ready .d2-loader-ring {
+  animation: d2-loader-ring-ready 1.35s ease-in-out infinite;
+}
+#d2-startup-loader.d2-loader-ready .d2-loader-status-text {
+  animation: d2-loader-status-glitch 0.9s steps(2, end) 1;
+}
+.d2-loader-status-text.d2-loader-status-glitch {
+  animation: d2-loader-status-glitch 0.725s steps(2, end) 1;
+}
 @media (max-width: 560px) {
   .d2-loader-brand {
     top: calc(50% - 78px);
@@ -1971,6 +2219,27 @@ html:not(.d2-ready) body::after {
     font-size: 12px;
     line-height: 18px;
   }
+  .d2-loader-control {
+    bottom: 34px;
+    min-width: 8rem;
+  }
+  .d2-loader-ring {
+    width: 48px;
+    height: 48px;
+  }
+  .d2-loader-dot {
+    transform:
+      translate(-50%, -50%)
+      rotate(var(--d2-loader-angle))
+      translateY(-24px);
+  }
+  .d2-loader-percent {
+    font-size: 11px;
+  }
+  .d2-loader-status-text {
+    font-size: 10px;
+    line-height: 14px;
+  }
 }
 @media (max-height: 560px) {
   .d2-loader-brand {
@@ -1978,6 +2247,16 @@ html:not(.d2-ready) body::after {
   }
   .d2-loader-description {
     top: calc(50% + 70px);
+  }
+  .d2-loader-control {
+    bottom: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .d2-loader-ring,
+  #d2-startup-loader.d2-loader-ready .d2-loader-ring,
+  #d2-startup-loader.d2-loader-ready .d2-loader-status-text {
+    animation: none !important;
   }
 }
 </style>
@@ -1991,20 +2270,169 @@ html:not(.d2-ready) body::after {
     '700 24px "Trajan Pro"',
     '900 24px "Trajan Pro"'
   ];
+  const loaderScrambleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+  window.__dota2tunedPlatformReady = window.__dota2tunedPlatformReady || false;
+  window.__dota2tunedLoaderVideoEnded = window.__dota2tunedLoaderVideoEnded || false;
+  window.__dota2tunedLoaderProgress = window.__dota2tunedLoaderProgress || 0;
+  window.__dota2tunedLoaderTargetProgress = window.__dota2tunedLoaderTargetProgress || 0;
+  window.__dota2tunedLoaderStartedAt = window.__dota2tunedLoaderStartedAt || performance.now();
+  const reducedMotion = () =>
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const scrambleLoaderText = (text, resolvedCount) =>
+    Array.from(text, (char, index) => {
+      if (/\\s/.test(char) || index < resolvedCount) return char;
+      return loaderScrambleChars[Math.floor(Math.random() * loaderScrambleChars.length)];
+    }).join("");
+  const setLoaderStatusText = (text, animate = false, force = false) => {
+    const label = document.querySelector(".d2-loader-status-text");
+    if (!label) return;
+    if (!force && label.dataset.d2TextValue === text) return;
+    label.dataset.d2TextValue = text;
+    const animationSeq = String((Number(label.dataset.d2AnimationSeq || "0") || 0) + 1);
+    label.dataset.d2AnimationSeq = animationSeq;
+    label.textContent = text;
+    if (!animate || reducedMotion()) {
+      label.textContent = text;
+      label.dataset.d2GlitchText = text;
+      label.classList.remove("d2-loader-status-scrambling");
+      delete label.dataset.d2ScrambleText;
+      return;
+    }
+    const frameDelayMs = 58;
+    const frames = Math.max(1, text.length);
+    let frame = 0;
+    const step = () => {
+      if (!document.body.contains(label)) return;
+      if (label.dataset.d2AnimationSeq !== animationSeq) return;
+      const resolved = Math.min(frame, text.length);
+      label.dataset.d2ScrambleText = scrambleLoaderText(text, resolved);
+      label.classList.add("d2-loader-status-scrambling");
+      frame += 1;
+      if (frame <= frames) {
+        window.setTimeout(step, frameDelayMs);
+        return;
+      }
+      label.textContent = text;
+      label.classList.remove("d2-loader-status-scrambling");
+      delete label.dataset.d2ScrambleText;
+      label.dataset.d2GlitchText = text;
+      label.classList.add("d2-loader-status-glitch");
+      window.setTimeout(() => {
+        if (label.dataset.d2AnimationSeq === animationSeq) {
+          label.classList.remove("d2-loader-status-glitch");
+        }
+      }, 950);
+    };
+    window.setTimeout(step, frameDelayMs);
+  };
+  const renderLoaderProgress = (value) => {
+    const loader = document.getElementById("d2-startup-loader");
+    const ring = loader?.querySelector(".d2-loader-ring");
+    const percent = loader?.querySelector(".d2-loader-percent");
+    const rounded = Math.max(0, Math.min(100, Math.round(value)));
+    const angle = (rounded / 100) * 360;
+    if (ring) {
+      ring.style.setProperty("--d2-loader-progress", String(rounded));
+      ring.style.setProperty("--d2-loader-angle", `${angle}deg`);
+    }
+    if (percent) percent.textContent = `${rounded}%`;
+  };
+  const setLoaderProgress = (target) => {
+    const clampedTarget = Math.max(
+      window.__dota2tunedLoaderTargetProgress || 0,
+      Math.min(100, Math.round(target))
+    );
+    window.__dota2tunedLoaderTargetProgress = clampedTarget;
+    if (window.__dota2tunedLoaderProgressRAF) return;
+    const step = () => {
+      const current = window.__dota2tunedLoaderProgress || 0;
+      const liveTarget = window.__dota2tunedLoaderTargetProgress || clampedTarget;
+      const next = current + Math.max(1, (liveTarget - current) * 0.22);
+      window.__dota2tunedLoaderProgress = Math.min(liveTarget, next);
+      renderLoaderProgress(window.__dota2tunedLoaderProgress);
+      if (window.__dota2tunedLoaderProgress < window.__dota2tunedLoaderTargetProgress) {
+        window.__dota2tunedLoaderProgressRAF = requestAnimationFrame(step);
+        return;
+      }
+      window.__dota2tunedLoaderProgressRAF = null;
+    };
+    window.__dota2tunedLoaderProgressRAF = requestAnimationFrame(step);
+  };
+  const startLoaderProgressDrift = () => {
+    if (window.__dota2tunedLoaderDriftRAF) return;
+    const drift = () => {
+      if (window.__dota2tunedPlatformReady || window.__dota2tunedLoaderHidden) {
+        window.__dota2tunedLoaderDriftRAF = null;
+        return;
+      }
+      const elapsed = performance.now() - window.__dota2tunedLoaderStartedAt;
+      const driftTarget = Math.min(94, 18 + Math.sqrt(Math.max(0, elapsed)) * 1.28);
+      setLoaderProgress(driftTarget);
+      window.__dota2tunedLoaderDriftRAF = requestAnimationFrame(drift);
+    };
+    window.__dota2tunedLoaderDriftRAF = requestAnimationFrame(drift);
+  };
+  const syncLoaderControl = (loader) => {
+    const control = loader?.querySelector(".d2-loader-control");
+    if (!control) return;
+    const ready = Boolean(window.__dota2tunedPlatformReady);
+    loader.classList.toggle("d2-loader-ready", ready);
+    control.disabled = !ready;
+    control.setAttribute("aria-disabled", ready ? "false" : "true");
+    control.setAttribute(
+      "aria-label",
+      ready ? "Skip intro and enter DOTA2Tuned" : "Loading DOTA2Tuned"
+    );
+    setLoaderProgress(ready ? 100 : window.__dota2tunedLoaderTargetProgress || 12);
+    setLoaderStatusText(
+      ready ? "Loading completed · Click to skip" : "Loading platform",
+      true
+    );
+  };
+  const handleLoaderVideoEnded = () => {
+    window.__dota2tunedLoaderVideoEnded = true;
+    if (window.__dota2tunedPlatformReady) {
+      window.dota2tunedHideLoader?.();
+    }
+  };
+  const wireLoaderControl = (loader) => {
+    const control = loader?.querySelector(".d2-loader-control");
+    if (!control || control.dataset.d2LoaderControlWired === "1") {
+      syncLoaderControl(loader);
+      return;
+    }
+    control.dataset.d2LoaderControlWired = "1";
+    control.addEventListener("click", (event) => {
+      if (!window.__dota2tunedPlatformReady) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.dota2tunedHideLoader?.();
+    });
+    syncLoaderControl(loader);
+  };
   const primeLoaderVideo = window.dota2tunedPrimeLoaderVideo || ((video) => {
     if (!video) return;
     video.autoplay = true;
     video.defaultMuted = true;
     video.muted = true;
-    video.loop = true;
+    video.loop = false;
     video.playsInline = true;
     video.setAttribute("autoplay", "autoplay");
     video.setAttribute("muted", "muted");
-    video.setAttribute("loop", "loop");
+    video.removeAttribute("loop");
     video.setAttribute("playsinline", "playsinline");
     video.setAttribute("webkit-playsinline", "webkit-playsinline");
     video.setAttribute("fetchpriority", "high");
     video.disableRemotePlayback = true;
+    if (video.dataset.d2EndedWired !== "1") {
+      video.dataset.d2EndedWired = "1";
+      video.addEventListener("ended", handleLoaderVideoEnded, { once: true });
+      video.addEventListener("loadeddata", () => setLoaderProgress(36), { once: true });
+      video.addEventListener("canplay", () => setLoaderProgress(52), { once: true });
+    }
+    if (video.ended) {
+      handleLoaderVideoEnded();
+    }
     const tryPlay = () => {
       const promise = video.play?.();
       promise?.then?.(() => {
@@ -2031,6 +2459,8 @@ html:not(.d2-ready) body::after {
   });
   window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
   document.documentElement.classList.add("d2-loading");
+  setLoaderProgress(8);
+  startLoaderProgressDrift();
   loaderFonts.forEach((font) => {
     document.fonts?.load(font).catch(() => {});
   });
@@ -2038,6 +2468,7 @@ html:not(.d2-ready) body::after {
     const existingLoader = document.getElementById("d2-startup-loader");
     if (existingLoader) {
       primeLoaderVideo(existingLoader.querySelector(".d2-loader-video"));
+      wireLoaderControl(existingLoader);
       return;
     }
     const loader = document.createElement("div");
@@ -2050,7 +2481,6 @@ html:not(.d2-ready) body::after {
         src="${montageMp4Url}"
         autoplay="autoplay"
         muted="muted"
-        loop="loop"
         playsinline="playsinline"
         webkit-playsinline="webkit-playsinline"
         preload="auto"
@@ -2075,23 +2505,57 @@ html:not(.d2-ready) body::after {
         <p class="d2-loader-description">
           __LOADER_DESCRIPTION__
         </p>
+        <button
+          type="button"
+          class="d2-loader-control"
+          aria-label="Loading DOTA2Tuned"
+          aria-disabled="true"
+          disabled
+        >
+          <span class="d2-loader-ring" aria-hidden="true">
+            <span class="d2-loader-percent">0%</span>
+            <span class="d2-loader-dot"></span>
+          </span>
+          <span class="d2-loader-status-text">Loading platform</span>
+        </button>
       </div>
     `;
     document.body.prepend(loader);
+    renderLoaderProgress(window.__dota2tunedLoaderProgress || 8);
+    setLoaderProgress(24);
+    startLoaderProgressDrift();
     primeLoaderVideo(loader.querySelector(".d2-loader-video"));
+    wireLoaderControl(loader);
+    window.setTimeout(() => setLoaderStatusText("Loading platform", true, true), 60);
   };
   window.dota2tunedHideLoader = () => {
+    if (window.__dota2tunedLoaderHidden) return;
+    window.__dota2tunedLoaderHidden = true;
     const loader = document.getElementById("d2-startup-loader");
     document.documentElement.classList.remove("d2-loading");
+    document.documentElement.classList.remove("d2-platform-ready");
     document.documentElement.classList.add("d2-ready");
     if (!loader) return;
     loader.classList.add("d2-loader-exit");
     window.setTimeout(() => loader.remove(), 460);
   };
+  window.dota2tunedMarkLoaderReady = () => {
+    if (window.__dota2tunedPlatformReady) return;
+    window.__dota2tunedPlatformReady = true;
+    setLoaderProgress(100);
+    document.documentElement.classList.add("d2-platform-ready");
+    const loader = document.getElementById("d2-startup-loader");
+    syncLoaderControl(loader);
+    const video = loader?.querySelector(".d2-loader-video");
+    if (!video || window.__dota2tunedLoaderVideoEnded || video.ended) {
+      window.setTimeout(() => window.dota2tunedHideLoader?.(), 180);
+    }
+  };
   const waitForFrames = (count = 2) => new Promise((resolve) => {
     const step = () => {
       count -= 1;
       if (count <= 0) {
+        setLoaderProgress(82);
         resolve();
       } else {
         requestAnimationFrame(step);
@@ -2101,11 +2565,25 @@ html:not(.d2-ready) body::after {
   });
   const waitForMountedImages = () => {
     const images = Array.from(document.querySelectorAll(".gradio-container img"));
-    if (!images.length) return Promise.resolve();
+    if (!images.length) {
+      setLoaderProgress(76);
+      return Promise.resolve();
+    }
+    let completed = 0;
+    const bumpImageProgress = () => {
+      completed += 1;
+      setLoaderProgress(58 + (completed / images.length) * 20);
+    };
     return Promise.allSettled(images.map((img) => {
-      if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+      if (img.complete && img.naturalWidth !== 0) {
+        bumpImageProgress();
+        return Promise.resolve();
+      }
       return new Promise((resolve) => {
-        const done = () => resolve();
+        const done = () => {
+          bumpImageProgress();
+          resolve();
+        };
         img.addEventListener("load", done, { once: true });
         img.addEventListener("error", done, { once: true });
       });
@@ -2115,12 +2593,13 @@ html:not(.d2-ready) body::after {
     if (window.__dota2tunedRevealScheduled) return;
     window.__dota2tunedRevealScheduled = true;
     const fontsReady = document.fonts?.ready || Promise.resolve();
+    fontsReady.then(() => setLoaderProgress(64)).catch(() => setLoaderProgress(64));
     const ready = Promise.allSettled([fontsReady, waitForMountedImages(), waitForFrames(3)]);
     Promise.race([
       ready,
       new Promise((resolve) => window.setTimeout(resolve, 6500))
     ]).then(() => {
-      window.setTimeout(() => window.dota2tunedHideLoader?.(), 180);
+      window.setTimeout(() => window.dota2tunedMarkLoaderReady?.(), 180);
     });
   };
   if (document.body) {
@@ -2130,7 +2609,6 @@ html:not(.d2-ready) body::after {
   }
   window.addEventListener("load", () => {
     window.setTimeout(() => window.dota2tunedRevealWhenReady?.(), 0);
-    window.setTimeout(() => window.dota2tunedHideLoader?.(), 20000);
   }, { once: true });
 })();
 </script>
@@ -2741,38 +3219,74 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       if (/\\s/.test(char) || index < resolvedCount) return char;
       return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
     }}).join("");
-  const settleGlitch = (element, finalText) => {{
-    element.textContent = finalText;
-    element.dataset.d2TextValue = finalText;
-    element.dataset.d2GlitchText = finalText;
+  const writeAnimatedText = (element, text) => {{
+    if (element.dataset) element.dataset.d2AnimationFrameText = text;
+    element.dataset.d2ScrambleText = text;
+    element.classList.add("d2-text-scrambling");
+  }};
+  const isOwnedAnimationFrame = (element, text) =>
+    element.dataset.d2Animating === "1"
+    && (
+      text === element.dataset.d2AnimationFrameText
+      || text === element.dataset.d2FinalText
+    );
+  const settleGlitch = (element, finalText, animationSeq) => {{
+    if (element.dataset.d2AnimationSeq !== animationSeq) return;
+    const settledText = element.textContent || finalText;
+    element.dataset.d2TextValue = settledText;
+    element.dataset.d2FinalText = settledText;
+    element.dataset.d2AnimationFrameText = settledText;
+    element.dataset.d2GlitchText = settledText;
+    element.classList.remove("d2-text-scrambling");
+    delete element.dataset.d2ScrambleText;
     element.classList.add("d2-text-glitch");
     window.setTimeout(() => {{
+      if (element.dataset.d2AnimationSeq !== animationSeq) return;
       element.classList.remove("d2-text-glitch");
-      if (element.dataset) delete element.dataset.d2Animating;
+      if (element.dataset) {{
+        delete element.dataset.d2Animating;
+        delete element.dataset.d2FinalText;
+        delete element.dataset.d2AnimationFrameText;
+      }}
     }}, 420);
   }};
   const animateTextElement = (element) => {{
     if (!isLeafTextElement(element)) return;
     const finalText = element.textContent || "";
-    if (element.dataset.d2Animating === "1") return;
+    if (isOwnedAnimationFrame(element, finalText)) return;
     if (element.dataset.d2TextValue === finalText) return;
     if (reducedMotion()) {{
       element.dataset.d2TextValue = finalText;
       return;
     }}
+    const animationSeq = String((Number(element.dataset.d2AnimationSeq || "0") || 0) + 1);
+    element.dataset.d2AnimationSeq = animationSeq;
     element.dataset.d2Animating = "1";
-    const frames = Math.min(18, Math.max(7, Math.ceil(finalText.length / 5)));
+    element.dataset.d2FinalText = finalText;
+    element.dataset.d2AnimationFrameText = finalText;
+    const frames = Math.min(34, Math.max(16, Math.ceil(finalText.length / 3)));
     let frame = 0;
     const step = () => {{
-      if (!document.body.contains(element)) return;
+      if (!document.body.contains(element)) {{
+        if (element.dataset.d2AnimationSeq === animationSeq) {{
+          element.dataset.d2TextValue = element.textContent || finalText;
+          delete element.dataset.d2Animating;
+          delete element.dataset.d2FinalText;
+          delete element.dataset.d2AnimationFrameText;
+          delete element.dataset.d2ScrambleText;
+          element.classList.remove("d2-text-scrambling");
+        }}
+        return;
+      }}
+      if (element.dataset.d2AnimationSeq !== animationSeq) return;
       const resolved = Math.floor((frame / frames) * finalText.length);
-      element.textContent = scrambledText(finalText, resolved);
+      writeAnimatedText(element, scrambledText(finalText, resolved));
       frame += 1;
       if (frame <= frames) {{
         requestAnimationFrame(step);
         return;
       }}
-      settleGlitch(element, finalText);
+      settleGlitch(element, finalText, animationSeq);
     }};
     requestAnimationFrame(step);
   }};
@@ -3883,85 +4397,87 @@ def build_app() -> gr.Blocks:
                         "picks, then shows confidence and retrieval evidence."
                     )
                 )
-                with gr.Row():
-                    allies = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Allied heroes",
-                        multiselect=True,
-                        allow_custom_value=True,
-                        filterable=True,
-                        max_choices=5,
-                        elem_id="draft-allies-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                    enemies = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Enemy heroes",
-                        value=[44, 30],
-                        multiselect=True,
-                        allow_custom_value=True,
-                        filterable=True,
-                        max_choices=5,
-                        elem_id="draft-enemies-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                    bans = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Banned heroes",
-                        multiselect=True,
-                        allow_custom_value=True,
-                        filterable=True,
-                        elem_id="draft-bans-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-
-                    def update_choices(allies_val, enemies_val, bans_val):
-                        if any(
-                            has_transient_null_selection(value)
-                            for value in (allies_val, enemies_val, bans_val)
-                        ):
-                            return gr.skip(), gr.skip(), gr.skip()
-                        allied_ids = clean_hero_values(allies_val, max_count=5)
-                        enemy_ids = clean_hero_values(enemies_val, max_count=5)
-                        banned_ids = clean_hero_values(bans_val)
-                        selected = set(allied_ids) | set(enemy_ids) | set(banned_ids)
-
-                        def filtered(exclude_self):
-                            excl = selected - set(exclude_self)
-                            return [c for c in hero_choices if c[1] not in excl]
-
-                        return (
-                            gr.update(choices=filtered(allied_ids)),
-                            gr.update(choices=filtered(enemy_ids)),
-                            gr.update(choices=filtered(banned_ids)),
+                ally_preview_html = hero_preview_html([], "draft-allies-dropdown")
+                enemy_preview_html = hero_preview_html([44, 30], "draft-enemies-dropdown")
+                ban_preview_html = hero_preview_html([], "draft-bans-dropdown")
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-3"]):
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        allies = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Allied heroes",
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="draft-allies-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        ally_preview = gr.HTML(
+                            ally_preview_html,
+                            visible=bool(ally_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        enemies = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Enemy heroes",
+                            value=[44, 30],
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="draft-enemies-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        enemy_preview = gr.HTML(
+                            enemy_preview_html,
+                            visible=bool(enemy_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        bans = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Banned heroes",
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            elem_id="draft-bans-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        ban_preview = gr.HTML(
+                            ban_preview_html,
+                            visible=bool(ban_preview_html),
+                            elem_classes=["d2-preview-output"],
                         )
 
-                    for dd in (allies, enemies, bans):
-                        dd.change(
-                            update_choices,
-                            inputs=[allies, enemies, bans],
-                            outputs=[allies, enemies, bans],
-                            api_visibility="private",
-                            queue=False,
-                        )
-                with gr.Row():
-                    ally_preview_html = hero_preview_html([], "draft-allies-dropdown")
-                    enemy_preview_html = hero_preview_html([44, 30], "draft-enemies-dropdown")
-                    ban_preview_html = hero_preview_html([], "draft-bans-dropdown")
-                    ally_preview = gr.HTML(
-                        ally_preview_html,
-                        visible=bool(ally_preview_html),
-                        elem_classes=["d2-preview-output"],
+                def update_choices(allies_val, enemies_val, bans_val):
+                    if any(
+                        has_transient_null_selection(value)
+                        for value in (allies_val, enemies_val, bans_val)
+                    ):
+                        return gr.skip(), gr.skip(), gr.skip()
+                    allied_ids = clean_hero_values(allies_val, max_count=5)
+                    enemy_ids = clean_hero_values(enemies_val, max_count=5)
+                    banned_ids = clean_hero_values(bans_val)
+                    selected = set(allied_ids) | set(enemy_ids) | set(banned_ids)
+
+                    def filtered(exclude_self):
+                        excl = selected - set(exclude_self)
+                        return [c for c in hero_choices if c[1] not in excl]
+
+                    return (
+                        gr.update(choices=filtered(allied_ids)),
+                        gr.update(choices=filtered(enemy_ids)),
+                        gr.update(choices=filtered(banned_ids)),
                     )
-                    enemy_preview = gr.HTML(
-                        enemy_preview_html,
-                        visible=bool(enemy_preview_html),
-                        elem_classes=["d2-preview-output"],
-                    )
-                    ban_preview = gr.HTML(
-                        ban_preview_html,
-                        visible=bool(ban_preview_html),
-                        elem_classes=["d2-preview-output"],
+
+                for dd in (allies, enemies, bans):
+                    dd.change(
+                        update_choices,
+                        inputs=[allies, enemies, bans],
+                        outputs=[allies, enemies, bans],
+                        api_visibility="private",
+                        queue=False,
                     )
                 with gr.Row():
                     role = gr.Dropdown(
@@ -4015,36 +4531,37 @@ def build_app() -> gr.Blocks:
                         "current trends without manually typing every source query."
                     )
                 )
-                with gr.Row():
-                    meta_hero = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Hero",
-                        value=None,
-                        filterable=True,
-                        elem_id="meta-hero-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                    meta_item = gr.Dropdown(
-                        choices=item_choices,
-                        label="Item",
-                        value=None,
-                        filterable=True,
-                        elem_id="meta-item-dropdown",
-                        elem_classes=["dota-dropdown", "item-dropdown"],
-                    )
-                with gr.Row():
-                    meta_hero_preview_html = hero_preview_html([])
-                    meta_item_preview_html = item_preview_html(None)
-                    meta_hero_preview = gr.HTML(
-                        meta_hero_preview_html,
-                        visible=bool(meta_hero_preview_html),
-                        elem_classes=["d2-preview-output"],
-                    )
-                    meta_item_preview = gr.HTML(
-                        meta_item_preview_html,
-                        visible=bool(meta_item_preview_html),
-                        elem_classes=["d2-preview-output"],
-                    )
+                meta_hero_preview_html = hero_preview_html([])
+                meta_item_preview_html = item_preview_html(None)
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        meta_hero = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Hero",
+                            value=None,
+                            filterable=True,
+                            elem_id="meta-hero-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        meta_hero_preview = gr.HTML(
+                            meta_hero_preview_html,
+                            visible=bool(meta_hero_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        meta_item = gr.Dropdown(
+                            choices=item_choices,
+                            label="Item",
+                            value=None,
+                            filterable=True,
+                            elem_id="meta-item-dropdown",
+                            elem_classes=["dota-dropdown", "item-dropdown"],
+                        )
+                        meta_item_preview = gr.HTML(
+                            meta_item_preview_html,
+                            visible=bool(meta_item_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
                 query = gr.Textbox(label="Patch or meta query", value="current pro meta")
                 meta_button = gr.Button("Search")
                 meta_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
@@ -4077,46 +4594,47 @@ def build_app() -> gr.Blocks:
                         "lineups using the local draft model."
                     )
                 )
-                with gr.Row():
-                    radiant = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Radiant heroes",
-                        value=[1, 2, 3, 25, 5],
-                        multiselect=True,
-                        allow_custom_value=True,
-                        filterable=True,
-                        max_choices=5,
-                        elem_id="predict-radiant-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                    dire = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Dire heroes",
-                        value=[14, 74, 6, 26, 18],
-                        multiselect=True,
-                        allow_custom_value=True,
-                        filterable=True,
-                        max_choices=5,
-                        elem_id="predict-dire-dropdown",
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                with gr.Row():
-                    radiant_preview_html = hero_preview_html(
-                        [1, 2, 3, 25, 5], "predict-radiant-dropdown"
-                    )
-                    dire_preview_html = hero_preview_html(
-                        [14, 74, 6, 26, 18], "predict-dire-dropdown"
-                    )
-                    radiant_preview = gr.HTML(
-                        radiant_preview_html,
-                        visible=bool(radiant_preview_html),
-                        elem_classes=["d2-preview-output"],
-                    )
-                    dire_preview = gr.HTML(
-                        dire_preview_html,
-                        visible=bool(dire_preview_html),
-                        elem_classes=["d2-preview-output"],
-                    )
+                radiant_preview_html = hero_preview_html(
+                    [1, 2, 3, 25, 5], "predict-radiant-dropdown"
+                )
+                dire_preview_html = hero_preview_html(
+                    [14, 74, 6, 26, 18], "predict-dire-dropdown"
+                )
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        radiant = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Radiant heroes",
+                            value=[1, 2, 3, 25, 5],
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="predict-radiant-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        radiant_preview = gr.HTML(
+                            radiant_preview_html,
+                            visible=bool(radiant_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        dire = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Dire heroes",
+                            value=[14, 74, 6, 26, 18],
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="predict-dire-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        dire_preview = gr.HTML(
+                            dire_preview_html,
+                            visible=bool(dire_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
                 predict_button = gr.Button("Predict")
                 predict_output = gr.Code(label="Prediction", language="json")
                 radiant.change(
@@ -4168,35 +4686,39 @@ def build_app() -> gr.Blocks:
                         "for scouting, one-minute explanations, and constraint drills."
                     )
                 )
-                lab_enemies = gr.Dropdown(
-                    choices=hero_choices,
-                    label="Enemy heroes",
-                    value=[44, 30],
-                    multiselect=True,
-                    allow_custom_value=True,
-                    filterable=True,
-                    max_choices=5,
-                    elem_id="lab-enemies-dropdown",
-                    elem_classes=["dota-dropdown", "hero-dropdown"],
-                )
                 lab_enemy_preview_html = hero_preview_html([44, 30], "lab-enemies-dropdown")
-                lab_enemy_preview = gr.HTML(
-                    lab_enemy_preview_html,
-                    visible=bool(lab_enemy_preview_html),
-                    elem_classes=["d2-preview-output"],
-                )
-                lab_role = gr.Dropdown(
-                    choices=ROLE_OPTIONS,
-                    label="Role",
-                    value="mid",
-                    elem_classes=["dota-dropdown", "role-dropdown"],
-                )
-                lab_twist = gr.Dropdown(
-                    DRAFT_LAB_MODE_OPTIONS,
-                    label="Mode",
-                    value="Tiny scout card",
-                    elem_classes=["dota-dropdown"],
-                )
+                with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-3"]):
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_enemies = gr.Dropdown(
+                            choices=hero_choices,
+                            label="Enemy heroes",
+                            value=[44, 30],
+                            multiselect=True,
+                            allow_custom_value=True,
+                            filterable=True,
+                            max_choices=5,
+                            elem_id="lab-enemies-dropdown",
+                            elem_classes=["dota-dropdown", "hero-dropdown"],
+                        )
+                        lab_enemy_preview = gr.HTML(
+                            lab_enemy_preview_html,
+                            visible=bool(lab_enemy_preview_html),
+                            elem_classes=["d2-preview-output"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_role = gr.Dropdown(
+                            choices=ROLE_OPTIONS,
+                            label="Role",
+                            value="mid",
+                            elem_classes=["dota-dropdown", "role-dropdown"],
+                        )
+                    with gr.Column(elem_classes=["d2-selector-stack"]):
+                        lab_twist = gr.Dropdown(
+                            DRAFT_LAB_MODE_OPTIONS,
+                            label="Mode",
+                            value="Tiny scout card",
+                            elem_classes=["dota-dropdown"],
+                        )
                 lab_button = gr.Button("Generate Draft Lab Card")
                 lab_output = gr.Markdown(elem_classes=["d2-dynamic-output"])
                 lab_enemies.change(

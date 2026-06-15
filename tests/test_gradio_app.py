@@ -228,6 +228,12 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "dota-option-selected" in js
     assert "selectedLabelsForDropdown" in js
     assert "scheduleTextAnimations" in js
+    assert "isOwnedAnimationFrame" in js
+    assert "writeAnimatedText" in js
+    assert "d2AnimationSeq" in js
+    assert "d2AnimationFrameText" in js
+    assert "d2ScrambleText" in js
+    assert 'element.textContent = scrambledText' not in js
     assert "openFromChevron" in js
     assert "removeSelectedHero" in js
     assert "syncSidebarView" in js
@@ -293,6 +299,10 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
     assert ".d2-hide-selected-text" in APP_CSS
     assert "d2-caret-pulse" in APP_CSS
     assert ".d2-text-glitch" in APP_CSS
+    assert ".d2-text-scrambling" in APP_CSS
+    assert "content: attr(data-d2-scramble-text)" in APP_CSS
+    assert ".d2-selector-grid" in APP_CSS
+    assert ".d2-selector-stack" in APP_CSS
 
 
 def test_css_promotes_open_dropdown_stack_for_safari():
@@ -338,8 +348,41 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "d2-loader-video" in APP_HEAD
     assert "d2-loader-content" in APP_HEAD
     assert "d2-loader-description" in APP_HEAD
+    assert "d2-loader-control" in APP_HEAD
+    assert "d2-loader-ring" in APP_HEAD
+    assert "d2-loader-percent" in APP_HEAD
+    assert "d2-loader-dot" in APP_HEAD
+    assert "d2-loader-status-text" in APP_HEAD
+    assert "d2-loader-status-scrambling" in APP_HEAD
+    assert "content: attr(data-d2-scramble-text)" in APP_HEAD
+    assert "Loading platform" in APP_HEAD
+    assert "Loading completed · Click to skip" in APP_HEAD
+    assert 'setLoaderStatusText("Loading platform", true, true)' in APP_HEAD
+    assert "const frameDelayMs = 58" in APP_HEAD
+    assert "const frames = Math.max(1, text.length)" in APP_HEAD
+    assert "const resolved = Math.min(frame, text.length)" in APP_HEAD
+    assert "window.setTimeout(step, frameDelayMs)" in APP_HEAD
+    assert "}, 950)" in APP_HEAD
+    assert "d2-loader-ring-spin 1.1s" not in APP_HEAD
+    assert "conic-gradient(" in APP_HEAD
+    assert "from 0deg" in APP_HEAD
+    assert "from -90deg" not in APP_HEAD
+    assert APP_HEAD.index("rgba(217, 177, 102, 0.94) 0deg") < APP_HEAD.index(
+        "rgba(255, 96, 70, 0.96) var(--d2-loader-angle)"
+    )
+    assert "--d2-loader-angle" in APP_HEAD
+    assert "--d2-loader-progress" in APP_HEAD
+    assert "setLoaderProgress" in APP_HEAD
+    assert "renderLoaderProgress" in APP_HEAD
+    assert "startLoaderProgressDrift" in APP_HEAD
+    assert "__dota2tunedLoaderStartedAt" in APP_HEAD
+    assert "__dota2tunedLoaderProgress" in APP_HEAD
+    assert "d2-loader-status-glitch" in APP_HEAD
+    assert "dota2tunedMarkLoaderReady" in APP_HEAD
     assert "top: calc(50% - 84px)" in APP_HEAD
     assert "top: calc(50% + 84px)" in APP_HEAD
+    assert "bottom: 42px" in APP_HEAD
+    assert "text-underline-offset: 4px" in APP_HEAD
     assert "Draft intelligence for heroes, counters, builds, and match prediction" in APP_HEAD
     assert "::-webkit-media-controls-start-playback-button" not in APP_HEAD
     assert "translateY(118px)" not in APP_HEAD
@@ -363,7 +406,11 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "dota_montage_02.mp4" in APP_HEAD
     assert "autoplay" in APP_HEAD
     assert "muted" in APP_HEAD
-    assert "loop" in APP_HEAD
+    assert 'loop="loop"' not in APP_HEAD
+    assert 'video.setAttribute("loop", "loop")' not in APP_HEAD
+    assert "video.loop = false" in APP_HEAD
+    assert 'video.removeAttribute("loop")' in APP_HEAD
+    assert 'video.addEventListener("ended", handleLoaderVideoEnded' in APP_HEAD
     assert "playsinline" in APP_HEAD
     assert "webkit-playsinline" in APP_HEAD
     assert 'src="${montageMp4Url}"' in APP_HEAD
@@ -378,6 +425,7 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "dota2tunedRevealWhenReady" in APP_HEAD
     assert "DOTA2Tuned" in APP_HEAD
+    assert "dota2tunedHideLoader?.(), 20000" not in APP_HEAD
     assert "4.2s ease-in-out infinite" in APP_HEAD
     assert APP_HEAD.index('classList.add("d2-loading")') < APP_HEAD.index("<style>")
     assert "html:not(.d2-ready) .gradio-container" in APP_HEAD
@@ -602,6 +650,9 @@ def test_dynamic_outputs_have_stable_animation_classes():
 
     assert 'elem_classes=["d2-preview-output"]' in source
     assert 'elem_classes=["d2-dynamic-output"]' in source
+    assert 'elem_classes=["d2-selector-grid", "d2-selector-grid-3"]' in source
+    assert 'elem_classes=["d2-selector-grid", "d2-selector-grid-2"]' in source
+    assert 'elem_classes=["d2-selector-stack"]' in source
     assert "visible=bool(ally_preview_html)" in source
     assert "visible=bool(meta_item_preview_html)" in source
     assert "return gr.update(value=html, visible=bool(html))" in source
@@ -620,6 +671,24 @@ def test_module_intro_copy_replaces_static_status_strips():
     assert "Builds summarizes observed hero item timings" in source
     assert "Draft Lab turns the recommendation engine" in source
     assert "Data Freshness lists the normalized Parquet artifacts" in source
+
+
+def test_tuned_model_hides_duplicate_output_status_tracker():
+    assert '#tuned-model-view .d2-dynamic-output [data-testid="status-tracker"]' in APP_CSS
+    assert "display: none !important" in APP_CSS
+    assert "#tuned-model-view .d2-dynamic-output .html-container.pending" in APP_CSS
+    assert "opacity: 1 !important" in APP_CSS
+    assert "filter: none !important" in APP_CSS
+    assert (
+        "#tuned-model-view .assistant-shell > .block:not(.d2-dynamic-output)\n"
+        '  > [data-testid="status-tracker"]:not(.hide)'
+    ) in APP_CSS
+    assert "inset: 0 !important" in APP_CSS
+    assert "height: 100% !important" in APP_CSS
+    assert "min-height: 100% !important" in APP_CSS
+    assert "justify-content: center !important" in APP_CSS
+    assert "font-size: 11px !important" in APP_CSS
+    assert "width: 22px !important" in APP_CSS
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():
