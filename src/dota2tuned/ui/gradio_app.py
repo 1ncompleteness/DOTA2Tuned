@@ -18,6 +18,22 @@ from dota2tuned.train_predictor import predict_draft_win
 
 ASSET_BASE_URL = "https://cdn.cloudflare.steamstatic.com"
 DOTA_LOGO_URL = f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/global/dota2_logo_symbol.png"
+STEAM_STATIC_BASE_URL = "https://cdn.steamstatic.com"
+TRAJAN_REGULAR_FONT_URL = (
+    f"{STEAM_STATIC_BASE_URL}/apps/dota2/fonts/goudytrajan-regular-pro-webfont.woff"
+)
+TRAJAN_MEDIUM_FONT_URL = (
+    f"{STEAM_STATIC_BASE_URL}/apps/dota2/fonts/goudytrajan-medium-pro-webfont.woff"
+)
+TRAJAN_BOLD_FONT_URL = (
+    f"{STEAM_STATIC_BASE_URL}/apps/dota2/fonts/goudytrajan-bold-pro-webfont.woff"
+)
+DOTA_MONTAGE_WEBM_URL = (
+    f"{STEAM_STATIC_BASE_URL}/apps/dota2/videos/dota_react/homepage/dota_montage_webm.webm"
+)
+DOTA_MONTAGE_MP4_URL = (
+    f"{STEAM_STATIC_BASE_URL}/apps/dota2/videos/dota_react/homepage/dota_montage_02.mp4"
+)
 
 
 def _svg_data_uri(svg: str) -> str:
@@ -1376,10 +1392,63 @@ __NAV_ICON_CSS__
 APP_HEAD = """
 <link rel="preconnect" href="https://cdn.steamstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com" crossorigin>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_REGULAR_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_MEDIUM_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link
+  rel="preload"
+  as="font"
+  href="__TRAJAN_BOLD_FONT_URL__"
+  type="font/woff"
+  crossorigin
+  fetchpriority="high"
+>
+<link rel="preload" as="image" href="__DOTA_LOGO_URL__" fetchpriority="high">
+<link
+  rel="preload"
+  as="video"
+  href="__DOTA_MONTAGE_MP4_URL__"
+  type="video/mp4"
+  fetchpriority="high"
+>
 <script>
 document.documentElement.classList.add("d2-loading");
 </script>
 <style>
+@font-face {
+  font-family: "Trajan Pro";
+  src: url("__TRAJAN_REGULAR_FONT_URL__") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Trajan Pro";
+  src: url("__TRAJAN_MEDIUM_FONT_URL__") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Trajan Pro";
+  src: url("__TRAJAN_BOLD_FONT_URL__") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --d2-red: #ff6046;
   --d2-gold: #d9b166;
@@ -1549,7 +1618,15 @@ html:not(.d2-ready) body::after {
 <script>
 (() => {
   const logoUrl = "__DOTA_LOGO_URL__";
+  const loaderFonts = [
+    '400 24px "Trajan Pro"',
+    '700 24px "Trajan Pro"',
+    '900 24px "Trajan Pro"'
+  ];
   document.documentElement.classList.add("d2-loading");
+  loaderFonts.forEach((font) => {
+    document.fonts?.load(font).catch(() => {});
+  });
   const ensureLoader = () => {
     if (document.getElementById("d2-startup-loader")) return;
     const loader = document.createElement("div");
@@ -1564,14 +1641,21 @@ html:not(.d2-ready) body::after {
         loop
         playsinline
         preload="auto"
+        fetchpriority="high"
         aria-hidden="true"
         tabindex="-1"
       >
-        <source type="video/webm" src="https://cdn.steamstatic.com/apps/dota2/videos/dota_react/homepage/dota_montage_webm.webm">
-        <source type="video/mp4" src="https://cdn.steamstatic.com/apps/dota2/videos/dota_react/homepage/dota_montage_02.mp4">
+        <source type="video/mp4" src="__DOTA_MONTAGE_MP4_URL__">
+        <source type="video/webm" src="__DOTA_MONTAGE_WEBM_URL__">
       </video>
       <div class="d2-loader-brand">
-        <img src="${logoUrl}" alt="Dota 2" decoding="async">
+        <img
+          src="${logoUrl}"
+          alt="Dota 2"
+          decoding="async"
+          loading="eager"
+          fetchpriority="high"
+        >
         <strong>DOTA2Tuned</strong>
       </div>
     `;
@@ -1580,6 +1664,8 @@ html:not(.d2-ready) body::after {
     if (video) {
       video.muted = true;
       video.playsInline = true;
+      video.setAttribute("fetchpriority", "high");
+      video.load?.();
       video.play?.().catch(() => {});
     }
   };
@@ -1637,7 +1723,19 @@ html:not(.d2-ready) body::after {
   }, { once: true });
 })();
 </script>
-""".replace("__DOTA_LOGO_URL__", DOTA_LOGO_URL)
+""".replace(
+    "__DOTA_LOGO_URL__", DOTA_LOGO_URL
+).replace(
+    "__TRAJAN_REGULAR_FONT_URL__", TRAJAN_REGULAR_FONT_URL
+).replace(
+    "__TRAJAN_MEDIUM_FONT_URL__", TRAJAN_MEDIUM_FONT_URL
+).replace(
+    "__TRAJAN_BOLD_FONT_URL__", TRAJAN_BOLD_FONT_URL
+).replace(
+    "__DOTA_MONTAGE_WEBM_URL__", DOTA_MONTAGE_WEBM_URL
+).replace(
+    "__DOTA_MONTAGE_MP4_URL__", DOTA_MONTAGE_MP4_URL
+)
 
 
 # Gradio 6.18 stores `head=` inside window.gradio_config; the frontend bundle injects

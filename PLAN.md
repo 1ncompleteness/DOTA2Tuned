@@ -167,6 +167,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 04:24: fixed the loader video visibility by changing the hydrated loader overlay from an opaque dark linear gradient to translucent RGBA layers and increasing the video layer opacity/brightness, so the montage remains visible behind the brand mark.
 - 2026-06-15 04:34: enabled Gradio `share=True` in both Space and CLI launch paths, added a narrow startup warning filter for Gradio's deprecated Starlette 422 constant, and added root `agents.md` with Space/API instructions for coding agents.
 - 2026-06-15 04:50: fixed the HF Space startup log regression from `share=True`: Gradio sharing is now enabled only for local runs, while HF Space containers use `share=False` and `quiet=True` because Spaces are already public and Gradio does not support share tunnels there.
+- 2026-06-15 04:59: raised loader asset priority by preloading Trajan font weights, the Dota logo, and the MP4 montage in `APP_HEAD`; declared critical Trajan font faces before the loader CSS; added eager/fetch-priority hints to the logo/video elements; and explicitly warmed loader fonts plus the video in startup JS.
 
 ## Adapter Eval Notes
 

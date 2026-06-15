@@ -289,6 +289,20 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "d2-logo-red-flash" in APP_HEAD
     assert "#d2-startup-loader" in APP_HEAD
     assert "d2-loader-video" in APP_HEAD
+    assert 'rel="preload"' in APP_HEAD
+    assert 'as="font"' in APP_HEAD
+    assert 'as="video"' in APP_HEAD
+    assert 'as="image"' in APP_HEAD
+    assert 'fetchpriority="high"' in APP_HEAD
+    assert "goudytrajan-regular-pro-webfont.woff" in APP_HEAD
+    assert "goudytrajan-medium-pro-webfont.woff" in APP_HEAD
+    assert "goudytrajan-bold-pro-webfont.woff" in APP_HEAD
+    assert "document.fonts?.load" in APP_HEAD
+    assert "video.load?.()" in APP_HEAD
+    assert 'loading="eager"' in APP_HEAD
+    assert APP_HEAD.index('as="font"') < APP_HEAD.index("<script>")
+    assert APP_HEAD.index('as="video"') < APP_HEAD.index("<script>")
+    assert APP_HEAD.index("@font-face") < APP_HEAD.index("@keyframes d2-logo-red-flash")
     assert "dota_montage_webm.webm" in APP_HEAD
     assert "dota_montage_02.mp4" in APP_HEAD
     assert "autoplay" in APP_HEAD
@@ -315,6 +329,8 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "brightness(0.78)" in APP_HEAD
     assert "waitForMountedImages" in APP_HEAD
     assert "document.fonts?.ready" in APP_HEAD
+    assert "__TRAJAN_REGULAR_FONT_URL__" not in APP_HEAD
+    assert "__DOTA_MONTAGE_MP4_URL__" not in APP_HEAD
     assert "25%, 75%" in logo_keyframes
     assert "sepia(0%)" in logo_keyframes
     assert "sepia(95%)" in logo_keyframes
