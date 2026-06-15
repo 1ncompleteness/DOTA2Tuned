@@ -251,6 +251,24 @@ SCOPE_ICON_URLS = {
     for scope, (accent, paths) in SCOPE_ICON_BODIES.items()
 }
 
+PRIMARY_ATTR_INFO = {
+    "str": ("STR", "#ee8f7d"),
+    "agi": ("AGI", "#8fd19e"),
+    "int": ("INT", "#8fc8ff"),
+    "all": ("UNIVERSAL", "#c09cff"),
+}
+
+TIME_BUCKET_ORDER = ["0-10m", "10-20m", "20-30m", "30-40m", "40m+", "unknown"]
+
+TIME_BUCKET_LABELS = {
+    "0-10m": "Laning (0-10 min)",
+    "10-20m": "Early Game (10-20 min)",
+    "20-30m": "Mid Game (20-30 min)",
+    "30-40m": "Late Game (30-40 min)",
+    "40m+": "End Game (40+ min)",
+    "unknown": "Unknown Timing",
+}
+
 COMMON_HERO_ALIASES = {
     "Anti-Mage": ["AM"],
     "Ancient Apparition": ["AA"],
@@ -754,6 +772,185 @@ __NAV_ICON_CSS__
   font-size: 13px;
   padding: 7px 0;
 }
+.build-hero-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(235, 207, 135, 0.4);
+  border-radius: 4px;
+  background-color: rgba(22, 22, 24, 0.78);
+  background-size: cover;
+  background-position: center 18%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.build-hero-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 11, 14, 0.92) 0%,
+    rgba(10, 11, 14, 0.55) 55%,
+    rgba(10, 11, 14, 0.85) 100%
+  );
+  pointer-events: none;
+}
+.build-hero-header .build-hero-icon {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: 0 0 64px;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.4), 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.build-hero-title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.build-hero-title strong {
+  font-size: 20px;
+  line-height: 24px;
+  color: #efe5bb;
+}
+.build-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.build-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 12px;
+  border: 1px solid var(--pill-color, rgba(235, 207, 135, 0.4));
+  background: rgba(235, 207, 135, 0.10);
+  color: #efe5bb;
+  font-size: 11px;
+  line-height: 16px;
+}
+.build-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+.build-column {
+  border: 1px solid rgba(217, 177, 102, 0.3);
+  border-radius: 4px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(50, 51, 58, 0.78), rgba(20, 21, 25, 0.78));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+.build-column-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #efd9a0;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(235, 207, 135, 0.32);
+}
+.build-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.build-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 3px;
+  cursor: help;
+  transition: background 0.12s ease;
+}
+.build-item:hover {
+  background: rgba(255, 96, 70, 0.10);
+}
+.build-item img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex: 0 0 38px;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.32);
+}
+.build-item-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(235, 207, 135, 0.5);
+  background: rgba(5, 6, 10, 0.6);
+  color: #efe5bb;
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 700;
+}
+.build-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.build-item-meta strong {
+  font-size: 13px;
+  line-height: 16px;
+  color: #f6f3e9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.build-item-meta span {
+  font-size: 11px;
+  line-height: 14px;
+  color: #a3aab2;
+}
+.build-item-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(103, 112, 123, 0.32);
+  overflow: hidden;
+}
+.build-item-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 96, 70, 0.9), rgba(217, 177, 102, 0.9));
+}
+.build-column-highlight {
+  border-color: rgba(235, 207, 135, 0.55);
+  background: linear-gradient(180deg, rgba(94, 68, 32, 0.42), rgba(22, 22, 24, 0.7));
+  margin-top: 4px;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.12), 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+.build-column-highlight .build-column-title {
+  font-size: 13px;
+  color: #ffd98c;
+}
+.build-item-list-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.build-item-highlight img {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
 @media (max-width: 720px) {
   .dota-dropdown .options[role="listbox"],
   .dota-dropdown [role="listbox"] {
@@ -1123,10 +1320,15 @@ def _hero_metadata(heroes: pl.DataFrame) -> dict[int, dict[str, str]]:
     for row in heroes.iter_rows(named=True):
         hero_id = int(row["hero_id"])
         hero_name = str(row.get("hero_name") or f"Hero {hero_id}")
+        pro_win_rate = row.get("pro_win_rate")
         metadata[hero_id] = {
             "name": hero_name,
             "roles": _format_roles_text(row.get("roles")),
             "icon": _asset_url(row.get("icon") or row.get("img")),
+            "image": _asset_url(row.get("img") or row.get("icon")),
+            "primary_attr": str(row.get("primary_attr") or "").lower(),
+            "pro_pick": int(row.get("pro_pick") or 0),
+            "pro_win_rate": float(pro_win_rate) if pro_win_rate is not None else None,
             "aliases": ", ".join(_hero_aliases(hero_name)),
         }
     return metadata
@@ -1201,6 +1403,163 @@ def _item_choices(items: pl.DataFrame) -> list[tuple[str, str]]:
         cost_text = f" - {cost}g" if cost else ""
         choices.append((f"{name}{cost_text}", key))
     return sorted(choices, key=lambda item: item[0])
+
+
+def _item_tooltip(item_name: str, item_row: dict[str, object]) -> str:
+    lines = [item_name]
+    cost = item_row.get("cost")
+    if cost:
+        lines.append(f"Cost: {int(cost):,}g")
+    attrib = item_row.get("attrib")
+    if attrib:
+        lines.append(str(attrib))
+    notes = item_row.get("notes")
+    if notes:
+        lines.append(str(notes))
+    return _html_escape("\n".join(lines))
+
+
+def _item_metadata(items: pl.DataFrame) -> dict[str, dict[str, object]]:
+    metadata: dict[str, dict[str, object]] = {}
+    if items.is_empty():
+        return metadata
+    for row in items.iter_rows(named=True):
+        key = str(row.get("item_key") or "")
+        if not key:
+            continue
+        metadata[key] = {
+            "name": str(row.get("item_name") or key.replace("_", " ").title()),
+            "cost": row.get("cost"),
+            "attrib": row.get("attrib"),
+            "notes": row.get("notes"),
+        }
+    return metadata
+
+
+def _build_hero_header_html(hero_id: int, metadata: dict[int, dict[str, object]]) -> str:
+    row = metadata.get(hero_id, {})
+    name = _html_escape(row.get("name") or f"Hero {hero_id}")
+    icon = _html_escape(row.get("icon") or "")
+    image = _html_escape(row.get("image") or "")
+    attr_key = str(row.get("primary_attr") or "")
+    attr_label, attr_color = PRIMARY_ATTR_INFO.get(attr_key, ("", ""))
+    pills = []
+    if attr_label:
+        style = f" style='--pill-color: {attr_color}'" if attr_color else ""
+        pills.append(f"<span class='build-stat-pill'{style}>{attr_label}</span>")
+    pro_win_rate = row.get("pro_win_rate")
+    if pro_win_rate is not None:
+        pills.append(f"<span class='build-stat-pill'>Pro WR {pro_win_rate * 100:.1f}%</span>")
+    pro_pick = row.get("pro_pick") or 0
+    if pro_pick:
+        pills.append(f"<span class='build-stat-pill'>{pro_pick:,} pro picks</span>")
+    icon_html = f"<img class='build-hero-icon' src='{icon}' alt='{name}' loading='lazy'>" if icon else ""
+    style = f" style=\"background-image: url('{image}')\"" if image else ""
+    return (
+        f"<div class='build-hero-header'{style}>"
+        f"{icon_html}"
+        "<div class='build-hero-title'>"
+        f"<strong>{name}</strong>"
+        f"{_role_tags_html(row.get('roles'))}"
+        f"<div class='build-stat-row'>{''.join(pills)}</div>"
+        "</div></div>"
+    )
+
+
+def _build_top_items_html(
+    hero_id: int,
+    build_stats: pl.DataFrame,
+    item_metadata: dict[str, dict[str, object]],
+    top_n: int = 6,
+) -> str:
+    if build_stats.is_empty():
+        return ""
+    filtered = build_stats.filter(
+        (pl.col("hero_id") == hero_id) & ~pl.col("item_key").str.starts_with("recipe_")
+    )
+    if filtered.is_empty():
+        return ""
+    totals = filtered.group_by("item_key").agg(pl.col("purchases").sum().alias("purchases"))
+    total = totals["purchases"].sum() or 0
+    items_html = []
+    for row in totals.sort("purchases", descending=True).head(top_n).iter_rows(named=True):
+        item_key = str(row["item_key"])
+        item_row = item_metadata.get(item_key, {})
+        item_name = _html_escape(item_row.get("name") or item_key.replace("_", " ").title())
+        icon = _html_escape(_item_icon_url(item_key))
+        tooltip = _item_tooltip(item_row.get("name") or item_name, item_row)
+        purchases = int(row["purchases"])
+        share = (purchases / total * 100) if total else 0
+        items_html.append(
+            f"<div class='build-item build-item-highlight' title='{tooltip}'>"
+            f"<img src='{icon}' alt='{item_name}' loading='lazy'>"
+            "<div class='build-item-meta'>"
+            f"<strong>{item_name}</strong>"
+            f"<span>{share:.0f}% of buys</span>"
+            f"<div class='build-item-bar'><span style='width: {share:.0f}%'></span></div>"
+            "</div></div>"
+        )
+    if not items_html:
+        return ""
+    return (
+        "<div class='build-column build-column-highlight'>"
+        "<div class='build-column-title'>Most Popular Items</div>"
+        f"<div class='build-item-list build-item-list-row'>{''.join(items_html)}</div>"
+        "</div>"
+    )
+
+
+def _build_columns_html(
+    hero_id: int,
+    build_stats: pl.DataFrame,
+    item_metadata: dict[str, dict[str, object]],
+    top_n: int = 8,
+) -> str:
+    if build_stats.is_empty():
+        return "<div class='empty-strip'>No build table is available yet. Run match enrichment and normalization first.</div>"
+    filtered = build_stats.filter(
+        (pl.col("hero_id") == hero_id) & ~pl.col("item_key").str.starts_with("recipe_")
+    )
+    if filtered.is_empty():
+        return "<div class='empty-strip'>No observed item timings for that hero.</div>"
+    columns = []
+    for bucket in TIME_BUCKET_ORDER:
+        bucket_rows = filtered.filter(pl.col("time_bucket") == bucket)
+        if bucket_rows.is_empty():
+            continue
+        total = bucket_rows["purchases"].sum() or 0
+        top_rows = bucket_rows.sort("purchases", descending=True).head(top_n)
+        items_html = []
+        for order, row in enumerate(
+            top_rows.sort("median_time").iter_rows(named=True), start=1
+        ):
+            item_key = str(row["item_key"])
+            item_row = item_metadata.get(item_key, {})
+            item_name = _html_escape(item_row.get("name") or item_key.replace("_", " ").title())
+            icon = _html_escape(_item_icon_url(item_key))
+            tooltip = _item_tooltip(item_row.get("name") or item_name, item_row)
+            purchases = int(row["purchases"])
+            share = (purchases / total * 100) if total else 0
+            median_time = _format_item_time(row.get("median_time"))
+            items_html.append(
+                f"<div class='build-item' title='{tooltip}'>"
+                f"<span class='build-item-order'>{order}</span>"
+                f"<img src='{icon}' alt='{item_name}' loading='lazy'>"
+                "<div class='build-item-meta'>"
+                f"<strong>{item_name}</strong>"
+                f"<span>{share:.0f}% of buys &middot; median {median_time}</span>"
+                f"<div class='build-item-bar'><span style='width: {share:.0f}%'></span></div>"
+                "</div></div>"
+            )
+        columns.append(
+            "<div class='build-column'>"
+            f"<div class='build-column-title'>{_html_escape(TIME_BUCKET_LABELS.get(bucket, bucket))}</div>"
+            f"<div class='build-item-list'>{''.join(items_html)}</div>"
+            "</div>"
+        )
+    if not columns:
+        return "<div class='empty-strip'>No observed item timings for that hero.</div>"
+    return "<div class='build-columns'>" + "".join(columns) + "</div>"
 
 
 def _selected_hero_html(
@@ -1306,6 +1665,7 @@ def build_app() -> gr.Blocks:
     hero_choices = _hero_choices(recommender.heroes)
     item_table = read_parquet(settings.parquet_dir / "dim_item.parquet")
     item_choices = _item_choices(item_table)
+    item_metadata = _item_metadata(item_table)
 
     def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str:
         return _selected_hero_html(hero_ids or [], hero_metadata, target)
@@ -1400,26 +1760,16 @@ def build_app() -> gr.Blocks:
             return prediction.get("message", "Prediction unavailable.")
         return json.dumps(prediction, indent=2)
 
-    def hero_builds(hero_id: int | None, item_key: str | None) -> str:
+    def hero_builds(hero_id: int | None) -> str:
         hero_ids, unknown = _parse_heroes([hero_id] if hero_id else [], hero_name_lookup)
         if unknown:
-            return f"Unrecognized hero: {', '.join(unknown)}"
+            return f"<div class='empty-strip'>Unrecognized hero: {_html_escape(', '.join(unknown))}</div>"
         if not hero_ids:
-            return "Select a hero."
-        if build_stats.is_empty():
-            return "No build table is available yet. Run match enrichment and normalization first."
-        filtered = build_stats.filter(pl.col("hero_id") == hero_ids[0])
-        if item_key:
-            filtered = filtered.filter(pl.col("item_key") == item_key)
-        rows = filtered.sort("purchases", descending=True).head(15).iter_rows(named=True)
-        lines = []
-        for row in rows:
-            median_time = _format_item_time(row.get("median_time"))
-            lines.append(
-                f"- **{row.get('item_key')}** in `{row.get('time_bucket')}`: "
-                f"{row.get('purchases')} purchases, median `{median_time}`"
-            )
-        return "\n".join(lines) if lines else "No observed item timings for that hero."
+            return "<div class='empty-strip'>Select a hero.</div>"
+        header = _build_hero_header_html(hero_ids[0], hero_metadata)
+        top_build = _build_top_items_html(hero_ids[0], build_stats, item_metadata)
+        columns = _build_columns_html(hero_ids[0], build_stats, item_metadata)
+        return header + top_build + columns
 
     def draft_lab(enemies: list[int] | None, role: str, twist: str) -> str:
         enemy_ids, unknown = _parse_heroes(enemies, hero_name_lookup)
@@ -1699,38 +2049,22 @@ def build_app() -> gr.Blocks:
             with gr.Column(
                 visible=False, elem_id="builds-view", elem_classes=["app-view"]
             ) as builds_view:
-                with gr.Row():
-                    hero = gr.Dropdown(
-                        choices=hero_choices,
-                        label="Hero",
-                        value=1,
-                        filterable=True,
-                        elem_classes=["dota-dropdown", "hero-dropdown"],
-                    )
-                    build_item = gr.Dropdown(
-                        choices=item_choices,
-                        label="Optional item filter",
-                        filterable=True,
-                        elem_classes=["dota-dropdown", "item-dropdown"],
-                    )
-                with gr.Row():
-                    build_hero_preview = gr.HTML(hero_preview([1]))
-                    build_item_preview = gr.HTML(item_preview(None))
-                builds_button = gr.Button("Show Builds")
-                builds_output = gr.Markdown()
+                hero = gr.Dropdown(
+                    choices=hero_choices,
+                    label="Hero",
+                    value=1,
+                    filterable=True,
+                    elem_classes=["dota-dropdown", "hero-dropdown"],
+                )
+                build_hero_preview = gr.HTML(hero_preview([1]))
+                builds_output = gr.HTML(hero_builds(1))
                 hero.change(
                     hero_single_preview,
                     inputs=[hero],
                     outputs=[build_hero_preview],
                     api_visibility="private",
                 )
-                build_item.change(
-                    item_preview,
-                    inputs=[build_item],
-                    outputs=[build_item_preview],
-                    api_visibility="private",
-                )
-                builds_button.click(hero_builds, inputs=[hero, build_item], outputs=[builds_output])
+                hero.change(hero_builds, inputs=[hero], outputs=[builds_output])
 
             with gr.Column(
                 visible=False, elem_id="draft-lab-view", elem_classes=["app-view"]
