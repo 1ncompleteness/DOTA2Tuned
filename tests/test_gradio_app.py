@@ -1,3 +1,4 @@
+import gradio as gr
 import polars as pl
 
 from dota2tuned.ui.gradio_app import (
@@ -87,6 +88,34 @@ def test_selected_hero_preview_has_text_tags_and_remove_button():
     assert "data-dota-target='draft-allies-dropdown'" in html
 
 
+def test_selected_hero_preview_ignores_transient_null_values():
+    html = _selected_hero_html(
+        [None, "", "1", "bad"],
+        {1: {"name": "Anti-Mage", "icon": "https://example.test/am.png", "roles": "Carry"}},
+        "draft-allies-dropdown",
+    )
+
+    assert "<strong>Anti-Mage</strong>" in html
+    assert "Hero None" not in html
+    assert "Hero bad" not in html
+
+
+def test_hero_multiselect_tolerates_gradio_scroll_null_payload():
+    heroes = pl.DataFrame([{"hero_id": 1, "hero_name": "Anti-Mage"}])
+    lookup, _ = _hero_lookup(heroes)
+    dropdown = gr.Dropdown(
+        choices=[("Anti-Mage", 1)],
+        multiselect=True,
+        allow_custom_value=True,
+    )
+
+    payload = dropdown.preprocess([None, 1])
+    hero_ids, unknown = _parse_heroes(payload, lookup)
+
+    assert hero_ids == [1]
+    assert unknown == []
+
+
 def test_dropdown_js_does_not_reinject_topbar():
     js = _dropdown_js({"Anti-Mage · Carry": {"src": "https://example.test/am.png", "kind": "hero"}})
 
@@ -98,6 +127,7 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "syncSidebarView" in js
     assert "closestElement" in js
     assert "syncDropdownMenus" in js
+    assert "isDropdownMenuScroll" in js
 
 
 def test_css_uses_trajan_font_without_global_red_buttons():

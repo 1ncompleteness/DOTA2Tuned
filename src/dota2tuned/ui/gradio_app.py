@@ -1116,6 +1116,13 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       .replace(/\\([^)]*\\)/g, " ")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "");
+  const isDropdownMenuScroll = (event) => {{
+    const target = event?.target;
+    if (!(target instanceof Element)) return false;
+    return Boolean(
+      closestElement(target, '.dota-dropdown .options, .dota-dropdown [role="listbox"]')
+    );
+  }};
   const syncDropdownMenus = () => {{
     const margin = 8;
     if (!document.querySelector('.dota-dropdown .options, .dota-dropdown ul[role="listbox"]')) {{
@@ -1294,7 +1301,8 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   const observer = new MutationObserver(scheduleDecorate);
   observer.observe(document.body, {{ childList: true, subtree: true }});
   let syncScheduled = false;
-  const scheduleSync = () => {{
+  const scheduleSync = (event) => {{
+    if (isDropdownMenuScroll(event)) return;
     if (syncScheduled) return;
     syncScheduled = true;
     requestAnimationFrame(() => {{
@@ -1733,7 +1741,12 @@ def _selected_hero_html(
         return "<div class='hero-strip'></div>"
     chips = []
     for raw_id in hero_ids:
-        hero_id = int(raw_id)
+        if raw_id in {None, ""}:
+            continue
+        try:
+            hero_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
         row = metadata.get(hero_id, {})
         name = _html_escape(row.get("name") or f"Hero {hero_id}")
         icon = _html_escape(row.get("icon") or "")
@@ -1751,6 +1764,8 @@ def _selected_hero_html(
             f"{img}<div class='hero-card-body'><strong>{name}</strong>"
             f"{_role_tags_html(row.get('roles'))}</div>{remove}</div>"
         )
+    if not chips:
+        return "<div class='hero-strip'></div>"
     return "<div class='hero-strip'>" + "".join(chips) + "</div>"
 
 
@@ -1831,8 +1846,12 @@ def build_app() -> gr.Blocks:
     item_choices = _item_choices(item_table)
     item_metadata = _item_metadata(item_table)
 
+    def clean_hero_values(value: object, max_count: int | None = None) -> list[int]:
+        hero_ids, _ = _parse_heroes(value, hero_name_lookup)
+        return hero_ids[:max_count] if max_count is not None else hero_ids
+
     def hero_preview(hero_ids: list[int] | None, target: str | None = None) -> str:
-        return _selected_hero_html(hero_ids or [], hero_metadata, target)
+        return _selected_hero_html(clean_hero_values(hero_ids), hero_metadata, target)
 
     def hero_preview_for(target: str):
         return lambda hero_ids: hero_preview(hero_ids, target)
@@ -1997,6 +2016,7 @@ def build_app() -> gr.Blocks:
                         choices=hero_choices,
                         label="Allied heroes",
                         multiselect=True,
+                        allow_custom_value=True,
                         filterable=True,
                         max_choices=5,
                         elem_id="draft-allies-dropdown",
@@ -2007,6 +2027,7 @@ def build_app() -> gr.Blocks:
                         label="Enemy heroes",
                         value=[44, 30],
                         multiselect=True,
+                        allow_custom_value=True,
                         filterable=True,
                         max_choices=5,
                         elem_id="draft-enemies-dropdown",
@@ -2016,26 +2037,26 @@ def build_app() -> gr.Blocks:
                         choices=hero_choices,
                         label="Banned heroes",
                         multiselect=True,
+                        allow_custom_value=True,
                         filterable=True,
                         elem_id="draft-bans-dropdown",
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
 
                     def update_choices(allies_val, enemies_val, bans_val):
-                        selected = (
-                            set(allies_val or [])
-                            | set(enemies_val or [])
-                            | set(bans_val or [])
-                        )
+                        allied_ids = clean_hero_values(allies_val, max_count=5)
+                        enemy_ids = clean_hero_values(enemies_val, max_count=5)
+                        banned_ids = clean_hero_values(bans_val)
+                        selected = set(allied_ids) | set(enemy_ids) | set(banned_ids)
 
                         def filtered(exclude_self):
-                            excl = selected - set(exclude_self or [])
+                            excl = selected - set(exclude_self)
                             return [c for c in hero_choices if c[1] not in excl]
 
                         return (
-                            gr.update(choices=filtered(allies_val)),
-                            gr.update(choices=filtered(enemies_val)),
-                            gr.update(choices=filtered(bans_val)),
+                            gr.update(choices=filtered(allied_ids), value=allied_ids),
+                            gr.update(choices=filtered(enemy_ids), value=enemy_ids),
+                            gr.update(choices=filtered(banned_ids), value=banned_ids),
                         )
 
                     for dd in (allies, enemies, bans):
@@ -2044,6 +2065,7 @@ def build_app() -> gr.Blocks:
                             inputs=[allies, enemies, bans],
                             outputs=[allies, enemies, bans],
                             api_visibility="private",
+                            queue=False,
                         )
                 with gr.Row():
                     ally_preview = gr.HTML(hero_preview([], "draft-allies-dropdown"))
@@ -2070,18 +2092,21 @@ def build_app() -> gr.Blocks:
                     inputs=[allies],
                     outputs=[ally_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 enemies.change(
                     hero_preview_for("draft-enemies-dropdown"),
                     inputs=[enemies],
                     outputs=[enemy_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 bans.change(
                     hero_preview_for("draft-bans-dropdown"),
                     inputs=[bans],
                     outputs=[ban_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 run.click(
                     draft_coach,
@@ -2116,12 +2141,14 @@ def build_app() -> gr.Blocks:
                     inputs=[meta_hero],
                     outputs=[meta_hero_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 meta_item.change(
                     item_preview,
                     inputs=[meta_item],
                     outputs=[meta_item_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 meta_button.click(
                     hero_meta,
@@ -2169,6 +2196,7 @@ def build_app() -> gr.Blocks:
                         label="Radiant heroes",
                         value=[1, 2, 3, 25, 5],
                         multiselect=True,
+                        allow_custom_value=True,
                         filterable=True,
                         max_choices=5,
                         elem_id="predict-radiant-dropdown",
@@ -2179,6 +2207,7 @@ def build_app() -> gr.Blocks:
                         label="Dire heroes",
                         value=[14, 74, 6, 26, 18],
                         multiselect=True,
+                        allow_custom_value=True,
                         filterable=True,
                         max_choices=5,
                         elem_id="predict-dire-dropdown",
@@ -2198,12 +2227,14 @@ def build_app() -> gr.Blocks:
                     inputs=[radiant],
                     outputs=[radiant_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 dire.change(
                     hero_preview_for("predict-dire-dropdown"),
                     inputs=[dire],
                     outputs=[dire_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 predict_button.click(
                     match_predictor,
@@ -2228,6 +2259,7 @@ def build_app() -> gr.Blocks:
                     inputs=[hero],
                     outputs=[build_hero_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 hero.change(hero_builds, inputs=[hero], outputs=[builds_output])
 
@@ -2239,6 +2271,7 @@ def build_app() -> gr.Blocks:
                     label="Enemy heroes",
                     value=[44, 30],
                     multiselect=True,
+                    allow_custom_value=True,
                     filterable=True,
                     max_choices=5,
                     elem_id="lab-enemies-dropdown",
@@ -2264,6 +2297,7 @@ def build_app() -> gr.Blocks:
                     inputs=[lab_enemies],
                     outputs=[lab_enemy_preview],
                     api_visibility="private",
+                    queue=False,
                 )
                 lab_button.click(
                     draft_lab,
