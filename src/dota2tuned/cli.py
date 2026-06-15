@@ -207,11 +207,13 @@ def serve() -> None:
     demo = build_app()
     # Load JS is attached inside build_app via demo.load(); launch(js=) does not
     # run on page load in Gradio 6.18. app_kwargs wires the critical-head middleware
-    # that prevents the bare-element flash before the loader.
+    # that prevents the bare-element flash before the loader. ssr_mode=False keeps
+    # rendering client-side (HF auto-enables SSR, which bypasses the loader/middleware).
     demo.launch(
         css=APP_CSS,
         head=APP_HEAD,
         theme=gr.themes.Soft(),
+        ssr_mode=False,
         app_kwargs=launch_app_kwargs(),
     )
 

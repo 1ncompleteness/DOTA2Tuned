@@ -15,9 +15,13 @@ if __name__ == "__main__":
     # is a no-op on page load in Gradio 6.18, so it is intentionally not passed.
     # app_kwargs wires the critical-head middleware that prevents the bare-element
     # flash (Gradio injects head= only after mount; see launch_app_kwargs).
+    # ssr_mode=False: HF Spaces auto-enables SSR (Node proxy), which server-renders
+    # the bare app and bypasses both our head= loader and the Python middleware.
+    # Client-side rendering lets the critical-head middleware hide the app until ready.
     demo.launch(
         css=APP_CSS,
         head=APP_HEAD,
         theme=gr.themes.Soft(),
+        ssr_mode=False,
         app_kwargs=launch_app_kwargs(),
     )
