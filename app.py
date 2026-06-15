@@ -1,5 +1,12 @@
+import os
 import sys
 from pathlib import Path
+
+# Force client-side rendering before Gradio is imported/launched. HF Spaces sets
+# GRADIO_SSR_MODE=True, which runs a Node SSR proxy that server-renders the bare
+# app and bypasses our critical-head loader/middleware (flash of bare elements).
+# Overriding the env here keeps rendering client-side so the loader covers startup.
+os.environ["GRADIO_SSR_MODE"] = "False"
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 

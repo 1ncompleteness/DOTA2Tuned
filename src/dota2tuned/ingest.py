@@ -11,6 +11,8 @@ from dota2tuned.clients.valve import flatten_patch_notes
 from dota2tuned.config import Settings
 from dota2tuned.storage import read_jsonl, read_parquet, write_jsonl
 
+PATCH_NOTE_SUFFIXES = ("", "a", "b", "c", "d", "e")
+
 
 def _take_unique_matches(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
     seen: set[int] = set()
@@ -41,6 +43,15 @@ def _recent_league_ids(rows: list[dict[str, Any]], limit: int) -> list[int]:
         if len(league_ids) >= limit:
             break
     return league_ids
+
+
+def _patch_note_versions(version: str) -> list[str]:
+    base = str(version or "").strip()
+    if not base:
+        return []
+    if base[-1:].isalpha():
+        return [base]
+    return [f"{base}{suffix}" for suffix in PATCH_NOTE_SUFFIXES]
 
 
 def _indexed_match_details(path: Path, id_key: str = "match_id") -> dict[int, dict[str, Any]]:
@@ -174,15 +185,24 @@ class IngestCoordinator:
                 patch_rows = list(patch_rows.values())
             patch_rows = sorted(patch_rows, key=lambda row: row.get("date", ""))[-max_patches:]
             changes: list[dict[str, Any]] = []
+            seen_versions: set[str] = set()
             for row in patch_rows:
                 version = row.get("name")
                 if not version:
                     continue
-                try:
-                    payload = valve.patch_notes(version)
-                except Exception:
-                    continue
-                changes.extend(flatten_patch_notes(payload))
+                for note_version in _patch_note_versions(str(version)):
+                    try:
+                        payload = valve.patch_notes(note_version)
+                    except Exception:
+                        continue
+                    rows = flatten_patch_notes(payload)
+                    if not rows:
+                        continue
+                    actual_version = str(rows[0].get("patch") or note_version)
+                    if actual_version in seen_versions:
+                        continue
+                    seen_versions.add(actual_version)
+                    changes.extend(rows)
             return {
                 "valve_patch_changes": write_jsonl(
                     self.raw_dir / "patches" / "valve_patch_changes.jsonl", changes

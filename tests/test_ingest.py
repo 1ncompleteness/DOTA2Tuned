@@ -2,7 +2,15 @@ from pathlib import Path
 
 import polars as pl
 
-from dota2tuned.ingest import _targeted_match_query, _under_sampled_heroes
+from dota2tuned.ingest import _patch_note_versions, _targeted_match_query, _under_sampled_heroes
+
+
+def test_patch_note_versions_expand_major_patch_family():
+    assert _patch_note_versions("7.41") == ["7.41", "7.41a", "7.41b", "7.41c", "7.41d", "7.41e"]
+
+
+def test_patch_note_versions_keep_letter_patch_exact():
+    assert _patch_note_versions("7.41d") == ["7.41d"]
 
 
 def test_under_sampled_heroes_uses_player_games_and_pro_pick(tmp_path: Path):
