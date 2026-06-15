@@ -10,6 +10,7 @@ import polars as pl
 from starlette.middleware import Middleware
 
 from dota2tuned.config import get_settings
+from dota2tuned.normalize import ROLE_ALL
 from dota2tuned.rag import Retriever
 from dota2tuned.recommend import DraftRecommender
 from dota2tuned.schemas import DraftInput
@@ -137,6 +138,8 @@ ROLE_OPTIONS = [
     ("Position 4 Soft support", "soft support"),
     ("Position 5 Hard support", "hard support"),
 ]
+
+BUILD_ROLE_OPTIONS = [("All roles", "all"), *ROLE_OPTIONS]
 
 SCOPE_OPTIONS = [
     ("Pro matches", "pro"),
@@ -293,6 +296,24 @@ TIME_BUCKET_LABELS = {
     "30-40m": "Late Game (30-40 min)",
     "40m+": "End Game (40+ min)",
     "unknown": "Unknown Timing",
+}
+
+CORE_ITEM_TIME_BUCKETS = ["20-30m", "30-40m", "40m+"]
+
+# Universal consumables/utility that every hero buys regardless of role or build path.
+BASIC_ITEM_KEYS = {
+    "tango",
+    "tango_single",
+    "flask",
+    "clarity",
+    "enchanted_mango",
+    "faerie_fire",
+    "ward_observer",
+    "ward_sentry",
+    "tpscroll",
+    "smoke_of_deceit",
+    "dust",
+    "branches",
 }
 
 COMMON_HERO_ALIASES = {
@@ -1456,6 +1477,45 @@ __NAV_ICON_CSS__
   height: 48px;
   flex: 0 0 48px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.skill-order-row {
+  grid-template-columns: repeat(auto-fill, 46px);
+}
+.skill-order-item {
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.skill-order-item img {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 4px;
+}
+.skill-order-talent {
+  grid-column: span 2;
+  width: 100%;
+  height: 64px;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid rgba(235, 207, 135, 0.32);
+  border-radius: 4px;
+  background: rgba(255, 217, 140, 0.06);
+  overflow: hidden;
+}
+.skill-order-talent-label {
+  font-size: 10px;
+  line-height: 12px;
+  color: #efe5bb;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.build-role-radio {
+  margin-bottom: 8px;
 }
 @media (max-width: 820px) {
   .app-sidebar.sidebar,
@@ -2682,6 +2742,12 @@ def _asset_url(path: object) -> str:
     return value
 
 
+def _ability_icon_url(ability_key: object, img: object = None) -> str:
+    if img:
+        return _asset_url(img)
+    return f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/abilities/{ability_key}.png"
+
+
 def _item_icon_url(item_key: object) -> str:
     return f"{ASSET_BASE_URL}/apps/dota2/images/dota_react/items/{item_key}.png"
 
@@ -2857,6 +2923,27 @@ def _item_metadata(items: pl.DataFrame) -> dict[str, dict[str, object]]:
     return metadata
 
 
+def _ability_metadata(abilities: pl.DataFrame) -> dict[int, dict[str, object]]:
+    metadata: dict[int, dict[str, object]] = {}
+    if abilities.is_empty():
+        return metadata
+    for row in abilities.iter_rows(named=True):
+        ability_id = row.get("ability_id")
+        if ability_id is None:
+            continue
+        key = str(row.get("ability_key") or "")
+        name = str(row.get("ability_name") or key.replace("_", " ").title())
+        name = re.sub(r"\{s:[^}]+\}", "X", name).strip()
+        name = name.replace("_", " ")
+        metadata[int(ability_id)] = {
+            "key": key,
+            "name": name,
+            "icon": _ability_icon_url(key, row.get("img")),
+            "is_talent": key.startswith("special_bonus"),
+        }
+    return metadata
+
+
 def _build_hero_header_html(hero_id: int, metadata: dict[int, dict[str, object]]) -> str:
     row = metadata.get(hero_id, {})
     name = _html_escape(row.get("name") or f"Hero {hero_id}")
@@ -2891,6 +2978,58 @@ def _build_hero_header_html(hero_id: int, metadata: dict[int, dict[str, object]]
     )
 
 
+def _buildable_items_filter() -> pl.Expr:
+    return ~pl.col("item_key").str.starts_with("recipe_") & ~pl.col("item_key").is_in(
+        BASIC_ITEM_KEYS
+    )
+
+
+def _build_core_item_html(
+    hero_id: int,
+    build_stats: pl.DataFrame,
+    item_metadata: dict[str, dict[str, object]],
+    candidates: int = 5,
+) -> str:
+    if build_stats.is_empty():
+        return ""
+    filtered = build_stats.filter(
+        (pl.col("hero_id") == hero_id)
+        & pl.col("time_bucket").is_in(CORE_ITEM_TIME_BUCKETS)
+        & _buildable_items_filter()
+    )
+    if filtered.is_empty():
+        return ""
+    totals = filtered.group_by("item_key").agg(pl.col("purchases").sum().alias("purchases"))
+    top_rows = totals.sort("purchases", descending=True).head(candidates)
+    best_key: str | None = None
+    best_cost = -1
+    best_purchases = 0
+    for row in top_rows.iter_rows(named=True):
+        item_key = str(row["item_key"])
+        cost = int(item_metadata.get(item_key, {}).get("cost") or 0)
+        if cost > best_cost:
+            best_cost = cost
+            best_key = item_key
+            best_purchases = int(row["purchases"])
+    if best_key is None:
+        return ""
+    item_row = item_metadata.get(best_key, {})
+    item_name = _html_escape(item_row.get("name") or best_key.replace("_", " ").title())
+    icon = _html_escape(_item_icon_url(best_key))
+    tooltip = _item_tooltip(item_row.get("name") or item_name, item_row)
+    return (
+        "<div class='build-column build-column-highlight'>"
+        "<div class='build-column-title'>Core Item</div>"
+        "<div class='build-item-list build-item-list-row'>"
+        f"<div class='build-item build-item-highlight' title='{tooltip}'>"
+        f"<img src='{icon}' alt='{item_name}' loading='lazy'>"
+        "<div class='build-item-meta'>"
+        f"<strong>{item_name}</strong>"
+        f"<span>Built in {best_purchases:,} recorded games</span>"
+        "</div></div></div></div>"
+    )
+
+
 def _build_top_items_html(
     hero_id: int,
     build_stats: pl.DataFrame,
@@ -2899,9 +3038,7 @@ def _build_top_items_html(
 ) -> str:
     if build_stats.is_empty():
         return ""
-    filtered = build_stats.filter(
-        (pl.col("hero_id") == hero_id) & ~pl.col("item_key").str.starts_with("recipe_")
-    )
+    filtered = build_stats.filter((pl.col("hero_id") == hero_id) & _buildable_items_filter())
     if filtered.is_empty():
         return ""
     totals = filtered.group_by("item_key").agg(pl.col("purchases").sum().alias("purchases"))
@@ -2945,9 +3082,7 @@ def _build_columns_html(
             "<div class='empty-strip'>No build table is available yet. "
             "Run match enrichment and normalization first.</div>"
         )
-    filtered = build_stats.filter(
-        (pl.col("hero_id") == hero_id) & ~pl.col("item_key").str.starts_with("recipe_")
-    )
+    filtered = build_stats.filter((pl.col("hero_id") == hero_id) & _buildable_items_filter())
     if filtered.is_empty():
         return "<div class='empty-strip'>No observed item timings for that hero.</div>"
     columns = []
@@ -2989,6 +3124,57 @@ def _build_columns_html(
     if not columns:
         return "<div class='empty-strip'>No observed item timings for that hero.</div>"
     return "<div class='build-columns'>" + "".join(columns) + "</div>"
+
+
+def _build_skill_order_html(
+    hero_id: int,
+    role: str,
+    skill_stats: pl.DataFrame,
+    ability_metadata: dict[int, dict[str, object]],
+    max_picks: int = 18,
+) -> str:
+    if skill_stats.is_empty():
+        return ""
+    filtered = skill_stats.filter((pl.col("hero_id") == hero_id) & (pl.col("role") == role))
+    if filtered.is_empty():
+        filtered = skill_stats.filter(
+            (pl.col("hero_id") == hero_id) & (pl.col("role") == ROLE_ALL)
+        )
+    if filtered.is_empty():
+        return ""
+    items_html = []
+    for pick_order in range(1, max_picks + 1):
+        rows = filtered.filter(pl.col("pick_order") == pick_order)
+        if rows.is_empty():
+            continue
+        top = rows.sort("picks", descending=True).row(0, named=True)
+        ability_id = int(top["ability_id"])
+        ability_row = ability_metadata.get(ability_id, {})
+        name = _html_escape(ability_row.get("name") or f"Ability {ability_id}")
+        if ability_row.get("is_talent"):
+            items_html.append(
+                f"<div class='build-item skill-order-item skill-order-talent' title='{name}'>"
+                f"<span class='build-item-order'>{pick_order}</span>"
+                f"<span class='skill-order-talent-label'>{name}</span>"
+                "</div>"
+            )
+            continue
+        icon = _html_escape(ability_row.get("icon") or "")
+        items_html.append(
+            f"<div class='build-item skill-order-item' title='{name}'>"
+            f"<span class='build-item-order'>{pick_order}</span>"
+            f"<img src='{icon}' alt='{name}' loading='lazy'>"
+            "</div>"
+        )
+    if not items_html:
+        return ""
+    return (
+        "<div class='build-column'>"
+        "<div class='build-column-title'>Skill Build Order</div>"
+        f"<div class='build-item-list build-item-list-row skill-order-row'>"
+        f"{''.join(items_html)}</div>"
+        "</div>"
+    )
 
 
 def _selected_hero_html(
@@ -3349,6 +3535,10 @@ def build_app() -> gr.Blocks:
         return "\n".join(files)
 
     build_stats = read_parquet(settings.parquet_dir / "fact_hero_build_stats.parquet")
+    skill_stats = read_parquet(settings.parquet_dir / "fact_hero_skill_builds.parquet")
+    ability_metadata = _ability_metadata(
+        read_parquet(settings.parquet_dir / "dim_ability.parquet")
+    )
 
     def match_predictor(radiant: list[int] | None, dire: list[int] | None) -> str:
         radiant_ids, radiant_unknown = _parse_heroes(radiant, hero_name_lookup)
@@ -3367,17 +3557,30 @@ def build_app() -> gr.Blocks:
             return prediction.get("message", "Prediction unavailable.")
         return json.dumps(prediction, indent=2)
 
-    def hero_builds(hero_id: int | None) -> str:
+    def hero_builds(hero_id: int | None, role: str | None = None) -> str:
         hero_ids, unknown = _parse_heroes([hero_id] if hero_id else [], hero_name_lookup)
         if unknown:
             unknown_text = _html_escape(", ".join(unknown))
             return f"<div class='empty-strip'>Unrecognized hero: {unknown_text}</div>"
         if not hero_ids:
             return "<div class='empty-strip'>Select a hero.</div>"
-        header = _build_hero_header_html(hero_ids[0], hero_metadata)
-        top_build = _build_top_items_html(hero_ids[0], build_stats, item_metadata)
-        columns = _build_columns_html(hero_ids[0], build_stats, item_metadata)
-        return header + top_build + columns
+        hero_id = hero_ids[0]
+        role = role or ROLE_ALL
+
+        role_stats = build_stats.filter(
+            (pl.col("hero_id") == hero_id) & (pl.col("role") == role)
+        )
+        if role_stats.is_empty() or role_stats["purchases"].sum() == 0:
+            role_stats = build_stats.filter(
+                (pl.col("hero_id") == hero_id) & (pl.col("role") == ROLE_ALL)
+            )
+
+        header = _build_hero_header_html(hero_id, hero_metadata)
+        core_item = _build_core_item_html(hero_id, role_stats, item_metadata)
+        top_build = _build_top_items_html(hero_id, role_stats, item_metadata)
+        skill_order = _build_skill_order_html(hero_id, role, skill_stats, ability_metadata)
+        columns = _build_columns_html(hero_id, role_stats, item_metadata)
+        return header + core_item + top_build + skill_order + columns
 
     def draft_lab(enemies: list[int] | None, role: str, twist: str) -> str:
         enemy_ids, unknown = _parse_heroes(enemies, hero_name_lookup)
@@ -3707,8 +3910,19 @@ def build_app() -> gr.Blocks:
                     filterable=True,
                     elem_classes=["dota-dropdown", "hero-dropdown"],
                 )
-                builds_output = gr.HTML(hero_builds(1))
-                hero.change(hero_builds, inputs=[hero], outputs=[builds_output])
+                build_role = gr.Radio(
+                    choices=BUILD_ROLE_OPTIONS,
+                    label="Role",
+                    value="all",
+                    elem_classes=["build-role-radio"],
+                )
+                builds_output = gr.HTML(hero_builds(1, "all"))
+                hero.change(
+                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
+                )
+                build_role.change(
+                    hero_builds, inputs=[hero, build_role], outputs=[builds_output]
+                )
 
             with gr.Column(
                 visible=True, elem_id="draft-lab-view", elem_classes=["app-view"]
