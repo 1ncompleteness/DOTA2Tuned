@@ -397,7 +397,9 @@ def normalize_match_details(
                         }
                     )
             else:
-                for order, ability_id in enumerate(player.get("ability_upgrades_arr") or [], start=1):
+                for order, ability_id in enumerate(
+                    player.get("ability_upgrades_arr") or [], start=1
+                ):
                     if not ability_id:
                         continue
                     ability_upgrades.append(

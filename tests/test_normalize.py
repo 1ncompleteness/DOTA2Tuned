@@ -36,6 +36,14 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
         [{"id": 1, "key": "blink", "dname": "Blink Dagger", "cost": 2250}],
     )
     write_jsonl(
+        raw / "reference" / "opendota_constants_ability_ids.jsonl",
+        [{"key": "501", "value": "antimage_mana_break"}],
+    )
+    write_jsonl(
+        raw / "reference" / "opendota_constants_abilities.jsonl",
+        [{"key": "antimage_mana_break", "dname": "Mana Break"}],
+    )
+    write_jsonl(
         raw / "reference" / "opendota_constants_patch.jsonl",
         [{"id": 1, "name": "7.41d", "date": "2026-06-04T00:00:00Z"}],
     )
@@ -65,6 +73,7 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
                         "hero_id": 1,
                         "win": 1,
                         "purchase_log": [{"time": 700, "key": "blink"}],
+                        "ability_upgrades_arr": [501],
                     },
                     {"player_slot": 128, "hero_id": 2, "win": 0},
                 ],
@@ -77,9 +86,15 @@ def test_normalize_all_builds_core_tables(tmp_path: Path):
     counts = normalize_all(raw, parquet)
 
     assert counts["dim_hero"] == 2
+    assert counts["dim_ability"] == 1
     assert counts["fact_item_purchase"] == 1
-    assert counts["fact_hero_build_stats"] == 1
+    assert counts["fact_hero_build_stats"] == 2
+    assert counts["fact_hero_skill_builds"] == 2
     assert read_parquet(parquet / "fact_match.parquet").height == 2
-    build_row = read_parquet(parquet / "fact_hero_build_stats.parquet").row(0, named=True)
-    assert build_row["item_key"] == "blink"
-    assert build_row["time_bucket"] == "10-20m"
+    build_rows = read_parquet(parquet / "fact_hero_build_stats.parquet")
+    assert set(build_rows["role"].to_list()) == {"all", "carry"}
+    assert set(build_rows["item_key"].to_list()) == {"blink"}
+    assert set(build_rows["time_bucket"].to_list()) == {"10-20m"}
+    skill_rows = read_parquet(parquet / "fact_hero_skill_builds.parquet")
+    assert set(skill_rows["role"].to_list()) == {"all", "carry"}
+    assert set(skill_rows["ability_id"].to_list()) == {501}
