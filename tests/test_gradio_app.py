@@ -1,4 +1,5 @@
 import inspect
+from types import SimpleNamespace
 
 import gradio as gr
 import polars as pl
@@ -13,6 +14,7 @@ from dota2tuned.ui.gradio_app import (
     _hero_aliases,
     _hero_choices,
     _hero_lookup,
+    _is_benign_loop_teardown,
     _parse_heroes,
     _selected_hero_html,
     build_app,
@@ -395,3 +397,47 @@ def test_critical_head_middleware_passes_through_non_html():
     body = next(m for m in sent if m["type"] == "http.response.body")["body"]
     assert body == b"data: x\n\n"
     assert b"d2-critical" not in body
+
+
+def test_is_benign_loop_teardown_matches_only_the_asyncio_fd_noise():
+    loop_del = SimpleNamespace(__qualname__="BaseEventLoop.__del__")
+
+    # The exact benign case: ValueError "Invalid file descriptor" from a loop __del__.
+    benign = SimpleNamespace(
+        exc_value=ValueError("Invalid file descriptor: -1"),
+        object=loop_del,
+        exc_traceback=None,
+    )
+    assert _is_benign_loop_teardown(benign) is True
+
+    # A different exception type must pass through.
+    assert (
+        _is_benign_loop_teardown(
+            SimpleNamespace(exc_value=RuntimeError("boom"), object=loop_del, exc_traceback=None)
+        )
+        is False
+    )
+
+    # A ValueError that is NOT the fd noise and not from a loop must pass through.
+    assert (
+        _is_benign_loop_teardown(
+            SimpleNamespace(
+                exc_value=ValueError("bad value"),
+                object=SimpleNamespace(__qualname__="Foo.bar"),
+                exc_traceback=None,
+            )
+        )
+        is False
+    )
+
+    # Same ValueError from an unrelated destructor must not be hidden.
+    assert (
+        _is_benign_loop_teardown(
+            SimpleNamespace(
+                exc_value=ValueError("Invalid file descriptor: -1"),
+                object=SimpleNamespace(__qualname__="Widget.__del__"),
+                exc_traceback=None,
+            )
+        )
+        is False
+    )

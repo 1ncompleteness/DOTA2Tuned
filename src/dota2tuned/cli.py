@@ -202,8 +202,14 @@ def eval() -> None:
 def serve() -> None:
     import gradio as gr
 
-    from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD, launch_app_kwargs
+    from dota2tuned.ui.gradio_app import (
+        APP_CSS,
+        APP_HEAD,
+        install_quiet_unraisablehook,
+        launch_app_kwargs,
+    )
 
+    install_quiet_unraisablehook()
     demo = build_app()
     # Load JS is attached inside build_app via demo.load(); launch(js=) does not
     # run on page load in Gradio 6.18. app_kwargs wires the critical-head middleware

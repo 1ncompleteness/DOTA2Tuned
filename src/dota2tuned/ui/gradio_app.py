@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
+import traceback
 from urllib.parse import quote
 
 import gradio as gr
@@ -1461,6 +1463,53 @@ class _CriticalHeadMiddleware:
                 await send(message)
 
         await self.app(scope, receive, send_wrapper)
+
+
+def _is_benign_loop_teardown(unraisable) -> bool:
+    """True for the harmless asyncio event-loop teardown noise Gradio emits at
+    startup. gradio.utils.safe_get_lock/safe_get_stop_event create event loops
+    they never close; on garbage collection Python 3.12 reports the harmless
+    double-close as `Exception ignored ... ValueError: Invalid file descriptor: -1`.
+    """
+    exc = getattr(unraisable, "exc_value", None)
+    if not isinstance(exc, ValueError) or "Invalid file descriptor" not in str(exc):
+        return False
+    obj = getattr(unraisable, "object", None)
+    qualname = getattr(obj, "__qualname__", "") or ""
+    if "BaseEventLoop.__del__" in qualname:
+        return True
+    tb = getattr(unraisable, "exc_traceback", None)
+    frames = traceback.extract_tb(tb) if tb else []
+    return any(
+        frame.filename.endswith(
+            (
+                "asyncio/base_events.py",
+                "asyncio/unix_events.py",
+                "asyncio/selector_events.py",
+                "selectors.py",
+            )
+        )
+        for frame in frames
+    )
+
+
+def install_quiet_unraisablehook() -> None:
+    """Silence only the benign asyncio loop-teardown noise (see above); every
+    other unraisable exception still goes to the previous hook. Call once before
+    building/launching the app.
+    """
+    if getattr(sys.unraisablehook, "_dota2tuned_quiet_unraisablehook", False):
+        return
+
+    previous_hook = sys.unraisablehook
+
+    def hook(unraisable):
+        if _is_benign_loop_teardown(unraisable):
+            return
+        previous_hook(unraisable)
+
+    hook._dota2tuned_quiet_unraisablehook = True
+    sys.unraisablehook = hook
 
 
 def launch_app_kwargs() -> dict:

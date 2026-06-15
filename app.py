@@ -12,7 +12,18 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import gradio as gr
 
-from dota2tuned.ui.gradio_app import APP_CSS, APP_HEAD, build_app, launch_app_kwargs
+from dota2tuned.ui.gradio_app import (
+    APP_CSS,
+    APP_HEAD,
+    build_app,
+    install_quiet_unraisablehook,
+    launch_app_kwargs,
+)
+
+# Silence the benign asyncio loop-teardown noise Gradio emits at startup
+# ("Exception ignored ... ValueError: Invalid file descriptor: -1"). Targeted —
+# only that exact case is dropped; all other unraisable errors still surface.
+install_quiet_unraisablehook()
 
 demo = build_app()
 
