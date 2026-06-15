@@ -291,8 +291,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "#d2-startup-loader" in APP_HEAD
     assert "d2-loader-video" in APP_HEAD
     assert "d2-loader-content" in APP_HEAD
-    assert "d2-loader-play" in APP_HEAD
     assert "::-webkit-media-controls-start-playback-button" in APP_HEAD
+    assert "translateY(118px)" in APP_HEAD
+    assert "pointer-events: auto" in APP_HEAD
+    assert "d2-loader-play" not in APP_HEAD
     assert 'rel="preload"' in APP_HEAD
     assert 'as="font"' in APP_HEAD
     assert 'as="video"' in APP_HEAD
@@ -320,8 +322,8 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "promise?.catch?." in APP_HEAD
     assert "loadeddata" in APP_HEAD
     assert "canplay" in APP_HEAD
-    assert "dota2tunedWireLoaderPlayButton" in APP_HEAD
-    assert "<span>Play</span>" in APP_HEAD
+    assert "dota2tunedWireLoaderPlayButton" not in APP_HEAD
+    assert "<span>Play</span>" not in APP_HEAD
     assert "Play Video" not in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "dota2tunedRevealWhenReady" in APP_HEAD
@@ -516,17 +518,17 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert "#d2-startup-loader" in CRITICAL_HEAD
     assert ".d2-loader-video" in CRITICAL_HEAD
     assert ".d2-loader-content" in CRITICAL_HEAD
-    assert ".d2-loader-play" in CRITICAL_HEAD
-    assert "z-index: 5" in CRITICAL_HEAD
+    assert ".d2-loader-play" not in CRITICAL_HEAD
     assert "::-webkit-media-controls-start-playback-button" in CRITICAL_HEAD
+    assert "translateY(118px)" in CRITICAL_HEAD
 
 
 def test_critical_loader_body_contains_safari_hardened_video():
     assert 'id="d2-startup-loader"' in CRITICAL_LOADER_BODY
     assert 'data-critical-loader="true"' in CRITICAL_LOADER_BODY
     assert 'class="d2-loader-content"' in CRITICAL_LOADER_BODY
-    assert 'class="d2-loader-play"' in CRITICAL_LOADER_BODY
-    assert "<span>Play</span>" in CRITICAL_LOADER_BODY
+    assert 'class="d2-loader-play"' not in CRITICAL_LOADER_BODY
+    assert "<span>Play</span>" not in CRITICAL_LOADER_BODY
     assert "Play Video" not in CRITICAL_LOADER_BODY
     assert "dota_montage_02.mp4" in CRITICAL_LOADER_BODY
     assert 'muted="muted"' in CRITICAL_LOADER_BODY
@@ -534,7 +536,7 @@ def test_critical_loader_body_contains_safari_hardened_video():
     assert 'webkit-playsinline="webkit-playsinline"' in CRITICAL_LOADER_BODY
     assert "video.defaultMuted = true" in CRITICAL_LOADER_BODY
     assert "promise?.catch?." in CRITICAL_LOADER_BODY
-    assert "dota2tunedWireLoaderPlayButton" in CRITICAL_LOADER_BODY
+    assert "dota2tunedWireLoaderPlayButton" not in CRITICAL_LOADER_BODY
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():
@@ -596,8 +598,8 @@ def test_critical_head_middleware_injects_into_html_head():
     assert b'id="d2-startup-loader"' in body
     assert b'data-critical-loader="true"' in body
     assert body.index(b'id="d2-startup-loader"') < body.index(b"<main>app</main>")
-    assert b'class="d2-loader-play"' in body
-    assert b"<span>Play</span>" in body
+    assert b'class="d2-loader-play"' not in body
+    assert b"<span>Play</span>" not in body
     assert b"Play Video" not in body
     assert b"webkit-playsinline" in body
     assert b"video.defaultMuted = true" in body

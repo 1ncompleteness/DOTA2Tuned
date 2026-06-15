@@ -1716,16 +1716,11 @@ html:not(.d2-ready) body::after {
   object-fit: cover;
   opacity: 0.72;
   filter: saturate(1.1) contrast(1.06) brightness(0.78);
-  pointer-events: none;
+  pointer-events: auto;
 }
-.d2-loader-video::-webkit-media-controls,
-.d2-loader-video::-webkit-media-controls-panel,
-.d2-loader-video::-webkit-media-controls-play-button,
 .d2-loader-video::-webkit-media-controls-start-playback-button {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  -webkit-appearance: none !important;
+  -webkit-transform: translateY(118px) !important;
+  transform: translateY(118px) !important;
 }
 .d2-loader-content {
   position: relative;
@@ -1758,41 +1753,6 @@ html:not(.d2-ready) body::after {
   font-size: 24px;
   line-height: 28px;
   letter-spacing: 0;
-}
-.d2-loader-play {
-  position: relative;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 38px;
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 96, 70, 0.62);
-  border-radius: 3px;
-  background: linear-gradient(180deg, rgba(149, 46, 70, 0.92), rgba(83, 31, 28, 0.94));
-  color: #fff;
-  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
-  cursor: pointer;
-  pointer-events: auto;
-}
-.d2-loader-play:hover,
-.d2-loader-play:focus-visible {
-  border-color: rgba(255, 96, 70, 0.86);
-  background: linear-gradient(180deg, #c2452f, rgba(126, 43, 34, 0.98));
-  outline: none;
-}
-.d2-loader-play-icon {
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 9px solid #efe5bb;
 }
 </style>
 <script>
@@ -1844,24 +1804,6 @@ html:not(.d2-ready) body::after {
     }
   });
   window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
-  const wireLoaderPlayButton = window.dota2tunedWireLoaderPlayButton || ((loader) => {
-    const video = loader?.querySelector(".d2-loader-video");
-    const button = loader?.querySelector(".d2-loader-play");
-    if (!video || !button || button.dataset.bound === "true") return;
-    button.dataset.bound = "true";
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      primeLoaderVideo(video);
-      const promise = video.play?.();
-      promise?.then?.(() => {
-        delete video.dataset.playBlocked;
-      });
-      promise?.catch?.((error) => {
-        video.dataset.playBlocked = error?.name || "blocked";
-      });
-    });
-  });
-  window.dota2tunedWireLoaderPlayButton = wireLoaderPlayButton;
   document.documentElement.classList.add("d2-loading");
   loaderFonts.forEach((font) => {
     document.fonts?.load(font).catch(() => {});
@@ -1870,7 +1812,6 @@ html:not(.d2-ready) body::after {
     const existingLoader = document.getElementById("d2-startup-loader");
     if (existingLoader) {
       primeLoaderVideo(existingLoader.querySelector(".d2-loader-video"));
-      wireLoaderPlayButton(existingLoader);
       return;
     }
     const loader = document.createElement("div");
@@ -1905,15 +1846,10 @@ html:not(.d2-ready) body::after {
           >
           <strong>DOTA2Tuned</strong>
         </div>
-        <button class="d2-loader-play" type="button" aria-label="Play loader video">
-          <span class="d2-loader-play-icon" aria-hidden="true"></span>
-          <span>Play</span>
-        </button>
       </div>
     `;
     document.body.prepend(loader);
     primeLoaderVideo(loader.querySelector(".d2-loader-video"));
-    wireLoaderPlayButton(loader);
   };
   window.dota2tunedHideLoader = () => {
     const loader = document.getElementById("d2-startup-loader");
@@ -2114,16 +2050,11 @@ html:not(.d2-ready) body::after {
   object-fit: cover;
   opacity: 0.72;
   filter: saturate(1.1) contrast(1.06) brightness(0.78);
-  pointer-events: none;
+  pointer-events: auto;
 }
-.d2-loader-video::-webkit-media-controls,
-.d2-loader-video::-webkit-media-controls-panel,
-.d2-loader-video::-webkit-media-controls-play-button,
 .d2-loader-video::-webkit-media-controls-start-playback-button {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  -webkit-appearance: none !important;
+  -webkit-transform: translateY(118px) !important;
+  transform: translateY(118px) !important;
 }
 .d2-loader-content {
   position: relative;
@@ -2155,41 +2086,6 @@ html:not(.d2-ready) body::after {
   color: #efe5bb;
   font-size: 24px;
   line-height: 28px;
-}
-.d2-loader-play {
-  position: relative;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 38px;
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 96, 70, 0.62);
-  border-radius: 3px;
-  background: linear-gradient(180deg, rgba(149, 46, 70, 0.92), rgba(83, 31, 28, 0.94));
-  color: #fff;
-  font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
-  cursor: pointer;
-  pointer-events: auto;
-}
-.d2-loader-play:hover,
-.d2-loader-play:focus-visible {
-  border-color: rgba(255, 96, 70, 0.86);
-  background: linear-gradient(180deg, #c2452f, rgba(126, 43, 34, 0.98));
-  outline: none;
-}
-.d2-loader-play-icon {
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 9px solid #efe5bb;
 }
 </style>
 <script>document.documentElement.classList.add("d2-loading");</script>
@@ -2227,10 +2123,6 @@ CRITICAL_LOADER_BODY = """
       >
       <strong>DOTA2Tuned</strong>
     </div>
-    <button class="d2-loader-play" type="button" aria-label="Play loader video">
-      <span class="d2-loader-play-icon" aria-hidden="true"></span>
-      <span>Play</span>
-    </button>
   </div>
 </div>
 <script>
@@ -2274,27 +2166,8 @@ CRITICAL_LOADER_BODY = """
     }
   });
   window.dota2tunedPrimeLoaderVideo = primeLoaderVideo;
-  const wireLoaderPlayButton = window.dota2tunedWireLoaderPlayButton || ((loader) => {
-    const video = loader?.querySelector(".d2-loader-video");
-    const button = loader?.querySelector(".d2-loader-play");
-    if (!video || !button || button.dataset.bound === "true") return;
-    button.dataset.bound = "true";
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      primeLoaderVideo(video);
-      const promise = video.play?.();
-      promise?.then?.(() => {
-        delete video.dataset.playBlocked;
-      });
-      promise?.catch?.((error) => {
-        video.dataset.playBlocked = error?.name || "blocked";
-      });
-    });
-  });
-  window.dota2tunedWireLoaderPlayButton = wireLoaderPlayButton;
   const loader = document.querySelector("#d2-startup-loader");
   primeLoaderVideo(loader?.querySelector(".d2-loader-video"));
-  wireLoaderPlayButton(loader);
 })();
 </script>
 """.replace(
