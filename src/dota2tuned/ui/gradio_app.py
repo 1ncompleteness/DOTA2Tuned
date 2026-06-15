@@ -1718,6 +1718,15 @@ html:not(.d2-ready) body::after {
   filter: saturate(1.1) contrast(1.06) brightness(0.78);
   pointer-events: none;
 }
+.d2-loader-video::-webkit-media-controls,
+.d2-loader-video::-webkit-media-controls-panel,
+.d2-loader-video::-webkit-media-controls-play-button,
+.d2-loader-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  -webkit-appearance: none !important;
+}
 .d2-loader-content {
   position: relative;
   z-index: 4;
@@ -1898,7 +1907,7 @@ html:not(.d2-ready) body::after {
         </div>
         <button class="d2-loader-play" type="button" aria-label="Play loader video">
           <span class="d2-loader-play-icon" aria-hidden="true"></span>
-          <span>Play Video</span>
+          <span>Play</span>
         </button>
       </div>
     `;
@@ -2107,6 +2116,15 @@ html:not(.d2-ready) body::after {
   filter: saturate(1.1) contrast(1.06) brightness(0.78);
   pointer-events: none;
 }
+.d2-loader-video::-webkit-media-controls,
+.d2-loader-video::-webkit-media-controls-panel,
+.d2-loader-video::-webkit-media-controls-play-button,
+.d2-loader-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  -webkit-appearance: none !important;
+}
 .d2-loader-content {
   position: relative;
   z-index: 4;
@@ -2211,7 +2229,7 @@ CRITICAL_LOADER_BODY = """
     </div>
     <button class="d2-loader-play" type="button" aria-label="Play loader video">
       <span class="d2-loader-play-icon" aria-hidden="true"></span>
-      <span>Play Video</span>
+      <span>Play</span>
     </button>
   </div>
 </div>
