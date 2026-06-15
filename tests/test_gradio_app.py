@@ -140,6 +140,16 @@ def test_css_uses_trajan_font_without_global_red_buttons():
     assert "overscroll-behavior: contain" in APP_CSS
 
 
+def test_css_keeps_dropdown_chevrons_inside_fields():
+    assert ".dota-dropdown .icon-wrap" in APP_CSS
+    assert "right: 8px !important" in APP_CSS
+    assert "padding-right: 32px !important" in APP_CSS
+    assert ".dota-dropdown .secondary-wrapper" in APP_CSS
+    assert "background: transparent !important" in APP_CSS
+    assert ".hero-dropdown input[autocomplete=\"off\"]" not in APP_CSS
+    assert "min-width: 100% !important" not in APP_CSS
+
+
 def test_parse_heroes_accepts_dropdown_values():
     heroes = pl.DataFrame([{"hero_id": 44, "hero_name": "Phantom Assassin"}])
     lookup, _ = _hero_lookup(heroes)

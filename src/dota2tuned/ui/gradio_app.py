@@ -629,6 +629,53 @@ __NAV_ICON_CSS__
 .dota-dropdown:focus-within {
   z-index: 2500;
 }
+.dota-dropdown .wrap,
+.dota-dropdown .wrap-inner,
+.dota-dropdown .input-container {
+  position: relative !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.dota-dropdown .secondary-wrap,
+.dota-dropdown .secondary-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.dota-dropdown input[autocomplete="off"],
+.dota-dropdown input[role="combobox"] {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding-right: 32px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.dota-dropdown .icon-wrap {
+  position: absolute !important;
+  top: 50% !important;
+  right: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  z-index: 2 !important;
+}
+.dota-dropdown .icon-wrap svg {
+  width: 16px !important;
+  height: 16px !important;
+}
 .dota-dropdown ul[role="listbox"],
 .dota-dropdown .options {
   z-index: 4000 !important;
@@ -745,12 +792,6 @@ __NAV_ICON_CSS__
 .hero-dropdown .token,
 .hero-dropdown .token-remove.remove-all {
   display: none !important;
-}
-.hero-dropdown .secondary-wrap {
-  width: 100% !important;
-}
-.hero-dropdown input[autocomplete="off"] {
-  min-width: 100% !important;
 }
 .hero-strip {
   display: grid;
