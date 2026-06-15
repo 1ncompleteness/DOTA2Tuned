@@ -3,6 +3,22 @@ title: DOTA2Tuned
 sdk: gradio
 app_file: app.py
 python_version: "3.12"
+tags:
+- build-small-hackathon
+- backyard-ai
+- thousand-token-wood
+- openbmb
+- openai
+- modal
+- well-tuned
+- off-brand
+- field-notes
+models:
+- build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+- build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
+- build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
+datasets:
+- build-small-hackathon/dota2tuned-data
 ---
 
 # DOTA2Tuned
@@ -14,7 +30,37 @@ The implementation is designed around a simple rule: stats and predictors choose
 - Hugging Face Space: https://build-small-hackathon-dota2tuned.hf.space
 - Modal alternate UI: https://dracufeuer--dota2tuned-ui.modal.run
 - Tiny fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+- Balanced fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
+- Quality fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
 - Dataset artifacts: https://huggingface.co/datasets/build-small-hackathon/dota2tuned-data
+- Demo video: TODO add final demo video URL before validation.
+- Social post: TODO add final social post URL before validation.
+
+## Hackathon Validation
+
+The Build Small validator checks this Space README. Entry requirements are: sub-32B models, Gradio Space in the Build Small org, demo video, social-media post linked from this README, and GPU-limit compliance.
+
+Validator: https://build-small-hackathon-field-guide.hf.space/submit
+
+Selected tracks, prizes, and badges:
+
+- Tracks: Backyard AI, Thousand Token Wood.
+- Sponsor prizes: OpenBMB Best MiniCPM Build, OpenAI Best Use of Codex, Modal Best Use of Modal.
+- Bonus badges: Well-Tuned, Off-Brand, Field Notes.
+- Not claimed: Nemotron Hardware Prize, Off the Grid, Llama Champion, Sharing is Caring.
+- GPU note: this Space does not use Zero GPU allocation; training and tuned-model serving use Modal.
+
+Social post draft:
+
+> Built DOTA2Tuned for the Hugging Face Build Small Hackathon: a Gradio Dota 2 draft coach that combines STRATZ/OpenDota match evidence, deterministic draft stats, and fine-tuned sub-32B adapters for grounded explanations.
+>
+> It suggests heroes, counters, synergies, builds, match predictions, and caveats weak data instead of inventing unsupported meta claims.
+>
+> Space: https://build-small-hackathon-dota2tuned.hf.space
+> Tiny: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+> Balanced: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
+> Quality: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
+> Repo: https://github.com/1ncompleteness/DOTA2Tuned
 
 ## Quick Start
 

@@ -70,7 +70,9 @@
    - Current refreshed Tiny call: `fc-01KV6SE7YRK1P0JC0NYS0FPBPP`.
    - Completed Balanced call: `fc-01KV6S4FD9JQ6K5TCA42MHM9RC`.
    - Superseded Quality A100 call: `fc-01KV6S4FC8PZHBR6Y9QPFQSNFQ`, failed on A100 80GB OOM during k-bit preparation.
-   - Current Quality H200 call: `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
+   - Superseded Quality H200 call: `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`, failed on target-module parsing.
+   - Superseded Quality H200 call: `fc-01KV6T2WHK8TEJJJ9JM2M58RBA`, failed because PEFT `ParamWrapper` rejects nonzero dropout.
+   - Completed Quality H200 call: `fc-01KV6TCTX9CSYVHJ98S3P5PTMK`.
    - Output repos: `build-small-hackathon/dota2tuned-qwen3-4b-2507-lora`, `build-small-hackathon/dota2tuned-minicpm4-1-8b-lora`, and `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora`.
    - Expected files: `adapter_model.safetensors`, `adapter_config.json`, tokenizer files, `training_args.bin`.
 8. Verify fine-tuned adapter inference.
@@ -208,6 +210,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 16:26: added `scripts/watch_modal_training.py` and started durable tmux session `dota2tuned_modal_training_watch` so Modal training stays monitored in the background. Current log: `logs/modal-training-watch-tmux-20260615-1632.log`.
 - 2026-06-15 16:29: Quality Qwen3 30B-A3B failed on the original A100 80GB training function with CUDA OOM during `prepare_model_for_kbit_training`. Updated Quality to use a dedicated Modal `train_sft_quality` function on `H200`, set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, reduced Quality LoRA/context settings for reliability, redeployed Modal, and resubmitted Quality as `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
 - 2026-06-15 16:39: Quality H200 progressed past memory and target-module setup, then failed because PEFT's `ParamWrapper` path rejects nonzero LoRA dropout for this model. Set Quality `lora_dropout=0.0` and prepared another retry.
+- 2026-06-15 16:45: Quality Qwen3 30B-A3B retry `fc-01KV6TCTX9CSYVHJ98S3P5PTMK` completed successfully and pushed to `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora`.
+- 2026-06-15 16:47: added Draft-style `New here? How to use ...` guide cards to Ask, Meta, Builds, Predictor, and Data; kept Draft's existing guide; and documented the Build Small README validator/social-post requirement in `README.md` and `SUBMISSION.md`.
 
 ## Adapter Eval Notes
 

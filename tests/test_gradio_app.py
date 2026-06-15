@@ -677,12 +677,22 @@ def test_module_intro_copy_replaces_static_status_strips():
     assert "def _module_status_html" not in source
     assert "d2-module-status" not in source
     assert "def _module_intro_html" in source
+    assert "def _module_guide_html" in source
     assert "Draft recommends heroes" in source
     assert "Meta searches patch" in source
     assert "Predictor estimates Radiant win chance" in source
     assert "Builds summarizes observed hero item timings" in source
     assert "Draft also generates compact scouting cards" in source
     assert "Data lists the normalized Parquet artifacts" in source
+    for title in [
+        "New here? How to use Ask",
+        "New here? How to use Draft",
+        "New here? How to use Meta",
+        "New here? How to use Builds",
+        "New here? How to use Predictor",
+        "New here? How to use Data",
+    ]:
+        assert title in source
 
 
 def test_tuned_model_hides_duplicate_output_status_tracker():

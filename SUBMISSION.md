@@ -7,21 +7,28 @@ Last checked: 2026-06-15 16:17 PDT.
 - Hugging Face Space: https://build-small-hackathon-dota2tuned.hf.space
 - GitHub repo: https://github.com/1ncompleteness/DOTA2Tuned
 - Tiny fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
-- Balanced fine-tuned adapter target: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
-- Quality fine-tuned adapter target: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
+- Balanced fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
+- Quality fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
 - Dataset artifacts: https://huggingface.co/datasets/build-small-hackathon/dota2tuned-data
 - Modal alternate UI: https://dracufeuer--dota2tuned-ui.modal.run
+- README validator: https://build-small-hackathon-field-guide.hf.space/submit
+- Demo video: TODO add final demo video URL.
+- Social post: TODO add final social post URL and mirror it in `README.md`.
 
 ## Hackathon Fit
 
-- Primary track: Backyard AI.
+- Tracks: Backyard AI and Thousand Token Wood.
 - User problem: Dota 2 players need draft, counter, synergy, build, and match-outcome guidance that is grounded in patch and match evidence instead of generic hero lore.
 - Small-model constraint: all selected model profiles stay below the hackathon `<=32B` parameter cap. Tiny uses `Qwen/Qwen3-4B-Instruct-2507`; Balanced uses `openbmb/MiniCPM4.1-8B`; Quality uses `Qwen/Qwen3-30B-A3B-Instruct-2507`.
 - Gradio constraint: canonical app is a Gradio Space under the Build Small Hackathon org.
+- OpenBMB prize fit: app trains and exposes a MiniCPM4.1 8B Balanced adapter.
+- OpenAI prize fit: repository commits include Codex coauthor trailers and Codex-built implementation work.
+- Modal prize fit: Modal handles GPU training, tuned-model inference, and alternate Gradio runtime.
 - Well-Tuned badge: app uses a published fine-tuned adapter on Hugging Face.
-- Modal award fit: Modal handles GPU training and adapter inference; the Space remains the required submission app.
+- Off-Brand badge: app uses custom Dota-styled Gradio CSS/JS beyond the default theme.
+- Field Notes badge: repo includes implementation reports and model/data cards in `PLAN.md`, `MODEL_SELECTION.md`, `MODEL_CARD.md`, `DATASET_CARD.md`, and this handoff.
 
-Do not claim the Off the Grid or Local-first badges. The app uses Modal for the tuned-model path and uses public Dota data sources during data refreshes.
+Do not claim the Nemotron, Off the Grid, Llama Champion, or Sharing is Caring badges. The app does not use Nemotron, llama.cpp, local-only execution, or a published agent trace.
 
 ## Final Submission Checklist
 
@@ -37,8 +44,9 @@ Do not claim the Off the Grid or Local-first badges. The app uses Modal for the 
 - [x] Dataset card is prepared for the Hub dataset.
 - [x] Repository license is declared as Apache-2.0.
 - [x] GitHub `main` is pushed and clean.
+- [x] README lists selected tracks, sponsor prizes, and eligible badges for the validator.
 - [ ] Record short demo video.
-- [ ] Publish social post.
+- [ ] Publish social post and replace the README `Social post` TODO with its URL.
 - [ ] Submit Space link, demo video link, and social post link by June 15, 2026.
 
 ## Demo Video Script
@@ -69,12 +77,16 @@ Target length: 60-90 seconds.
 
 ## Social Post Draft
 
+After publishing, paste the final social URL into `README.md` because the Build Small validator checks the Space README directly.
+
 Built DOTA2Tuned for the Hugging Face Build Small Hackathon: a Gradio Dota 2 draft coach that combines STRATZ/OpenDota match evidence, deterministic draft stats, and fine-tuned sub-32B adapters for grounded explanations.
 
 It suggests heroes, counters, synergies, builds, match predictions, and caveats weak data instead of inventing unsupported meta claims.
 
 Space: https://build-small-hackathon-dota2tuned.hf.space
-Model: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+Tiny: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-4b-2507-lora
+Balanced: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
+Quality: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
 Repo: https://github.com/1ncompleteness/DOTA2Tuned
 
 ## Final Verification Commands

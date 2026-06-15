@@ -4876,6 +4876,23 @@ def build_app() -> gr.Blocks:
                 elem_id="tuned-model-view",
                 elem_classes=["app-view", "assistant-landing", "d2-active"],
             ):
+                gr.HTML(
+                    _module_guide_html(
+                        "New here? How to use Ask",
+                        [
+                            "Type a draft, matchup, build, patch, or prediction question "
+                            "in the prompt box.",
+                            "Choose a <strong>Model</strong>: Tiny for speed, Balanced for "
+                            "stronger answers, or Quality when the large adapter is available.",
+                            "Use <strong>Sources</strong> to filter retrieval toward Valve, "
+                            "OpenDota, STRATZ, or all evidence.",
+                            "Click <strong>Ask DOTA2Tuned</strong> or press Enter to generate "
+                            "a grounded answer with hero/item/source cards.",
+                            "Open <strong>Evidence</strong> when you want the raw retrieved "
+                            "documents behind the answer.",
+                        ],
+                    )
+                )
                 with gr.Column(elem_classes=["assistant-shell"]):
                     assistant_output = gr.HTML(
                         _assistant_empty_state_html(),
@@ -5186,6 +5203,21 @@ def build_app() -> gr.Blocks:
                         "current trends without manually typing every source query."
                     )
                 )
+                gr.HTML(
+                    _module_guide_html(
+                        "New here? How to use Meta",
+                        [
+                            "Optionally select a <strong>Hero</strong>, <strong>Item</strong>, "
+                            "or <strong>Skill</strong> to anchor the search.",
+                            "Edit <strong>Patch or meta query</strong> with the exact trend, "
+                            "counter, item timing, or skill question you want checked.",
+                            "Click <strong>Search</strong> to retrieve the most relevant patch, "
+                            "hero stat, item, skill, and STRATZ evidence.",
+                            "Use the rendered source cards and links to verify where each claim "
+                            "came from.",
+                        ],
+                    )
+                )
                 meta_hero_preview_html = hero_preview_html([])
                 meta_item_preview_html = item_preview_html(None)
                 meta_ability_preview_html = ability_preview_html(None)
@@ -5271,6 +5303,20 @@ def build_app() -> gr.Blocks:
                         "common skill orders from normalized match details."
                     )
                 )
+                gr.HTML(
+                    _module_guide_html(
+                        "New here? How to use Builds",
+                        [
+                            "Select a <strong>Hero</strong> from the searchable dropdown.",
+                            "Choose a <strong>Role</strong> to filter item timings and skill "
+                            "orders to that position when role-specific data exists.",
+                            "Review the hero header, core item, top observed items, and skill "
+                            "order blocks.",
+                            "Treat sparse rows as evidence for exploration, not guaranteed "
+                            "in-game build orders.",
+                        ],
+                    )
+                )
                 with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
                     hero = gr.Dropdown(
                         choices=hero_choices,
@@ -5303,6 +5349,21 @@ def build_app() -> gr.Blocks:
                     _module_intro_html(
                         "Predictor estimates Radiant win chance from both five-hero "
                         "lineups using the local draft model."
+                    )
+                )
+                gr.HTML(
+                    _module_guide_html(
+                        "New here? How to use Predictor",
+                        [
+                            "Pick up to 5 <strong>Radiant heroes</strong> and 5 "
+                            "<strong>Dire heroes</strong> with the searchable hero controls.",
+                            "Use aliases like AM, CM, PA, or QoP if that is faster than typing "
+                            "full hero names.",
+                            "Click <strong>Predict</strong> to estimate Radiant and Dire win "
+                            "chance from draft-only features.",
+                            "Read the caveat: this model does not know player skill, lanes, "
+                            "live itemization, or in-game execution.",
+                        ],
                     )
                 )
                 radiant_preview_html = hero_preview_html(
@@ -5375,6 +5436,19 @@ def build_app() -> gr.Blocks:
                     _module_intro_html(
                         "Data lists the normalized Parquet artifacts currently loaded "
                         "by the app."
+                    )
+                )
+                gr.HTML(
+                    _module_guide_html(
+                        "New here? How to use Data",
+                        [
+                            "Click <strong>Refresh</strong> to inspect the active model profile, "
+                            "adapter repo, dataset repo, and local artifact counts.",
+                            "Check Parquet row counts to confirm the app is using the latest "
+                            "match, patch, STRATZ, item, and skill data.",
+                            "Use the rendered Hugging Face links to open the Space, dataset, "
+                            "and model artifacts for judging or debugging.",
+                        ],
                     )
                 )
                 status_button = gr.Button("Refresh")

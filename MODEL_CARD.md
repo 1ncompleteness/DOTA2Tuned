@@ -26,7 +26,7 @@ Current profile status:
 
 - Tiny Qwen3 4B: trained and published at `build-small-hackathon/dota2tuned-qwen3-4b-2507-lora`.
 - Balanced MiniCPM4.1 8B: trained and published at `build-small-hackathon/dota2tuned-minicpm4-1-8b-lora`.
-- Quality Qwen3 30B-A3B: original A100 call `fc-01KV6S4FC8PZHBR6Y9QPFQSNFQ` failed with CUDA OOM; H200 retry is running as `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
+- Quality Qwen3 30B-A3B: trained on Modal H200 and published at `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora`.
 
 ## Intended Behavior
 
