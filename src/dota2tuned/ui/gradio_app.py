@@ -1218,11 +1218,49 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       view.setAttribute("aria-hidden", active ? "false" : "true");
     }});
   }};
+  const readOptionLabel = (option) => {{
+    const ariaLabel = cleanLabel(option.getAttribute("aria-label") || "");
+    if (ariaLabel) return ariaLabel.replace(/^✓\\s*/, "");
+    const clone = option.cloneNode(true);
+    clone.querySelectorAll(".dota-choice-icon, .dota-choice-label").forEach((node) => {{
+      node.remove();
+    }});
+    return cleanLabel(clone.textContent).replace(/^✓\\s*/, "");
+  }};
+  const resetOptionDecoration = (option) => {{
+    Array.from(option.children).forEach((child) => {{
+      if (
+        child.classList?.contains("dota-choice-icon")
+        || child.classList?.contains("dota-choice-label")
+      ) {{
+        child.remove();
+      }}
+    }});
+    option.classList.remove(
+      "dota-choice-option",
+      "dota-hero-option",
+      "dota-item-option",
+      "dota-role-option",
+      "dota-scope-option",
+      "dota-decorated-rich"
+    );
+    if (option.dataset) {{
+      delete option.dataset.dotaChoiceIconDecorated;
+      delete option.dataset.dotaChoiceLabel;
+    }}
+  }};
   const decorateOption = (option) => {{
-    if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") return;
     // Gradio 6.18 prefixes option text with a "✓" checkmark glyph; the clean
     // choice label lives in aria-label, which is what choiceIcons is keyed on.
-    const label = cleanLabel(option.getAttribute("aria-label") || option.textContent);
+    const label = readOptionLabel(option);
+    if (
+      option.dataset
+      && option.dataset.dotaChoiceIconDecorated === "1"
+      && option.dataset.dotaChoiceLabel === label
+    ) return;
+    if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") {{
+      resetOptionDecoration(option);
+    }}
     const icon = choiceIcons[label];
     if (!icon || !icon.src) return;
     option.classList.add("dota-choice-option");
@@ -1258,7 +1296,10 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     }} else {{
       option.prepend(img);
     }}
-    if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
+    if (option.dataset) {{
+      option.dataset.dotaChoiceIconDecorated = "1";
+      option.dataset.dotaChoiceLabel = label;
+    }}
   }};
   const decorate = () => {{
     const options = document.querySelectorAll('li[role="option"], [role="option"]');
@@ -1349,7 +1390,13 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     setTimeout(syncSidebarView, 0);
   }};
   const observer = new MutationObserver(scheduleDecorate);
-  observer.observe(document.body, {{ childList: true, subtree: true }});
+  observer.observe(document.body, {{
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["aria-label"],
+    characterData: true
+  }});
   let syncScheduled = false;
   const scheduleSync = (event) => {{
     if (isDropdownMenuScroll(event)) return;

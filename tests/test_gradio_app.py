@@ -214,6 +214,18 @@ def test_dropdown_js_decorates_without_deleting_svelte_nodes():
     assert '"keyup"' not in js
 
 
+def test_dropdown_js_refreshes_reused_search_option_nodes():
+    js = _dropdown_js(
+        {"Anti-Mage · Carry": {"src": "https://example.test/am.png", "kind": "hero"}}
+    )
+
+    assert "readOptionLabel" in js
+    assert "resetOptionDecoration" in js
+    assert "dotaChoiceLabel" in js
+    assert 'attributeFilter: ["aria-label"]' in js
+    assert "characterData: true" in js
+
+
 def test_app_head_preconnects_without_theme_redirect():
     assert "preconnect" in APP_HEAD
     assert "cdn.steamstatic.com" in APP_HEAD
