@@ -169,6 +169,17 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "animation: d2-logo-red-flash 4.2s ease-in-out infinite" in APP_CSS
 
 
+def test_gradio_primary_backgrounds_use_action_red():
+    assert "--d2-action-fill:" in APP_CSS
+    assert "--primary-600: var(--d2-red-strong)" in APP_CSS
+    assert "--block-label-background-fill: var(--d2-action-fill)" in APP_CSS
+    assert "--block-label-background-fill: var(--primary-600)" not in APP_CSS
+    assert ".gradio-container .block-label" in APP_CSS
+    assert "background: var(--d2-action-fill) !important" in APP_CSS
+    assert "accent-color: var(--d2-red) !important" in APP_CSS
+    assert "background: var(--d2-action-fill) !important;" in APP_CSS
+
+
 def test_parse_heroes_accepts_dropdown_values():
     heroes = pl.DataFrame([{"hero_id": 44, "hero_name": "Phantom Assassin"}])
     lookup, _ = _hero_lookup(heroes)

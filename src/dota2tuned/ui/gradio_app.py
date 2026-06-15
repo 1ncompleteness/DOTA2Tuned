@@ -362,6 +362,9 @@ APP_CSS = """
   --d2-gold-soft: #efe5bb;
   --d2-red: #ff6046;
   --d2-red-strong: #c2452f;
+  --d2-action-border: rgba(255, 96, 70, 0.42);
+  --d2-action-fill: linear-gradient(180deg, rgba(149, 46, 70, 0.92), rgba(83, 31, 28, 0.94));
+  --d2-action-fill-hover: linear-gradient(180deg, var(--d2-red-strong), rgba(126, 43, 34, 0.98));
   --d2-focus: #ff7a63;
   --d2-border: #7d8893;
   --d2-border-menu: #8a96a3;
@@ -380,13 +383,36 @@ APP_CSS = """
   --body-background-fill: var(--neutral-950);
   --body-text-color: var(--neutral-100);
   --body-text-color-subdued: var(--neutral-400);
+  --primary-50: rgba(255, 96, 70, 0.10);
+  --primary-100: rgba(255, 96, 70, 0.16);
+  --primary-200: rgba(255, 96, 70, 0.24);
+  --primary-300: rgba(255, 96, 70, 0.34);
+  --primary-400: #ff7a63;
+  --primary-500: #ff6046;
+  --primary-600: var(--d2-red-strong);
+  --primary-700: #7e2b22;
+  --primary-800: #531f1c;
+  --primary-900: #2a1110;
   --border-color-primary: var(--neutral-700);
   --border-color-accent: var(--neutral-600);
   --block-background-fill: var(--neutral-800);
   --block-border-color: var(--neutral-700);
-  --block-label-background-fill: var(--primary-600);
+  --block-label-background-fill: var(--d2-action-fill);
+  --block-label-border-color: var(--d2-action-border);
   --block-label-text-color: #fff;
   --block-title-text-color: #fff;
+  --button-primary-background-fill: var(--d2-action-fill);
+  --button-primary-background-fill-hover: var(--d2-action-fill-hover);
+  --button-primary-border-color: var(--d2-action-border);
+  --button-primary-text-color: #fff;
+  --checkbox-background-color-selected: var(--d2-red-strong);
+  --checkbox-border-color-selected: var(--d2-red);
+  --checkbox-label-background-fill-selected: rgba(255, 96, 70, 0.16);
+  --checkbox-label-border-color-selected: rgba(255, 96, 70, 0.48);
+  --radio-circle: var(--d2-red);
+  --radio-circle-background-color-selected: var(--d2-red);
+  --radio-label-background-fill-selected: rgba(255, 96, 70, 0.16);
+  --radio-label-border-color-selected: rgba(255, 96, 70, 0.48);
   --panel-background-fill: var(--neutral-900);
   --panel-border-color: var(--neutral-700);
   --input-background-fill: var(--neutral-700);
@@ -396,7 +422,11 @@ APP_CSS = """
   --table-even-background-fill: var(--neutral-950);
   --table-odd-background-fill: var(--neutral-900);
   --table-border-color: var(--neutral-700);
-  --color-accent-soft: var(--neutral-700);
+  --color-accent: var(--d2-red);
+  --color-accent-soft: rgba(255, 96, 70, 0.14);
+  --link-text-color: var(--d2-red);
+  --link-text-color-hover: #fff;
+  --slider-color: var(--d2-red);
 }
 .gradio-container {
   max-width: none !important;
@@ -453,24 +483,41 @@ APP_CSS = """
 .gradio-container input {
   color: var(--d2-gold-soft) !important;
 }
+.gradio-container .block-label,
+.gradio-container .block-info,
+.gradio-container .label-wrap > span,
+.gradio-container [data-testid="block-label"],
+.gradio-container [data-testid="block-info"] {
+  border-color: var(--d2-action-border) !important;
+  background: var(--d2-action-fill) !important;
+  color: #fff !important;
+}
+.gradio-container input[type="checkbox"],
+.gradio-container input[type="radio"],
+.gradio-container input[type="range"] {
+  accent-color: var(--d2-red) !important;
+}
+.gradio-container label:has(input[type="radio"]:checked),
+.gradio-container label:has(input[type="checkbox"]:checked) {
+  border-color: rgba(255, 96, 70, 0.48) !important;
+  background: rgba(255, 96, 70, 0.16) !important;
+}
 .gradio-container :focus-visible {
   outline: 2px solid var(--d2-focus) !important;
   outline-offset: 2px !important;
   border-radius: 2px;
 }
 .app-main button {
-  border: 1px solid rgba(255, 96, 70, 0.42) !important;
+  border: 1px solid var(--d2-action-border) !important;
   border-radius: 3px !important;
-  background:
-    linear-gradient(180deg, rgba(149, 46, 70, 0.92), rgba(83, 31, 28, 0.94)) !important;
+  background: var(--d2-action-fill) !important;
   color: #fff !important;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34) !important;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease !important;
 }
 .app-main button:hover {
   border-color: rgba(255, 96, 70, 0.74) !important;
-  background:
-    linear-gradient(180deg, var(--d2-red-strong), rgba(126, 43, 34, 0.98)) !important;
+  background: var(--d2-action-fill-hover) !important;
   transform: translateY(-1px);
 }
 .app-main button:active {
