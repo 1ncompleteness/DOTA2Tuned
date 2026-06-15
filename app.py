@@ -46,5 +46,6 @@ if __name__ == "__main__":
         head=APP_HEAD,
         theme=gr.themes.Soft(),
         ssr_mode=False,
+        share=True,
         app_kwargs=launch_app_kwargs(),
     )

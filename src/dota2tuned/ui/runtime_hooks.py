@@ -3,6 +3,12 @@ from __future__ import annotations
 import asyncio
 import sys
 import traceback
+import warnings
+
+STARLETTE_422_DEPRECATION_PATTERN = (
+    r"'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated\. "
+    r"Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead\."
+)
 
 
 def _is_benign_loop_teardown(unraisable) -> bool:
@@ -35,7 +41,8 @@ def _is_benign_loop_teardown(unraisable) -> bool:
 
 
 def install_quiet_unraisablehook() -> None:
-    """Silence only the benign asyncio loop-teardown noise."""
+    """Silence only known benign Gradio/Starlette runtime noise."""
+    install_quiet_starlette_422_warning()
     install_safe_asyncio_loop_del()
     if getattr(sys.unraisablehook, "_dota2tuned_quiet_unraisablehook", False):
         return
@@ -70,6 +77,30 @@ def install_safe_asyncio_loop_del() -> None:
     safe_loop_del._dota2tuned_safe_loop_del = True
     safe_loop_del._dota2tuned_original_loop_del = original_del
     asyncio.BaseEventLoop.__del__ = safe_loop_del
+
+
+def install_quiet_starlette_422_warning() -> None:
+    """Suppress Gradio's deprecated Starlette 422 constant warning.
+
+    Gradio 6.18 still references Starlette's old
+    HTTP_422_UNPROCESSABLE_ENTITY constant. Starlette emits a deprecation
+    warning for that exact symbol. Define the old alias before Gradio imports
+    so Starlette's deprecation `__getattr__` path is not hit; keep the narrow
+    warning filter as a fallback for already-imported modules.
+    """
+    warnings.filterwarnings(
+        "ignore",
+        message=STARLETTE_422_DEPRECATION_PATTERN,
+        category=Warning,
+    )
+    try:
+        from starlette import status
+    except Exception:
+        return
+    if "HTTP_422_UNPROCESSABLE_ENTITY" not in vars(status):
+        status.HTTP_422_UNPROCESSABLE_ENTITY = getattr(
+            status, "HTTP_422_UNPROCESSABLE_CONTENT", 422
+        )
 
 
 def close_idle_main_event_loop() -> None:

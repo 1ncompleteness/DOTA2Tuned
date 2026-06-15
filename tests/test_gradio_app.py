@@ -1,4 +1,5 @@
 import inspect
+from pathlib import Path
 from types import SimpleNamespace
 
 import gradio as gr
@@ -239,10 +240,20 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
     assert ".dota-dropdown .icon-wrap" in APP_CSS
     assert "right: 8px !important" in APP_CSS
     assert "padding-right: 32px !important" in APP_CSS
+    assert "pointer-events: auto !important" in APP_CSS
+    assert "cursor: pointer !important" in APP_CSS
     assert ".dota-dropdown .secondary-wrapper" in APP_CSS
     assert "background: transparent !important" in APP_CSS
     assert ".hero-dropdown input[autocomplete=\"off\"]" not in APP_CSS
     assert "min-width: 100% !important" not in APP_CSS
+
+
+def test_css_promotes_open_dropdown_stack_for_safari():
+    assert ".d2-dropdown-menu-host" in APP_CSS
+    assert ".dota-dropdown.d2-dropdown-open" in APP_CSS
+    assert "overflow: visible !important" in APP_CSS
+    assert "position: fixed !important" in APP_CSS
+    assert "z-index: 10000 !important" in APP_CSS
 
 
 def test_css_shows_full_selected_hero_cards():
@@ -277,6 +288,14 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
 
     assert "d2-logo-red-flash" in APP_HEAD
     assert "#d2-startup-loader" in APP_HEAD
+    assert "d2-loader-video" in APP_HEAD
+    assert "dota_montage_webm.webm" in APP_HEAD
+    assert "dota_montage_02.mp4" in APP_HEAD
+    assert "autoplay" in APP_HEAD
+    assert "muted" in APP_HEAD
+    assert "loop" in APP_HEAD
+    assert "playsinline" in APP_HEAD
+    assert "video.play?.().catch" in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "dota2tunedRevealWhenReady" in APP_HEAD
     assert "DOTA2Tuned" in APP_HEAD
@@ -287,10 +306,13 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "html.d2-ready .gradio-container" in APP_HEAD
     assert "html:not(.d2-ready) body::before" in APP_HEAD
     assert "html:not(.d2-ready) body::after" in APP_HEAD
-    assert "circle 22rem at 50% 50%" in APP_HEAD
+    assert "circle 28.6rem at 50% 50%" in APP_HEAD
     assert "circle at 50% 42%" not in APP_HEAD
     assert "rgba(255, 96, 70, 0.28) 0%" in APP_HEAD
     assert "rgba(217, 177, 102, 0.15) 52%" in APP_HEAD
+    assert "rgba(17, 19, 24, 0.16) 56%" in APP_HEAD
+    assert "opacity: 0.72" in APP_HEAD
+    assert "brightness(0.78)" in APP_HEAD
     assert "waitForMountedImages" in APP_HEAD
     assert "document.fonts?.ready" in APP_HEAD
     assert "25%, 75%" in logo_keyframes
@@ -386,6 +408,18 @@ def test_dropdown_js_refreshes_reused_search_option_nodes():
     assert "characterData: true" in js
 
 
+def test_dropdown_js_marks_open_menu_ancestors_for_safari():
+    js = _dropdown_js({})
+
+    assert "clearDropdownMenuHosts" in js
+    assert "promoteDropdownMenu" in js
+    assert "d2-dropdown-open" in js
+    assert "d2-dropdown-menu-host" in js
+    assert 'classList?.contains("form")' in js
+    assert 'classList?.contains("row")' in js
+    assert 'classList?.contains("app-view")' in js
+
+
 def test_app_head_preconnects_without_theme_redirect():
     assert "preconnect" in APP_HEAD
     assert "cdn.steamstatic.com" in APP_HEAD
@@ -420,7 +454,7 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert 'id="d2-critical"' in CRITICAL_HEAD
     assert "html:not(.d2-ready) .gradio-container" in CRITICAL_HEAD
     assert "visibility: hidden !important" in CRITICAL_HEAD
-    assert "circle 22rem at 50% 50%" in CRITICAL_HEAD
+    assert "circle 28.6rem at 50% 50%" in CRITICAL_HEAD
     assert "circle at 50% 42%" not in CRITICAL_HEAD
     assert "rgba(217, 177, 102, 0.15) 52%" in CRITICAL_HEAD
     assert 'classList.add("d2-loading")' in CRITICAL_HEAD
@@ -430,6 +464,11 @@ def test_critical_head_hides_app_before_bundle_mounts():
 def test_launch_app_kwargs_wires_critical_head_middleware():
     middleware = launch_app_kwargs()["middleware"]
     assert any(getattr(m, "cls", None) is _CriticalHeadMiddleware for m in middleware)
+
+
+def test_launch_entrypoints_enable_public_share_links():
+    assert "share=True" in Path("app.py").read_text()
+    assert "share=True" in Path("src/dota2tuned/cli.py").read_text()
 
 
 def _drive_middleware(downstream):

@@ -847,10 +847,20 @@ __NAV_ICON_CSS__
 }
 .dota-dropdown {
   position: relative;
+  overflow: visible !important;
   z-index: 20;
 }
 .dota-dropdown:focus-within {
   z-index: 2500;
+}
+.d2-dropdown-menu-host {
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 3900 !important;
+}
+.dota-dropdown.d2-dropdown-open {
+  overflow: visible !important;
+  z-index: 5000 !important;
 }
 .dota-dropdown .wrap,
 .dota-dropdown .wrap-inner,
@@ -893,15 +903,19 @@ __NAV_ICON_CSS__
   margin: 0 !important;
   transform: translateY(-50%) !important;
   background: transparent !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
   z-index: 2 !important;
 }
 .dota-dropdown .icon-wrap svg {
   width: 16px !important;
   height: 16px !important;
+  pointer-events: none !important;
 }
 .dota-dropdown ul[role="listbox"],
 .dota-dropdown .options {
-  z-index: 4000 !important;
+  position: fixed !important;
+  z-index: 10000 !important;
   pointer-events: auto !important;
   min-width: 0 !important;
   max-width: calc(100vw - 16px) !important;
@@ -1410,7 +1424,7 @@ html:not(.d2-ready) body::before {
   z-index: 2147483645;
   background:
     radial-gradient(
-      circle 22rem at 50% 50%,
+      circle 28.6rem at 50% 50%,
       rgba(255, 96, 70, 0.28) 0%,
       rgba(255, 96, 70, 0.20) 24%,
       rgba(217, 177, 102, 0.15) 52%,
@@ -1445,30 +1459,78 @@ html:not(.d2-ready) body::after {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  background: #05060a;
+  color: #efe5bb;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s ease, visibility 0.42s ease;
+}
+#d2-startup-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   background:
     radial-gradient(
-      circle 22rem at 50% 50%,
+      circle 28.6rem at 50% 50%,
       rgba(255, 96, 70, 0.28) 0%,
       rgba(255, 96, 70, 0.20) 24%,
       rgba(217, 177, 102, 0.15) 52%,
       rgba(217, 177, 102, 0.00) 74%
     ),
-    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
-  color: #efe5bb;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.42s ease, visibility 0.42s ease;
+    linear-gradient(
+      180deg,
+      rgba(5, 6, 10, 0.34) 0%,
+      rgba(17, 19, 24, 0.16) 56%,
+      rgba(9, 10, 13, 0.46) 100%
+    );
+  pointer-events: none;
+}
+#d2-startup-loader::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 6, 10, 0.30),
+      rgba(5, 6, 10, 0.08),
+      rgba(5, 6, 10, 0.30)
+    ),
+    linear-gradient(
+      180deg,
+      rgba(5, 6, 10, 0.36),
+      rgba(5, 6, 10, 0.10) 44%,
+      rgba(5, 6, 10, 0.54)
+    );
+  pointer-events: none;
 }
 #d2-startup-loader.d2-loader-exit {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
+.d2-loader-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+  filter: saturate(1.1) contrast(1.06) brightness(0.78);
+  pointer-events: none;
+}
 .d2-loader-brand {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 14px;
   font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
 }
 .d2-loader-brand img {
   width: 48px;
@@ -1495,12 +1557,31 @@ html:not(.d2-ready) body::after {
     loader.setAttribute("role", "status");
     loader.setAttribute("aria-live", "polite");
     loader.innerHTML = `
+      <video
+        class="d2-loader-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        aria-hidden="true"
+        tabindex="-1"
+      >
+        <source type="video/webm" src="https://cdn.steamstatic.com/apps/dota2/videos/dota_react/homepage/dota_montage_webm.webm">
+        <source type="video/mp4" src="https://cdn.steamstatic.com/apps/dota2/videos/dota_react/homepage/dota_montage_02.mp4">
+      </video>
       <div class="d2-loader-brand">
         <img src="${logoUrl}" alt="Dota 2" decoding="async">
         <strong>DOTA2Tuned</strong>
       </div>
     `;
     document.body.prepend(loader);
+    const video = loader.querySelector(".d2-loader-video");
+    if (video) {
+      video.muted = true;
+      video.playsInline = true;
+      video.play?.().catch(() => {});
+    }
   };
   window.dota2tunedHideLoader = () => {
     const loader = document.getElementById("d2-startup-loader");
@@ -1582,7 +1663,7 @@ html:not(.d2-ready) body::before {
   z-index: 2147483645;
   background:
     radial-gradient(
-      circle 22rem at 50% 50%,
+      circle 28.6rem at 50% 50%,
       rgba(255, 96, 70, 0.28) 0%,
       rgba(255, 96, 70, 0.20) 24%,
       rgba(217, 177, 102, 0.15) 52%,
@@ -1693,8 +1774,33 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       closestElement(target, '.options, [role="listbox"]')
     );
   }};
+  const clearDropdownMenuHosts = () => {{
+    document
+      .querySelectorAll(".d2-dropdown-open, .d2-dropdown-menu-host")
+      .forEach((node) => {{
+        node.classList.remove("d2-dropdown-open", "d2-dropdown-menu-host");
+      }});
+  }};
+  const promoteDropdownMenu = (dropdown, listbox) => {{
+    if (!dropdown || !listbox || !listbox.getClientRects().length) return;
+    dropdown.classList.add("d2-dropdown-open");
+    let node = dropdown.parentElement;
+    while (node && node !== document.body) {{
+      if (
+        node.classList?.contains("form")
+        || node.classList?.contains("row")
+        || node.classList?.contains("app-view")
+        || node.classList?.contains("app-main")
+      ) {{
+        node.classList.add("d2-dropdown-menu-host");
+      }}
+      if (node.classList?.contains("app-view")) break;
+      node = node.parentElement;
+    }}
+  }};
   const syncDropdownMenus = () => {{
     const margin = 8;
+    clearDropdownMenuHosts();
     if (!document.querySelector('.dota-dropdown .options, .dota-dropdown ul[role="listbox"]')) {{
       return;
     }}
@@ -1719,6 +1825,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       listbox.style.left = `${{left}}px`;
       listbox.style.boxSizing = "border-box";
       listbox.style.overflowX = "hidden";
+      promoteDropdownMenu(dropdown, listbox);
     }});
   }};
   const syncSidebarView = () => {{

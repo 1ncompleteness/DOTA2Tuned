@@ -1,8 +1,12 @@
 import asyncio
+import warnings
 
 import pytest
 
-from dota2tuned.ui.runtime_hooks import install_safe_asyncio_loop_del
+from dota2tuned.ui.runtime_hooks import (
+    install_quiet_starlette_422_warning,
+    install_safe_asyncio_loop_del,
+)
 
 
 def test_install_safe_asyncio_loop_del_suppresses_only_invalid_fd(monkeypatch):
@@ -28,3 +32,21 @@ def test_install_safe_asyncio_loop_del_preserves_other_value_errors(monkeypatch)
 
     with pytest.raises(ValueError, match="not the Gradio fd noise"):
         asyncio.BaseEventLoop.__del__(object())
+
+
+def test_install_quiet_starlette_422_warning_suppresses_only_target_message():
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        install_quiet_starlette_422_warning()
+        import starlette.status
+
+        assert starlette.status.HTTP_422_UNPROCESSABLE_ENTITY == 422
+        warnings.warn(
+            "'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. "
+            "Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+        warnings.warn("other warning", UserWarning, stacklevel=2)
+
+    assert [str(item.message) for item in caught] == ["other warning"]

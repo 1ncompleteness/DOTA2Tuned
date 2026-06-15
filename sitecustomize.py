@@ -10,6 +10,12 @@ from __future__ import annotations
 import asyncio
 import sys
 import traceback
+import warnings
+
+_STARLETTE_422_DEPRECATION_PATTERN = (
+    r"'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated\. "
+    r"Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead\."
+)
 
 
 def _is_benign_loop_teardown(unraisable) -> bool:
@@ -36,6 +42,7 @@ def _is_benign_loop_teardown(unraisable) -> bool:
 
 
 def _install_quiet_unraisablehook() -> None:
+    _install_quiet_starlette_422_warning()
     _install_safe_asyncio_loop_del()
     if getattr(sys.unraisablehook, "_dota2tuned_quiet_unraisablehook", False):
         return
@@ -69,6 +76,14 @@ def _install_safe_asyncio_loop_del() -> None:
     safe_loop_del._dota2tuned_safe_loop_del = True
     safe_loop_del._dota2tuned_original_loop_del = original_del
     asyncio.BaseEventLoop.__del__ = safe_loop_del
+
+
+def _install_quiet_starlette_422_warning() -> None:
+    warnings.filterwarnings(
+        "ignore",
+        message=_STARLETTE_422_DEPRECATION_PATTERN,
+        category=Warning,
+    )
 
 
 _install_quiet_unraisablehook()

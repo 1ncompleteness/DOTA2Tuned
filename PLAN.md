@@ -161,6 +161,11 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 03:07: removed the duplicate landing-page DOTA2Tuned heading block from the assistant view while keeping the sidebar brand and tuned-model composer/result surface intact.
 - 2026-06-15 03:12: aligned the assistant view with the rest of the app pages by dropping the centered hero-style layout and making the tuned-model surface full-width, top-aligned, compactly spaced, and flush with the existing app view grid.
 - 2026-06-15 03:20: centered the startup-loader radial glow on the combined Dota icon and DOTA2Tuned text mark in both the critical first-paint fallback and hydrated loader, then changed the glow from inner Dota red `#ff6046` to outer Dota gold `#d9b166`.
+- 2026-06-15 03:42: increased the centered startup-loader radial glow by 30%, from `22rem` to `28.6rem`, while keeping the red-to-gold gradient centered on the brand mark in both loader paths.
+- 2026-06-15 04:02: diagnosed the Safari dropdown layering bug as a Gradio/Svelte stacking-chain issue: the fixed dropdown menu was nested under a `.dota-dropdown` block with `overflow: hidden` and a parent `.form` with `overflow: auto hidden`, so Safari could clip or paint the leftmost menu under later rows. Promoted the open dropdown plus its `.form`/`.row`/`.app-view` ancestors with temporary classes, forced the menu layer to fixed `z-index: 10000`, and kept ancestor overflow visible only while a menu is open.
+- 2026-06-15 04:18: added the official Dota 2 homepage montage video as the startup-loader background, using the Steam WebM/MP4 sources with muted inline autoplay and keeping the red-to-gold radial glow plus dark vignette as an overlay/fallback.
+- 2026-06-15 04:24: fixed the loader video visibility by changing the hydrated loader overlay from an opaque dark linear gradient to translucent RGBA layers and increasing the video layer opacity/brightness, so the montage remains visible behind the brand mark.
+- 2026-06-15 04:34: enabled Gradio `share=True` in both Space and CLI launch paths, added a narrow startup warning filter for Gradio's deprecated Starlette 422 constant, and added root `agents.md` with Space/API instructions for coding agents.
 
 ## Adapter Eval Notes
 
