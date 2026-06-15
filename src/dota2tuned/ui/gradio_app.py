@@ -4454,7 +4454,7 @@ def build_app() -> gr.Blocks:
         return isinstance(value, list) and any(item is None for item in value)
 
     def preview_update(html: str) -> dict:
-        return gr.update(value=html, visible=bool(html))
+        return gr.update(value=html)
 
     def hero_preview_html(hero_ids: list[int] | None, target: str | None = None) -> str:
         return _selected_hero_html(clean_hero_values(hero_ids), hero_metadata, target)
@@ -4744,7 +4744,7 @@ def build_app() -> gr.Blocks:
                         )
                         ally_preview = gr.HTML(
                             ally_preview_html,
-                            visible=bool(ally_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                     with gr.Column(elem_classes=["d2-selector-stack"]):
@@ -4761,7 +4761,7 @@ def build_app() -> gr.Blocks:
                         )
                         enemy_preview = gr.HTML(
                             enemy_preview_html,
-                            visible=bool(enemy_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                     with gr.Column(elem_classes=["d2-selector-stack"]):
@@ -4776,7 +4776,7 @@ def build_app() -> gr.Blocks:
                         )
                         ban_preview = gr.HTML(
                             ban_preview_html,
-                            visible=bool(ban_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
 
@@ -4896,7 +4896,7 @@ def build_app() -> gr.Blocks:
                         )
                         meta_hero_preview = gr.HTML(
                             meta_hero_preview_html,
-                            visible=bool(meta_hero_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                     with gr.Column(elem_classes=["d2-selector-stack"]):
@@ -4910,7 +4910,7 @@ def build_app() -> gr.Blocks:
                         )
                         meta_item_preview = gr.HTML(
                             meta_item_preview_html,
-                            visible=bool(meta_item_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                 query = gr.Textbox(label="Patch or meta query", value="current pro meta")
@@ -4966,7 +4966,7 @@ def build_app() -> gr.Blocks:
                         )
                         radiant_preview = gr.HTML(
                             radiant_preview_html,
-                            visible=bool(radiant_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                     with gr.Column(elem_classes=["d2-selector-stack"]):
@@ -4983,7 +4983,7 @@ def build_app() -> gr.Blocks:
                         )
                         dire_preview = gr.HTML(
                             dire_preview_html,
-                            visible=bool(dire_preview_html),
+                            visible=True,
                             elem_classes=["d2-preview-output"],
                         )
                 predict_button = gr.Button("Predict")
