@@ -114,10 +114,16 @@ if modal is not None and settings.modal_enabled:
 
     @app.function(image=web_image, secrets=[runtime_secret], timeout=900)
     def remote_smoke() -> dict[str, object]:
-        from dota2tuned.ui.gradio_app import build_app, install_quiet_unraisablehook
+        from dota2tuned.ui.runtime_hooks import (
+            close_idle_main_event_loop,
+            install_quiet_unraisablehook,
+        )
 
         install_quiet_unraisablehook()
+        from dota2tuned.ui.gradio_app import build_app
+
         demo = build_app()
+        close_idle_main_event_loop()
         return {
             "app": type(demo).__name__,
             "blocks": len(demo.blocks),
@@ -134,15 +140,20 @@ if modal is not None and settings.modal_enabled:
         from fastapi import FastAPI
         from gradio.routes import mount_gradio_app
 
-        from dota2tuned.ui.gradio_app import (
-            APP_CSS,
-            APP_HEAD,
-            build_app,
+        from dota2tuned.ui.runtime_hooks import (
+            close_idle_main_event_loop,
             install_quiet_unraisablehook,
         )
 
         install_quiet_unraisablehook()
+        from dota2tuned.ui.gradio_app import (
+            APP_CSS,
+            APP_HEAD,
+            build_app,
+        )
+
         demo = build_app()
+        close_idle_main_event_loop()
         return mount_gradio_app(
             app=FastAPI(),
             blocks=demo,

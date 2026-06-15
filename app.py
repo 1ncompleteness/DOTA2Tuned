@@ -10,22 +10,27 @@ os.environ["GRADIO_SSR_MODE"] = "False"
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-import gradio as gr
+from dota2tuned.ui.runtime_hooks import (  # noqa: E402
+    close_idle_main_event_loop,
+    install_quiet_unraisablehook,
+)
 
-from dota2tuned.ui.gradio_app import (
+# Install before importing Gradio. Gradio 6 on HF Spaces can create orphaned
+# asyncio loops during import/startup; Python 3.12 reports those as noisy
+# unraisable "Invalid file descriptor: -1" tracebacks.
+install_quiet_unraisablehook()
+
+import gradio as gr  # noqa: E402
+
+from dota2tuned.ui.gradio_app import (  # noqa: E402
     APP_CSS,
     APP_HEAD,
     build_app,
-    install_quiet_unraisablehook,
     launch_app_kwargs,
 )
 
-# Silence the benign asyncio loop-teardown noise Gradio emits at startup
-# ("Exception ignored ... ValueError: Invalid file descriptor: -1"). Targeted —
-# only that exact case is dropped; all other unraisable errors still surface.
-install_quiet_unraisablehook()
-
 demo = build_app()
+close_idle_main_event_loop()
 
 
 if __name__ == "__main__":

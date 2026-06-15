@@ -25,7 +25,6 @@ from dota2tuned.sft import create_sft_examples
 from dota2tuned.smoke import has_failures, run_smoke_checks
 from dota2tuned.storage import refresh_views
 from dota2tuned.train_predictor import train_predictor
-from dota2tuned.ui.gradio_app import build_app
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -200,17 +199,24 @@ def eval() -> None:
 
 @app.command()
 def serve() -> None:
+    from dota2tuned.ui.runtime_hooks import (
+        close_idle_main_event_loop,
+        install_quiet_unraisablehook,
+    )
+
+    install_quiet_unraisablehook()
+
     import gradio as gr
 
     from dota2tuned.ui.gradio_app import (
         APP_CSS,
         APP_HEAD,
-        install_quiet_unraisablehook,
+        build_app,
         launch_app_kwargs,
     )
 
-    install_quiet_unraisablehook()
     demo = build_app()
+    close_idle_main_event_loop()
     # Load JS is attached inside build_app via demo.load(); launch(js=) does not
     # run on page load in Gradio 6.18. app_kwargs wires the critical-head middleware
     # that prevents the bare-element flash before the loader. ssr_mode=False keeps
