@@ -140,6 +140,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-14 18:04: switched all app text to the Dota Trajan Pro font assets, made sidebar nav labels uppercase, removed the style-only `gr.HTML` wrapper by passing CSS/JS through Gradio launch/mount paths, restored text-and-tag hero preview cards with remove buttons, hid selected hero tokens inside multiselect dropdowns so the control remains search-only, fixed chevron clicks by focusing the underlying dropdown input, and fixed the cross-browser dropdown scroll error by making injected option icons/tags non-interactive so Gradio receives events on the original option element.
 - 2026-06-14 18:07: removed the sidebar brand subtitle and added client-side sidebar navigation synchronization with stable view IDs so page content switches on the first click while the Gradio backend visibility callback catches up.
 - 2026-06-14 18:08: tightened role icon sizing inside hero-card tag pills so tag icons fit the allocated pill height instead of inheriting larger card image dimensions.
+- 2026-06-14 18:30: constrained Gradio dropdown overlays to the trigger/viewport width, scoped listbox CSS to `.dota-dropdown`, hid horizontal overflow, and added a runtime clamp that repositions fixed dropdown menus on open, scroll, and resize so long hero labels no longer push menus outside the field.
 
 ## Adapter Eval Notes
 

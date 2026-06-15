@@ -526,26 +526,33 @@ __NAV_ICON_CSS__
 .dota-dropdown:focus-within {
   z-index: 2500;
 }
-[role="listbox"],
-.options,
-.dropdown-options,
-.svelte-select-list {
+.dota-dropdown [role="listbox"],
+.dota-dropdown .options,
+.dota-dropdown .dropdown-options,
+.dota-dropdown .svelte-select-list {
   z-index: 4000 !important;
   pointer-events: auto !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 16px) !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  box-sizing: border-box !important;
   border: 1px solid rgba(103, 112, 123, 0.55) !important;
   background: linear-gradient(180deg, #36363e 0%, #23262e 100%) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.58) !important;
 }
-[role="option"],
-.option,
-.dropdown-option,
-.svelte-select-list div {
+.dota-dropdown [role="option"],
+.dota-dropdown .option,
+.dota-dropdown .dropdown-option,
+.dota-dropdown .svelte-select-list div {
   color: #dcdedf !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
-[role="option"]:hover,
-.option:hover,
-.dropdown-option:hover,
-.svelte-select-list div:hover {
+.dota-dropdown [role="option"]:hover,
+.dota-dropdown .option:hover,
+.dota-dropdown .dropdown-option:hover,
+.dota-dropdown .svelte-select-list div:hover {
   background: rgba(255, 96, 70, 0.16) !important;
   color: #fff !important;
 }
@@ -553,6 +560,10 @@ __NAV_ICON_CSS__
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 .dota-choice-option .dota-choice-icon {
   width: 22px;
@@ -577,7 +588,9 @@ __NAV_ICON_CSS__
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: calc(100% - 30px);
 }
 .dota-choice-name {
   color: #f1f3f4;
@@ -589,6 +602,7 @@ __NAV_ICON_CSS__
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
+  min-width: 0;
 }
 .dota-choice-tag {
   display: inline-flex;
@@ -601,6 +615,7 @@ __NAV_ICON_CSS__
   color: #efe5bb;
   font-size: 10px;
   line-height: 13px;
+  max-width: 100%;
 }
 .hero-dropdown .token,
 .hero-dropdown .token-remove.remove-all {
@@ -739,6 +754,15 @@ __NAV_ICON_CSS__
   font-size: 13px;
   padding: 7px 0;
 }
+@media (max-width: 720px) {
+  .dota-dropdown .options[role="listbox"],
+  .dota-dropdown [role="listbox"] {
+    left: 8px !important;
+    right: 8px !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+}
 """.replace("__NAV_ICON_CSS__", NAV_ICON_CSS)
 
 
@@ -762,6 +786,33 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   }};
   const comparableHeroName = (value) =>
     cleanLabel(value).split(" · ", 1)[0].replace(/\\s+\\([^)]*\\)\\s*$/, "");
+  const syncDropdownMenus = () => {{
+    const margin = 8;
+    document.querySelectorAll(".dota-dropdown").forEach((dropdown) => {{
+      const input = dropdown.querySelector(
+        'input[autocomplete="off"], input[role="combobox"], input'
+      );
+      const listbox = dropdown.querySelector(
+        '.options[role="listbox"], [role="listbox"], .dropdown-options, .svelte-select-list'
+      );
+      if (!input || !listbox) return;
+      const rect = input.closest(".wrap, .wrap-inner, .input-container")?.getBoundingClientRect()
+        || input.getBoundingClientRect();
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      const maxWidth = Math.max(240, viewportWidth - margin * 2);
+      const width = Math.min(Math.max(rect.width, 240), maxWidth);
+      const left = Math.min(
+        Math.max(rect.left, margin),
+        Math.max(margin, viewportWidth - width - margin)
+      );
+      listbox.style.width = `${{width}}px`;
+      listbox.style.minWidth = "0px";
+      listbox.style.maxWidth = `${{maxWidth}}px`;
+      listbox.style.left = `${{left}}px`;
+      listbox.style.boxSizing = "border-box";
+      listbox.style.overflowX = "hidden";
+    }});
+  }};
   const syncSidebarView = () => {{
     const nav = document.querySelector(".app-nav");
     if (!nav) return;
@@ -822,6 +873,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       }}
       if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
     }});
+    syncDropdownMenus();
   }};
   const openDropdown = (dropdown) => {{
     const input = dropdown?.querySelector(
@@ -845,7 +897,10 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     event.preventDefault();
     event.stopPropagation();
     openDropdown(dropdown);
-    setTimeout(decorate, 0);
+    setTimeout(() => {{
+      decorate();
+      syncDropdownMenus();
+    }}, 0);
   }};
   const removeSelectedHero = (event) => {{
     const button = closestElement(event.target, ".hero-card-remove");
@@ -899,6 +954,8 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   document.addEventListener("click", removeSelectedHero, true);
   document.addEventListener("click", () => setTimeout(decorate, 0), true);
   document.addEventListener("keyup", () => setTimeout(decorate, 0), true);
+  window.addEventListener("resize", syncDropdownMenus, true);
+  window.addEventListener("scroll", syncDropdownMenus, true);
   decorate();
   syncSidebarView();
 }}

@@ -96,6 +96,7 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "removeSelectedHero" in js
     assert "syncSidebarView" in js
     assert "closestElement" in js
+    assert "syncDropdownMenus" in js
 
 
 def test_css_uses_trajan_font_without_global_red_buttons():
@@ -104,6 +105,8 @@ def test_css_uses_trajan_font_without_global_red_buttons():
     assert ".app-main button {" in APP_CSS
     assert "text-transform: uppercase" in APP_CSS
     assert ".hero-dropdown .token" in APP_CSS
+    assert "max-width: calc(100vw - 16px)" in APP_CSS
+    assert "overscroll-behavior: contain" in APP_CSS
 
 
 def test_parse_heroes_accepts_dropdown_values():
