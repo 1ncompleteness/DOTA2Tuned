@@ -1617,15 +1617,7 @@ html:not(.d2-ready) body::before {
   position: fixed;
   inset: 0;
   z-index: 2147483645;
-  background:
-    radial-gradient(
-      circle 28.6rem at 50% 50%,
-      rgba(255, 96, 70, 0.28) 0%,
-      rgba(255, 96, 70, 0.20) 24%,
-      rgba(217, 177, 102, 0.15) 52%,
-      rgba(217, 177, 102, 0.00) 74%
-    ),
-    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
+  background: linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
 }
 html:not(.d2-ready) body::after {
   content: "DOTA2Tuned";
@@ -1667,13 +1659,6 @@ html:not(.d2-ready) body::after {
   inset: 0;
   z-index: 1;
   background:
-    radial-gradient(
-      circle 28.6rem at 50% 50%,
-      rgba(255, 96, 70, 0.28) 0%,
-      rgba(255, 96, 70, 0.20) 24%,
-      rgba(217, 177, 102, 0.15) 52%,
-      rgba(217, 177, 102, 0.00) 74%
-    ),
     linear-gradient(
       180deg,
       rgba(5, 6, 10, 0.34) 0%,
@@ -1952,15 +1937,7 @@ html:not(.d2-ready) body::before {
   position: fixed;
   inset: 0;
   z-index: 2147483645;
-  background:
-    radial-gradient(
-      circle 28.6rem at 50% 50%,
-      rgba(255, 96, 70, 0.28) 0%,
-      rgba(255, 96, 70, 0.20) 24%,
-      rgba(217, 177, 102, 0.15) 52%,
-      rgba(217, 177, 102, 0.00) 74%
-    ),
-    linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
+  background: linear-gradient(180deg, #05060a 0%, #111318 56%, #090a0d 100%);
 }
 html:not(.d2-ready) body::after {
   content: "DOTA2Tuned";
@@ -2001,13 +1978,6 @@ html:not(.d2-ready) body::after {
   inset: 0;
   z-index: 1;
   background:
-    radial-gradient(
-      circle 28.6rem at 50% 50%,
-      rgba(255, 96, 70, 0.28) 0%,
-      rgba(255, 96, 70, 0.20) 24%,
-      rgba(217, 177, 102, 0.15) 52%,
-      rgba(217, 177, 102, 0.00) 74%
-    ),
     linear-gradient(
       180deg,
       rgba(5, 6, 10, 0.34) 0%,

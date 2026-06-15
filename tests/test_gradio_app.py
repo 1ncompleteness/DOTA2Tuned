@@ -335,10 +335,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "html.d2-ready .gradio-container" in APP_HEAD
     assert "html:not(.d2-ready) body::before" in APP_HEAD
     assert "html:not(.d2-ready) body::after" in APP_HEAD
-    assert "circle 28.6rem at 50% 50%" in APP_HEAD
+    assert "circle 28.6rem at 50% 50%" not in APP_HEAD
     assert "circle at 50% 42%" not in APP_HEAD
-    assert "rgba(255, 96, 70, 0.28) 0%" in APP_HEAD
-    assert "rgba(217, 177, 102, 0.15) 52%" in APP_HEAD
+    assert "rgba(255, 96, 70, 0.28) 0%" not in APP_HEAD
+    assert "rgba(217, 177, 102, 0.15) 52%" not in APP_HEAD
     assert "rgba(17, 19, 24, 0.16) 56%" in APP_HEAD
     assert "opacity: 0.72" in APP_HEAD
     assert "brightness(0.78)" in APP_HEAD
@@ -510,9 +510,9 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert 'id="d2-critical"' in CRITICAL_HEAD
     assert "html:not(.d2-ready) .gradio-container" in CRITICAL_HEAD
     assert "visibility: hidden !important" in CRITICAL_HEAD
-    assert "circle 28.6rem at 50% 50%" in CRITICAL_HEAD
+    assert "circle 28.6rem at 50% 50%" not in CRITICAL_HEAD
     assert "circle at 50% 42%" not in CRITICAL_HEAD
-    assert "rgba(217, 177, 102, 0.15) 52%" in CRITICAL_HEAD
+    assert "rgba(217, 177, 102, 0.15) 52%" not in CRITICAL_HEAD
     assert 'classList.add("d2-loading")' in CRITICAL_HEAD
     assert "DOTA2Tuned" in CRITICAL_HEAD
     assert "#d2-startup-loader" in CRITICAL_HEAD
