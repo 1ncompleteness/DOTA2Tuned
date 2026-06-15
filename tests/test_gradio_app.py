@@ -169,6 +169,19 @@ def test_css_shows_full_selected_hero_cards():
     assert "text-overflow: clip" in APP_CSS
 
 
+def test_builds_header_uses_conventional_hero_icon_shape():
+    header_icon_css = APP_CSS.split(".build-hero-header .build-hero-icon", 1)[1].split(
+        "}", 1
+    )[0]
+
+    assert "width: 48px" in header_icon_css
+    assert "height: 36px" in header_icon_css
+    assert "object-fit: contain" in header_icon_css
+    assert "background: transparent" in header_icon_css
+    assert "object-fit: cover" not in header_icon_css
+    assert "64px" not in header_icon_css
+
+
 def test_loader_and_sidebar_logo_use_shared_red_flash():
     logo_keyframes = APP_HEAD.split("@keyframes d2-logo-red-flash", 1)[1].split(
         "html:not(.d2-ready)", 1
