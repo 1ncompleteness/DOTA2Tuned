@@ -319,6 +319,12 @@ APP_CSS = """
   font-weight: 700;
   font-style: normal;
 }
+@font-face {
+  font-family: "Radiance";
+  src: url("https://cdn.steamstatic.com/apps/dota2/fonts/radiance-bold.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+}
 .gradio-container {
   max-width: none !important;
   width: 100% !important;
@@ -364,7 +370,7 @@ APP_CSS = """
 .gradio-container input {
   color: #efe5bb !important;
 }
-.gradio-container button {
+.app-main button {
   border: 1px solid rgba(255, 96, 70, 0.42) !important;
   border-radius: 3px !important;
   background:
@@ -373,13 +379,13 @@ APP_CSS = """
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34) !important;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease !important;
 }
-.gradio-container button:hover {
+.app-main button:hover {
   border-color: rgba(255, 96, 70, 0.74) !important;
   background:
     linear-gradient(180deg, rgba(234, 105, 83, 0.98), rgba(126, 43, 34, 0.98)) !important;
   transform: translateY(-1px);
 }
-.gradio-container button:active {
+.app-main button:active {
   transform: translateY(0);
 }
 .app-title {
@@ -542,20 +548,52 @@ __NAV_ICON_CSS__
   gap: 8px !important;
 }
 .dota-choice-option .dota-choice-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   border-radius: 2px;
-  flex: 0 0 28px;
+  flex: 0 0 22px;
   box-shadow: 0 0 0 1px rgba(235, 207, 135, 0.22);
+}
+.dota-choice-option.dota-hero-option {
+  align-items: flex-start !important;
 }
 .dota-choice-option.dota-hero-option .dota-choice-icon {
   object-fit: cover;
 }
+.dota-choice-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dota-choice-name {
+  color: #f1f3f4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dota-choice-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.dota-choice-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 15px;
+  padding: 0 5px;
+  border: 1px solid rgba(235, 207, 135, 0.34);
+  border-radius: 2px;
+  background: rgba(235, 207, 135, 0.16);
+  color: #efe5bb;
+  font-size: 10px;
+  line-height: 13px;
+}
 .hero-strip, .item-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 82px));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, 56px);
+  gap: 6px;
   margin-top: 6px;
   pointer-events: none;
 }
@@ -579,13 +617,13 @@ __NAV_ICON_CSS__
   border-radius: 5px;
 }
 .hero-card {
-  min-height: 50px;
-  padding: 4px;
+  min-height: 38px;
+  padding: 3px;
   justify-content: center;
 }
 .hero-card img {
   width: 100%;
-  height: 46px;
+  height: 32px;
   object-fit: cover;
   border-radius: 2px;
 }
@@ -606,9 +644,9 @@ __NAV_ICON_CSS__
   min-height: 18px;
   padding: 1px 6px;
   border-radius: 2px;
-  background: rgba(171, 140, 59, 0.14);
-  border: 1px solid rgba(235, 207, 135, 0.22);
-  color: #d2bd6f;
+  background: rgba(235, 207, 135, 0.18);
+  border: 1px solid rgba(235, 207, 135, 0.38);
+  color: #efe5bb;
   font-size: 11px;
   line-height: 14px;
 }
@@ -660,7 +698,27 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
       img.alt = "";
       img.loading = "lazy";
       img.decoding = "async";
-      option.prepend(img);
+      if (icon.kind === "hero" && label.includes(" · ")) {{
+        const [name, tagsText] = label.split(" · ", 2);
+        const labelWrap = document.createElement("span");
+        labelWrap.className = "dota-choice-label";
+        const nameEl = document.createElement("span");
+        nameEl.className = "dota-choice-name";
+        nameEl.textContent = name;
+        const tagsEl = document.createElement("span");
+        tagsEl.className = "dota-choice-tags";
+        tagsText.split(",").map((tag) => tag.trim()).filter(Boolean).forEach((tag) => {{
+          const tagEl = document.createElement("span");
+          tagEl.className = "dota-choice-tag";
+          tagEl.textContent = tag;
+          tagsEl.append(tagEl);
+        }});
+        option.textContent = "";
+        option.append(img, labelWrap);
+        labelWrap.append(nameEl, tagsEl);
+      }} else {{
+        option.prepend(img);
+      }}
       if (option.dataset) option.dataset.dotaChoiceIconDecorated = "1";
     }});
   }};
@@ -1201,7 +1259,11 @@ def build_app() -> gr.Blocks:
                     )
 
                     def update_choices(allies_val, enemies_val, bans_val):
-                        selected = set(allies_val or []) | set(enemies_val or []) | set(bans_val or [])
+                        selected = (
+                            set(allies_val or [])
+                            | set(enemies_val or [])
+                            | set(bans_val or [])
+                        )
 
                         def filtered(exclude_self):
                             excl = selected - set(exclude_self or [])

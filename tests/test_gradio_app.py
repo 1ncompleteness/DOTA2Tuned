@@ -1,6 +1,7 @@
 import polars as pl
 
 from dota2tuned.ui.gradio_app import (
+    APP_CSS,
     _dropdown_js,
     _format_item_time,
     _hero_aliases,
@@ -87,6 +88,13 @@ def test_dropdown_js_does_not_reinject_topbar():
 
     assert "choiceIcons" in js
     assert "ensureTopbar" not in js
+    assert "dota-choice-tag" in js
+
+
+def test_css_uses_dota_font_without_global_red_buttons():
+    assert 'font-family: "Radiance", "Noto Sans", sans-serif' in APP_CSS
+    assert ".gradio-container button {" not in APP_CSS
+    assert ".app-main button {" in APP_CSS
 
 
 def test_parse_heroes_accepts_dropdown_values():
