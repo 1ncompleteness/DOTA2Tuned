@@ -53,6 +53,7 @@ DEFAULT_MODEL_PROFILES: dict[str, ModelProfile] = {
         modal_infer_gpu="H200",
         lora_r=32,
         lora_alpha=16,
+        lora_dropout=0.0,
         lora_target_modules="q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
         sft_learning_rate=1e-4,
         sft_grad_accum=16,

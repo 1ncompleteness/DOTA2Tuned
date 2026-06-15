@@ -8,6 +8,7 @@ def test_model_profiles_include_quality_and_sponsor_paths():
     assert quality.base_model_id == "Qwen/Qwen3-30B-A3B-Instruct-2507"
     assert quality.sft_max_length == 4096
     assert quality.modal_train_gpu == "H200"
+    assert quality.lora_dropout == 0.0
     assert "q_proj" in quality.lora_target_modules
     assert sponsor.base_model_id == "openbmb/MiniCPM4.1-8B"
     assert sponsor.hf_model_repo_id.endswith("minicpm4-1-8b-lora")

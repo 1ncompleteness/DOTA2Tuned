@@ -207,6 +207,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 16:21: audited the latest `origin/Builds` commit `90806fa`, which keeps preview HTML components mounted to avoid Gradio dropping first-selection visibility updates. Fast-forwarded `main`, reapplied local work without conflicts, extended the same preview behavior to the new Meta skill selector, and updated the UI regression test for the new always-mounted preview contract.
 - 2026-06-15 16:26: added `scripts/watch_modal_training.py` and started durable tmux session `dota2tuned_modal_training_watch` so Modal training stays monitored in the background. Current log: `logs/modal-training-watch-tmux-20260615-1632.log`.
 - 2026-06-15 16:29: Quality Qwen3 30B-A3B failed on the original A100 80GB training function with CUDA OOM during `prepare_model_for_kbit_training`. Updated Quality to use a dedicated Modal `train_sft_quality` function on `H200`, set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, reduced Quality LoRA/context settings for reliability, redeployed Modal, and resubmitted Quality as `fc-01KV6SWYDQ0ASTQNSXXEQ0C412`.
+- 2026-06-15 16:39: Quality H200 progressed past memory and target-module setup, then failed because PEFT's `ParamWrapper` path rejects nonzero LoRA dropout for this model. Set Quality `lora_dropout=0.0` and prepared another retry.
 
 ## Adapter Eval Notes
 
