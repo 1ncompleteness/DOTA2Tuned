@@ -22,6 +22,7 @@ from dota2tuned.ui.gradio_app import (
     _parse_heroes,
     _render_tuned_answer_html,
     _selected_hero_html,
+    _selected_item_html,
     build_app,
     launch_app_kwargs,
 )
@@ -112,6 +113,11 @@ def test_selected_hero_preview_ignores_transient_null_values():
     assert "<strong>Anti-Mage</strong>" in html
     assert "Hero None" not in html
     assert "Hero bad" not in html
+
+
+def test_empty_selection_previews_render_no_placeholder():
+    assert _selected_hero_html([], {}, "draft-allies-dropdown") == ""
+    assert _selected_item_html(None, pl.DataFrame()) == ""
 
 
 def test_tuned_model_is_first_nav_and_default_view():
@@ -223,6 +229,10 @@ def test_dropdown_js_does_not_reinject_topbar():
     assert "closestElement" in js
     assert "syncDropdownMenus" in js
     assert "isDropdownMenuScroll" in js
+    assert "decorateSelectedDropdownValues" in js
+    assert "dota-selected-field-icon" in js
+    assert "dota-selected-token-icon" in js
+    assert "selectedInputLabel" in js
     assert "dota2tunedRevealWhenReady" in js
 
 
@@ -230,10 +240,12 @@ def test_css_uses_trajan_font_without_global_red_buttons():
     assert 'font-family: "Trajan Pro", "Goudy Trajan", "Noto Sans", serif' in APP_CSS
     assert ".gradio-container button {" not in APP_CSS
     assert ".app-main button {" in APP_CSS
+    assert "box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04)" in APP_CSS
     assert "text-transform: uppercase" in APP_CSS
     assert ".hero-dropdown .token" in APP_CSS
     assert "max-width: calc(100vw - 16px)" in APP_CSS
     assert "overscroll-behavior: contain" in APP_CSS
+    assert ".label-wrap > span" in APP_CSS
 
 
 def test_css_keeps_dropdown_chevrons_inside_fields():
@@ -246,6 +258,11 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
     assert "background: transparent !important" in APP_CSS
     assert ".hero-dropdown input[autocomplete=\"off\"]" not in APP_CSS
     assert "min-width: 100% !important" not in APP_CSS
+    assert ".dota-selected-field-icon" in APP_CSS
+    assert ".d2-has-selected-icon" in APP_CSS
+    assert ".dota-selected-token" in APP_CSS
+    assert ".hero-strip:empty" in APP_CSS
+    assert ".item-strip:empty" in APP_CSS
 
 
 def test_css_promotes_open_dropdown_stack_for_safari():
@@ -292,10 +309,10 @@ def test_loader_and_sidebar_logo_use_shared_red_flash():
     assert "d2-loader-content" in APP_HEAD
     assert "d2-loader-description" in APP_HEAD
     assert "top: calc(50% - 84px)" in APP_HEAD
-    assert "top: calc(50% + 178px)" in APP_HEAD
+    assert "top: calc(50% + 84px)" in APP_HEAD
     assert "Draft intelligence for heroes, counters, builds, and match prediction" in APP_HEAD
-    assert "::-webkit-media-controls-start-playback-button" in APP_HEAD
-    assert "translateY(118px)" in APP_HEAD
+    assert "::-webkit-media-controls-start-playback-button" not in APP_HEAD
+    assert "translateY(118px)" not in APP_HEAD
     assert "pointer-events: auto" in APP_HEAD
     assert "d2-loader-play" not in APP_HEAD
     assert 'rel="preload"' in APP_HEAD
@@ -530,6 +547,14 @@ def test_critical_head_hides_app_before_bundle_mounts():
     assert ".d2-loader-play" not in CRITICAL_HEAD
     assert "<video" not in CRITICAL_HEAD
     assert "video.defaultMuted = true" not in CRITICAL_HEAD
+
+
+def test_code_outputs_use_accordion_sections():
+    source = Path("src/dota2tuned/ui/gradio_app.py").read_text()
+
+    assert 'gr.Accordion("Retrieved Evidence", open=False)' in source
+    assert 'gr.Accordion("Evidence", open=False)' in source
+    assert 'gr.Accordion("Prediction", open=False)' in source
 
 
 def test_launch_app_kwargs_wires_critical_head_middleware():

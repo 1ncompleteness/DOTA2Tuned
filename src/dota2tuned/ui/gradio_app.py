@@ -144,6 +144,8 @@ SCOPE_OPTIONS = [
     ("Public matches", "public"),
 ]
 
+DRAFT_LAB_MODE_OPTIONS = ["Tiny scout card", "One-minute coach", "Chaos constraint"]
+
 NAV_OPTIONS = [
     "Tuned Model",
     "Draft Coach",
@@ -267,6 +269,12 @@ SCOPE_ICON_BODIES = {
 SCOPE_ICON_URLS = {
     scope: _badge_icon("".join(paths), accent)
     for scope, (accent, paths) in SCOPE_ICON_BODIES.items()
+}
+
+MODE_ICON_URLS = {
+    "Tiny scout card": NAV_ICON_URLS["Hero Meta"],
+    "One-minute coach": NAV_ICON_URLS["Draft Coach"],
+    "Chaos constraint": NAV_ICON_URLS["Draft Lab"],
 }
 
 PRIMARY_ATTR_INFO = {
@@ -576,7 +584,9 @@ body::-webkit-scrollbar-thumb:hover,
   border-radius: 3px !important;
   background: var(--d2-action-fill) !important;
   color: #fff !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34) !important;
+  min-height: 30px !important;
+  padding: 5px 11px !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease !important;
 }
 .app-main button:hover {
@@ -947,6 +957,28 @@ __NAV_ICON_CSS__
   background: transparent !important;
   box-shadow: none !important;
 }
+.dota-dropdown .secondary-wrap.d2-has-selected-icon input[autocomplete="off"],
+.dota-dropdown .secondary-wrapper.d2-has-selected-icon input[autocomplete="off"],
+.dota-dropdown .secondary-wrap.d2-has-selected-icon input[role="combobox"],
+.dota-dropdown .secondary-wrapper.d2-has-selected-icon input[role="combobox"] {
+  padding-left: 34px !important;
+}
+.dota-selected-field-icon {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dota-selected-field-icon.dota-selected-hero-icon {
+  width: 24px;
+  height: 18px;
+}
 .dota-dropdown .icon-wrap {
   position: absolute !important;
   top: 50% !important;
@@ -1020,6 +1052,25 @@ __NAV_ICON_CSS__
 .dota-dropdown li[role="option"].dota-decorated-rich > .dota-choice-label {
   font-size: 13px;
   line-height: 1.25;
+}
+.dota-dropdown .token.dota-selected-token {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0;
+}
+.dota-dropdown .token .dota-selected-token-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  object-fit: contain;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.dota-dropdown .token .dota-selected-token-icon.dota-selected-hero-icon {
+  width: 22px;
+  height: 16px;
+  flex-basis: 22px;
 }
 .dota-choice-option {
   display: flex !important;
@@ -1100,6 +1151,11 @@ __NAV_ICON_CSS__
 }
 .item-strip {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.hero-strip:empty,
+.item-strip:empty {
+  display: none;
+  margin-top: 0;
 }
 .entity-chip {
   display: flex;
@@ -1704,10 +1760,6 @@ html:not(.d2-ready) body::after {
   filter: saturate(1.1) contrast(1.06) brightness(0.78);
   pointer-events: auto;
 }
-.d2-loader-video::-webkit-media-controls-start-playback-button {
-  -webkit-transform: translateY(118px) !important;
-  transform: translateY(118px) !important;
-}
 .d2-loader-content {
   position: absolute;
   inset: 0;
@@ -1741,7 +1793,7 @@ html:not(.d2-ready) body::after {
 }
 .d2-loader-description {
   position: absolute;
-  top: calc(50% + 178px);
+  top: calc(50% + 84px);
   left: 50%;
   z-index: 4;
   width: min(38rem, calc(100vw - 40px));
@@ -1753,7 +1805,7 @@ html:not(.d2-ready) body::after {
   letter-spacing: 0;
   text-align: center;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
 }
 @media (max-width: 560px) {
   .d2-loader-brand {
@@ -1769,7 +1821,7 @@ html:not(.d2-ready) body::after {
     line-height: 24px;
   }
   .d2-loader-description {
-    top: calc(50% + 166px);
+    top: calc(50% + 78px);
     width: calc(100vw - 32px);
     font-size: 12px;
     line-height: 18px;
@@ -1780,7 +1832,7 @@ html:not(.d2-ready) body::after {
     top: calc(50% - 70px);
   }
   .d2-loader-description {
-    top: calc(50% + 146px);
+    top: calc(50% + 70px);
   }
 }
 </style>
@@ -2114,6 +2166,14 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
 () => {{
   const choiceIcons = {json.dumps(choice_icon_by_label)};
   const cleanLabel = (value) => (value || "").trim().replace(/\\s+/g, " ");
+  const normalizeChoiceKey = (value) =>
+    cleanLabel(value)
+      .replace(/^✓\\s*/, "")
+      .replace(/[×x]\\s*$/, "")
+      .toLowerCase();
+  const normalizedChoiceIcons = Object.fromEntries(
+    Object.entries(choiceIcons).map(([label, icon]) => [normalizeChoiceKey(label), icon])
+  );
   const closestElement = (target, selector) => {{
     if (!(target instanceof Element)) return null;
     return target.closest(selector);
@@ -2220,6 +2280,91 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     }});
     return cleanLabel(clone.textContent).replace(/^✓\\s*/, "");
   }};
+  const resolveChoiceIcon = (label) => {{
+    const cleaned = cleanLabel(label).replace(/^✓\\s*/, "").replace(/[×x]\\s*$/, "");
+    return choiceIcons[cleaned] || normalizedChoiceIcons[normalizeChoiceKey(cleaned)] || null;
+  }};
+  const selectedTokenLabel = (token) => {{
+    const clone = token.cloneNode(true);
+    clone.querySelectorAll(
+      ".dota-selected-token-icon, .token-remove, .remove-all, button"
+    ).forEach((node) => node.remove());
+    return cleanLabel(clone.textContent);
+  }};
+  const selectedInputLabel = (dropdown, input) => {{
+    const inputLabel = cleanLabel(input?.value || "");
+    if (inputLabel) return inputLabel;
+    const tokens = Array.from(dropdown.querySelectorAll(".token"));
+    if (tokens.length) return selectedTokenLabel(tokens[tokens.length - 1]);
+    return "";
+  }};
+  const iconClassName = (base, icon) =>
+    `${{base}} dota-selected-${{icon?.kind || "choice"}}-icon`;
+  const decorateSelectedToken = (token) => {{
+    const label = selectedTokenLabel(token);
+    const icon = resolveChoiceIcon(label);
+    const existing = token.querySelector(".dota-selected-token-icon");
+    if (!icon || !icon.src) {{
+      existing?.remove();
+      token.classList.remove("dota-selected-token");
+      if (token.dataset) delete token.dataset.dotaSelectedIconLabel;
+      return;
+    }}
+    token.classList.add("dota-selected-token");
+    if (
+      existing
+      && token.dataset
+      && token.dataset.dotaSelectedIconLabel === label
+      && existing.src === icon.src
+    ) return;
+    existing?.remove();
+    const img = document.createElement("img");
+    img.className = iconClassName("dota-selected-token-icon", icon);
+    img.src = icon.src;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    token.prepend(img);
+    if (token.dataset) token.dataset.dotaSelectedIconLabel = label;
+  }};
+  const decorateSelectedField = (dropdown) => {{
+    const wrap = dropdown.querySelector(".secondary-wrap, .secondary-wrapper");
+    const input = dropdown.querySelector(
+      'input[autocomplete="off"], input[role="combobox"], input'
+    );
+    if (!wrap || !input) return;
+    const label = selectedInputLabel(dropdown, input);
+    const icon = resolveChoiceIcon(label);
+    let img = wrap.querySelector(".dota-selected-field-icon");
+    if (!icon || !icon.src) {{
+      img?.remove();
+      wrap.classList.remove("d2-has-selected-icon");
+      if (wrap.dataset) delete wrap.dataset.dotaSelectedIconLabel;
+      return;
+    }}
+    wrap.classList.add("d2-has-selected-icon");
+    if (
+      img
+      && wrap.dataset
+      && wrap.dataset.dotaSelectedIconLabel === label
+      && img.src === icon.src
+    ) return;
+    img?.remove();
+    img = document.createElement("img");
+    img.className = iconClassName("dota-selected-field-icon", icon);
+    img.src = icon.src;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    wrap.prepend(img);
+    if (wrap.dataset) wrap.dataset.dotaSelectedIconLabel = label;
+  }};
+  const decorateSelectedDropdownValues = () => {{
+    document.querySelectorAll(".dota-dropdown").forEach((dropdown) => {{
+      dropdown.querySelectorAll(".token").forEach(decorateSelectedToken);
+      decorateSelectedField(dropdown);
+    }});
+  }};
   const resetOptionDecoration = (option) => {{
     Array.from(option.children).forEach((child) => {{
       if (
@@ -2254,7 +2399,7 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     if (option.dataset && option.dataset.dotaChoiceIconDecorated === "1") {{
       resetOptionDecoration(option);
     }}
-    const icon = choiceIcons[label];
+    const icon = resolveChoiceIcon(label);
     if (!icon || !icon.src) return;
     option.classList.add("dota-choice-option");
     if (icon.kind) option.classList.add(`dota-${{icon.kind}}-option`);
@@ -2299,8 +2444,15 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
     if (options.length) {{
       observer.disconnect();
       options.forEach(decorateOption);
-      observer.observe(document.body, {{ childList: true, subtree: true }});
+      observer.observe(document.body, {{
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["aria-label", "class", "value"],
+        characterData: true
+      }});
     }}
+    decorateSelectedDropdownValues();
     syncDropdownMenus();
   }};
   let decorateScheduled = false;
@@ -2402,7 +2554,9 @@ def _dropdown_js(choice_icon_by_label: dict[str, dict[str, str]]) -> str:
   }};
   document.addEventListener("mousedown", openFromChevron, true);
   document.addEventListener("click", activateSidebarNav, true);
+  document.addEventListener("input", scheduleDecorate, true);
   document.addEventListener("change", syncSidebarView, true);
+  document.addEventListener("change", scheduleDecorate, true);
   document.addEventListener("click", removeSelectedHero, true);
   window.addEventListener("resize", scheduleSync, {{ passive: true }});
   window.addEventListener("scroll", scheduleSync, {{ passive: true, capture: true }});
@@ -2617,9 +2771,18 @@ def _role_icon_html(role: str) -> str:
 
 
 def _dropdown_icon_by_label(
-    hero_choices: list[tuple[str, int]], metadata: dict[int, dict[str, str]]
+    hero_choices: list[tuple[str, int]],
+    hero_metadata: dict[int, dict[str, str]],
+    item_choices: list[tuple[str, str]] | None = None,
 ) -> dict[str, dict[str, str]]:
-    icons = _hero_icon_by_label(hero_choices, metadata)
+    icons = _hero_icon_by_label(hero_choices, hero_metadata)
+    if item_choices:
+        icons.update(
+            {
+                label: {"src": _item_icon_url(value), "kind": "item"}
+                for label, value in item_choices
+            }
+        )
     icons.update(
         {
             label: {"src": ROLE_DROPDOWN_ICONS[value], "kind": "role"}
@@ -2631,6 +2794,9 @@ def _dropdown_icon_by_label(
             label: {"src": SCOPE_ICON_URLS[value], "kind": "scope"}
             for label, value in SCOPE_OPTIONS
         }
+    )
+    icons.update(
+        {label: {"src": MODE_ICON_URLS[label], "kind": "mode"} for label in DRAFT_LAB_MODE_OPTIONS}
     )
     return icons
 
@@ -2829,7 +2995,7 @@ def _selected_hero_html(
     hero_ids: object, metadata: dict[int, dict[str, str]], target: str | None = None
 ) -> str:
     if not isinstance(hero_ids, list) or not hero_ids:
-        return "<div class='hero-strip'></div>"
+        return ""
     chips = []
     for raw_id in hero_ids:
         if raw_id in {None, ""}:
@@ -2856,13 +3022,13 @@ def _selected_hero_html(
             f"{_role_tags_html(row.get('roles'))}</div>{remove}</div>"
         )
     if not chips:
-        return "<div class='hero-strip'></div>"
+        return ""
     return "<div class='hero-strip'>" + "".join(chips) + "</div>"
 
 
 def _selected_item_html(item_key: object, items: pl.DataFrame) -> str:
     if not item_key:
-        return "<div class='empty-strip'>No item selected.</div>"
+        return ""
     item_name = str(item_key).replace("_", " ").title()
     cost_text = ""
     if not items.is_empty():
@@ -3402,7 +3568,8 @@ def build_app() -> gr.Blocks:
                     )
                 run = gr.Button("Recommend")
                 rec_output = gr.Markdown()
-                evidence_output = gr.Code(label="Evidence", language="json")
+                with gr.Accordion("Evidence", open=False):
+                    evidence_output = gr.Code(label="Evidence", language="json")
                 allies.change(
                     hero_preview_for("draft-allies-dropdown"),
                     inputs=[allies],
@@ -3437,12 +3604,14 @@ def build_app() -> gr.Blocks:
                     meta_hero = gr.Dropdown(
                         choices=hero_choices,
                         label="Hero",
+                        value=None,
                         filterable=True,
                         elem_classes=["dota-dropdown", "hero-dropdown"],
                     )
                     meta_item = gr.Dropdown(
                         choices=item_choices,
                         label="Item",
+                        value=None,
                         filterable=True,
                         elem_classes=["dota-dropdown", "item-dropdown"],
                     )
@@ -3506,7 +3675,8 @@ def build_app() -> gr.Blocks:
                         hero_preview([14, 74, 6, 26, 18], "predict-dire-dropdown")
                     )
                 predict_button = gr.Button("Predict")
-                predict_output = gr.Code(label="Prediction", language="json")
+                with gr.Accordion("Prediction", open=False):
+                    predict_output = gr.Code(label="Prediction", language="json")
                 radiant.change(
                     hero_preview_for("predict-radiant-dropdown"),
                     inputs=[radiant],
@@ -3562,7 +3732,7 @@ def build_app() -> gr.Blocks:
                     elem_classes=["dota-dropdown", "role-dropdown"],
                 )
                 lab_twist = gr.Dropdown(
-                    ["Tiny scout card", "One-minute coach", "Chaos constraint"],
+                    DRAFT_LAB_MODE_OPTIONS,
                     label="Mode",
                     value="Tiny scout card",
                     elem_classes=["dota-dropdown"],
@@ -3596,6 +3766,6 @@ def build_app() -> gr.Blocks:
             None,
             None,
             None,
-            js=_dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata)),
+            js=_dropdown_js(_dropdown_icon_by_label(hero_choices, hero_metadata, item_choices)),
         )
     return demo

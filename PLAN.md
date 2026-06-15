@@ -175,6 +175,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 05:34: researched Safari's native video start overlay and confirmed it is browser-owned, with older WebKit pseudo-elements only a best-effort positioning path because newer Safari/iOS controls can live in closed UA shadow DOM. Removed the custom loader play button completely, restored pointer events on the loader video so Safari's native play affordance is active, and moved the WebKit `::-webkit-media-controls-start-playback-button` down with a scoped transform to keep it below the DOTA2Tuned icon/text.
 - 2026-06-15 05:51: removed the red/gold circular radial glow from the startup loader now that the Steam montage video is the visual background. Kept the dark linear video overlays/vignette so the DOTA2Tuned mark remains legible.
 - 2026-06-15 06:13: returned loader video handling to the normal Gradio/app-head path instead of middleware-injecting duplicate body HTML. Kept parse-time priority loading by injecting only critical preconnect/preload hints for Trajan fonts, the Dota logo, and the MP4 montage; moved the loader brand above Safari's native play affordance and added a centered app description below it.
+- 2026-06-15 06:27: removed the unreliable WebKit native play-button transform and made the loader brand/description symmetric around the default native play area.
+- 2026-06-15 06:43: normalized code output sections to Gradio accordion panels, restored the Retrieved Evidence accordion style, added selected-value icons for hero/item/role/scope/mode dropdowns, hid empty hero/item preview placeholders, and aligned action-button fills with the red field-label treatment.
 
 ## Adapter Eval Notes
 
