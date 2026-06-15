@@ -1006,11 +1006,11 @@ __NAV_ICON_CSS__
 .build-hero-header .build-hero-icon {
   position: relative;
   z-index: 1;
-  width: 48px;
-  height: 36px;
+  width: 96px;
+  height: 72px;
   object-fit: contain;
   border-radius: 2px;
-  flex: 0 0 48px;
+  flex: 0 0 96px;
   background: transparent;
 }
 .build-hero-title {

@@ -174,12 +174,12 @@ def test_builds_header_uses_conventional_hero_icon_shape():
         "}", 1
     )[0]
 
-    assert "width: 48px" in header_icon_css
-    assert "height: 36px" in header_icon_css
+    assert "width: 96px" in header_icon_css
+    assert "height: 72px" in header_icon_css
+    assert "flex: 0 0 96px" in header_icon_css
     assert "object-fit: contain" in header_icon_css
     assert "background: transparent" in header_icon_css
     assert "object-fit: cover" not in header_icon_css
-    assert "64px" not in header_icon_css
 
 
 def test_loader_and_sidebar_logo_use_shared_red_flash():
