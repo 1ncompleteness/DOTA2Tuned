@@ -151,20 +151,31 @@ def test_css_keeps_dropdown_chevrons_inside_fields():
 
 
 def test_css_shows_full_selected_hero_cards():
+    hero_image_css = APP_CSS.split(".hero-card > img", 1)[1].split("}", 1)[0]
+
     assert ".hero-card > img" in APP_CSS
-    assert "object-fit: contain" in APP_CSS
+    assert "object-fit: contain" in hero_image_css
+    assert "background: transparent" in hero_image_css
+    assert "background: rgba(5, 6, 10" not in hero_image_css
     assert ".hero-card strong" in APP_CSS
     assert "white-space: normal" in APP_CSS
     assert "text-overflow: clip" in APP_CSS
 
 
 def test_loader_and_sidebar_logo_use_shared_red_flash():
+    logo_keyframes = APP_HEAD.split("@keyframes d2-logo-red-flash", 1)[1].split(
+        "html.d2-loading", 1
+    )[0]
+
     assert "d2-logo-red-flash" in APP_HEAD
     assert "#d2-startup-loader" in APP_HEAD
     assert "dota2tunedHideLoader" in APP_HEAD
     assert "DOTA2Tuned" in APP_HEAD
     assert "4.2s ease-in-out infinite" in APP_HEAD
     assert "html.d2-loading .gradio-container" in APP_HEAD
+    assert "25%, 75%" in logo_keyframes
+    assert "sepia(0%)" in logo_keyframes
+    assert "sepia(95%)" in logo_keyframes
     assert ".app-sidebar-brand img" in APP_CSS
     assert "animation: d2-logo-red-flash 4.2s ease-in-out infinite" in APP_CSS
 

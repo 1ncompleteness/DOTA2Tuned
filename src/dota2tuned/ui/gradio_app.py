@@ -884,7 +884,7 @@ __NAV_ICON_CSS__
   flex: 0 0 48px;
   object-fit: contain;
   border-radius: 2px;
-  background: rgba(5, 6, 10, 0.62);
+  background: transparent;
 }
 .hero-card-body {
   min-width: 0;
@@ -1193,8 +1193,15 @@ APP_HEAD = """
 @keyframes d2-logo-red-flash {
   0%, 100% {
     filter:
-      brightness(0) invert(1)
+      brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%)
+      hue-rotate(0deg) brightness(108%) contrast(104%)
       drop-shadow(0 0 10px rgba(255, 255, 255, 0.20));
+  }
+  25%, 75% {
+    filter:
+      brightness(0) saturate(100%) invert(72%) sepia(34%) saturate(440%)
+      hue-rotate(322deg) brightness(105%) contrast(102%)
+      drop-shadow(0 0 13px rgba(255, 96, 70, 0.38));
   }
   50% {
     filter:
