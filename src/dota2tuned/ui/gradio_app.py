@@ -10,7 +10,8 @@ import polars as pl
 from starlette.middleware import Middleware
 
 from dota2tuned.config import get_settings
-from dota2tuned.model_profiles import profile_choices
+from dota2tuned.modal_backend import modal_infer_function_name
+from dota2tuned.model_profiles import profile_choices, resolve_model_profile
 from dota2tuned.normalize import ROLE_ALL
 from dota2tuned.rag import Retriever
 from dota2tuned.recommend import DraftRecommender
@@ -4551,8 +4552,12 @@ def _call_tuned_model(
     os.environ["MODAL_TOKEN_ID"] = settings.modal_token_id
     os.environ["MODAL_TOKEN_SECRET"] = settings.modal_token_secret
     try:
-        generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
-        result = generate_fn.remote(question, context, max_new_tokens, profile)
+        selected_profile = resolve_model_profile(profile or settings.model_profile)
+        generate_fn = modal.Function.from_name(
+            settings.modal_app_name,
+            modal_infer_function_name(selected_profile.key),
+        )
+        result = generate_fn.remote(question, context, max_new_tokens, selected_profile.key)
     except Exception as exc:
         return f"Tuned model call failed: {str(exc)[:500]}"
 

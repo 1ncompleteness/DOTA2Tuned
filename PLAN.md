@@ -21,7 +21,7 @@
 - Storage: raw API JSONL in `data/raw`, normalized Parquet in `data/parquet`, DuckDB at `data/dota2tuned.duckdb`, generated RAG docs in `data/rag`.
 - Tables: `dim_patch`, `dim_hero`, `dim_item`, `dim_ability`, `dim_league`, `fact_match`, `fact_player_match`, `fact_draft_pickban`, `fact_item_purchase`, `fact_hero_pair_stats`, `fact_hero_build_stats`, `fact_hero_skill_builds`, `doc_patch_change`, `doc_stratz_match`, `doc_stat_card`, `ingest_run`, `api_call_log`.
 - Data clients: Steam discovery/raw facts, OpenDota normalized stats, STRATZ rich enrichment, Valve patch JSON feed, dotaconstants constants.
-- Modal backend: deployed `ui`, `remote_smoke`, `train_sft`, and `generate_answer` functions. The HF Space remains available; Modal provides GPU training, adapter inference, and a verified alternate Gradio endpoint.
+- Modal backend: deployed `ui`, `remote_smoke`, `train_sft`, `train_sft_quality`, `generate_answer`, and `generate_answer_quality` functions. The HF Space remains available; Modal provides GPU training, profile-routed adapter inference, and a verified alternate Gradio endpoint.
 
 ## Interfaces
 
@@ -39,7 +39,7 @@
 - Recommendations: rank heroes by predicted win-probability delta plus empirical counter/synergy lift; builds come from observed item/skill/talent timing stats, not LLM invention.
 - RAG: index patch-change docs, hero stat cards, item constants, item timing stats, skill-build stats, and STRATZ match docs with patch/scope filters before retrieval.
 - Fine-tuning: default Tiny profile `Qwen/Qwen3-4B-Instruct-2507`; Balanced profile `openbmb/MiniCPM4.1-8B`; Quality profile `Qwen/Qwen3-30B-A3B-Instruct-2507`. Use explicit 4-bit QLoRA with TRL SFT on Modal `A100-80GB`, 1 epoch, structured answer examples, then push adapters to Hub.
-- Serving: HF Gradio Space loads compact predictor/RAG artifacts; Modal `ui` is a verified alternate Gradio endpoint, Modal `train_sft` handles GPU fine-tuning, and Modal `generate_answer` serves the fine-tuned adapter for explicit LLM responses.
+- Serving: HF Gradio Space loads compact predictor/RAG artifacts; Modal `ui` is a verified alternate Gradio endpoint, Modal `train_sft` handles Tiny/Balanced GPU fine-tuning, Modal `train_sft_quality` handles H200 Quality fine-tuning, and `generate_answer`/`generate_answer_quality` serve profile-routed adapter responses.
 
 ## Current Execution Process
 
@@ -57,7 +57,7 @@
    - `uv run python -c "from app import demo; print(type(demo).__name__, len(demo.blocks), len(demo.fns))"`
 5. Deploy Modal functions.
    - `uv run dota2tuned modal-deploy`
-   - Expected functions: `ui`, `remote_smoke`, `train_sft`, `generate_answer`.
+   - Expected functions: `ui`, `remote_smoke`, `train_sft`, `train_sft_quality`, `generate_answer`, `generate_answer_quality`.
    - Current Modal URL: `https://dracufeuer--dota2tuned-ui.modal.run`
 6. Verify Modal runtime artifacts.
    - `uv run dota2tuned modal-smoke`
@@ -77,6 +77,8 @@
    - Expected files: `adapter_model.safetensors`, `adapter_config.json`, tokenizer files, `training_args.bin`.
 8. Verify fine-tuned adapter inference.
    - `uv run dota2tuned modal-ask "Suggest one mid hero against Phantom Assassin and Witch Doctor. Include one caveat."`
+   - Quality profile routes to the H200-backed `generate_answer_quality` function.
+   - Balanced MiniCPM uses OpenBMB non-reasoning prompt mode and falls back to a grounded evidence response if the adapter returns malformed punctuation/empty text.
    - Target behavior: concise grounded answer; caveat weak evidence; no invented heroes/items.
 9. Configure HF Space runtime variables/secrets for Modal-backed inference.
    - Variables: `MODAL_ENABLED=1`, `MODAL_APP_NAME=dota2tuned`.
@@ -212,6 +214,8 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 16:39: Quality H200 progressed past memory and target-module setup, then failed because PEFT's `ParamWrapper` path rejects nonzero LoRA dropout for this model. Set Quality `lora_dropout=0.0` and prepared another retry.
 - 2026-06-15 16:45: Quality Qwen3 30B-A3B retry `fc-01KV6TCTX9CSYVHJ98S3P5PTMK` completed successfully and pushed to `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora`.
 - 2026-06-15 16:47: added Draft-style `New here? How to use ...` guide cards to Ask, Meta, Builds, Predictor, and Data; kept Draft's existing guide; and documented the Build Small README validator/social-post requirement in `README.md` and `SUBMISSION.md`.
+- 2026-06-15 17:05: fixed adapter inference routing after live smoke showed Balanced MiniCPM returning malformed punctuation and Quality loading through the wrong A100-backed endpoint. Added profile-aware Modal inference selection, a dedicated H200 `generate_answer_quality` function, MiniCPM non-reasoning prompt mode, and a grounded malformed-output fallback for Balanced.
+- 2026-06-15 17:33: redeployed Modal and verified `modal-ask --profile minicpm4_1_8b` returns a grounded answer with `fallback=balanced_malformed_generation` instead of blank/garbled text; verified `modal-ask --profile qwen3_30b_a3b_2507` returns a real adapter answer from `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora` through the H200 `generate_answer_quality` function.
 
 ## Adapter Eval Notes
 

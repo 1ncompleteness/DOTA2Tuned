@@ -20,6 +20,10 @@ REMOTE_ROOT = Path("/app")
 REMOTE_DATA = REMOTE_ROOT / "data"
 REMOTE_CACHE = Path("/cache")
 REMOTE_OUTPUTS = Path("/outputs")
+BALANCED_PROFILE_KEY = "minicpm4_1_8b"
+QUALITY_PROFILE_KEY = "qwen3_30b_a3b_2507"
+QUALITY_INFER_FUNCTION = "generate_answer_quality"
+DEFAULT_INFER_FUNCTION = "generate_answer"
 
 CORE_DEPS = [
     "duckdb>=1.5.3",
@@ -88,6 +92,109 @@ def _runtime_secret_dict() -> dict[str, str]:
     return {key: value for key, value in values.items() if value}
 
 
+def modal_infer_function_name(profile: str | None = None) -> str:
+    selected = resolve_model_profile(profile)
+    if selected.key == QUALITY_PROFILE_KEY:
+        return QUALITY_INFER_FUNCTION
+    return DEFAULT_INFER_FUNCTION
+
+
+def _looks_malformed_answer(answer: str) -> bool:
+    text = " ".join(str(answer or "").split())
+    if not text:
+        return True
+    if len(text) < 12:
+        return True
+    if text.count("\\") >= 6 or text.count("�") >= 2:
+        return True
+    nonspace = [char for char in text if not char.isspace()]
+    if not nonspace:
+        return True
+    alpha_numeric = sum(char.isalnum() for char in nonspace)
+    if alpha_numeric / len(nonspace) < 0.25:
+        return True
+    stripped_words = [
+        word.strip(".,;:!?*#`\"'()[]{}")
+        for word in text.split()
+    ]
+    word_like = [
+        word
+        for word in stripped_words
+        if len(word) >= 3 and any(char.isalpha() for char in word)
+    ]
+    normalized_words = [word.lower() for word in word_like]
+    if len(normalized_words) >= 8:
+        counts = {
+            word: normalized_words.count(word)
+            for word in set(normalized_words)
+        }
+        stems = [word[:5] for word in normalized_words]
+        stem_counts = {stem: stems.count(stem) for stem in set(stems)}
+        if max(counts.values()) / len(normalized_words) > 0.28:
+            return True
+        if max(stem_counts.values()) / len(stems) > 0.45:
+            return True
+    if len(text) < 120 and len(word_like) < 5:
+        return True
+    marker_count = text.count("##") + text.count("**") + text.count("\\")
+    if marker_count >= 3 and len(word_like) < 8:
+        return True
+    return len(set(nonspace)) <= 4 and len(nonspace) >= 24
+
+
+def _evidence_fallback_answer(question: str, context: str) -> str:
+    evidence_lines = [
+        " ".join(line.split())
+        for line in str(context or "").splitlines()
+        if line.strip()
+    ]
+    evidence = " ".join(evidence_lines)[:900].strip()
+    if not evidence:
+        evidence = "No retrieved evidence was supplied for this question."
+    return (
+        "Based on the retrieved evidence, use the most directly supported draft or "
+        "build choice rather than inventing outside context.\n\n"
+        f"Question: {question.strip()}\n\n"
+        f"Evidence summary: {evidence}\n\n"
+        "Recommendation: prefer the hero, item, or draft choice with the strongest "
+        "role fit and current-patch evidence in the retrieved context. Caveat: treat "
+        "this as evidence-grounded guidance, not a guaranteed match outcome."
+    )
+
+
+def _install_peft_weight_converter_compat() -> bool:
+    try:
+        import inspect
+
+        from transformers.core_model_loading import WeightConverter
+    except Exception:
+        return False
+
+    if "distributed_operation" in inspect.signature(WeightConverter.__init__).parameters:
+        return False
+    if getattr(WeightConverter.__init__, "_dota2tuned_compat", False):
+        return True
+
+    original_init = WeightConverter.__init__
+
+    def _compat_init(
+        self,
+        source_patterns,
+        target_patterns,
+        operations,
+        distributed_operation=None,
+        quantization_operation=None,
+        **_kwargs,
+    ):
+        original_init(self, source_patterns, target_patterns, operations)
+        self.distributed_operation = distributed_operation
+        self.quantization_operation = quantization_operation
+
+    _compat_init._dota2tuned_compat = True
+    WeightConverter.__init__ = _compat_init
+    return True
+
+
 def _add_project_files(image: modal.Image) -> modal.Image:
     image = image.add_local_dir(
         PROJECT_ROOT / "src" / "dota2tuned",
@@ -114,7 +221,7 @@ if modal is not None and settings.modal_enabled:
         modal.Image.debian_slim(python_version="3.12").uv_pip_install(*TRAIN_DEPS).env(REMOTE_ENV)
     )
     _MODEL_CACHE: dict[str, object] = {}
-    quality_train_profile = resolve_model_profile("qwen3_30b_a3b_2507")
+    quality_train_profile = resolve_model_profile(QUALITY_PROFILE_KEY)
 
     @app.function(image=web_image, secrets=[runtime_secret], timeout=900)
     def remote_smoke() -> dict[str, object]:
@@ -242,15 +349,7 @@ if modal is not None and settings.modal_enabled:
     ) -> dict[str, object]:
         return _run_train_sft(dataset_source, profile or quality_train_profile.key)
 
-    @app.function(
-        image=train_image,
-        gpu=settings.modal_infer_gpu,
-        secrets=[runtime_secret],
-        volumes={REMOTE_CACHE: cache_volume},
-        timeout=settings.modal_infer_timeout,
-        max_containers=1,
-    )
-    def generate_answer(
+    def _run_generate_answer(
         question: str,
         context: str = "",
         max_new_tokens: int = 384,
@@ -261,6 +360,8 @@ if modal is not None and settings.modal_enabled:
         from transformers import AutoTokenizer, BitsAndBytesConfig
 
         from dota2tuned.model_profiles import resolve_model_profile
+
+        _install_peft_weight_converter_compat()
 
         try:
             from transformers.utils import import_utils
@@ -319,37 +420,104 @@ if modal is not None and settings.modal_enabled:
         user = question.strip()
         if context.strip():
             user = f"{user}\n\nEvidence:\n{context.strip()}"
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ]
+        if selected.key == BALANCED_PROFILE_KEY:
+            messages = [
+                {
+                    "role": "user",
+                    "content": f"{system}\n\n{user}\n\n/no_think",
+                }
+            ]
+        else:
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
         try:
-            prompt = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
+            template_kwargs = {
+                "tokenize": False,
+                "add_generation_prompt": True,
+            }
+            if selected.key == BALANCED_PROFILE_KEY:
+                template_kwargs["enable_thinking"] = False
+            prompt = tokenizer.apply_chat_template(messages, **template_kwargs)
         except Exception:
             prompt = f"{system}\n\nUser: {user}\nAssistant:"
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        generation_kwargs = {
+            "max_new_tokens": max(32, min(max_new_tokens, 768)),
+            "use_cache": False,
+            "pad_token_id": tokenizer.pad_token_id,
+            "eos_token_id": tokenizer.eos_token_id,
+        }
+        if selected.key == BALANCED_PROFILE_KEY:
+            generation_kwargs.update(
+                {
+                    "do_sample": True,
+                    "temperature": 0.6,
+                    "top_p": 0.95,
+                    "repetition_penalty": 1.05,
+                }
+            )
+        else:
+            generation_kwargs["do_sample"] = False
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=max(32, min(max_new_tokens, 768)),
-                do_sample=False,
-                use_cache=False,
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id,
+                **generation_kwargs,
             )
         generated = outputs[0][inputs["input_ids"].shape[-1] :]
         answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
-        return {
+        fallback_reason = None
+        if selected.key == BALANCED_PROFILE_KEY and _looks_malformed_answer(answer):
+            answer = _evidence_fallback_answer(question, context)
+            fallback_reason = "balanced_malformed_generation"
+        response = {
             "status": "ok",
             "profile": selected.key,
             "model": model_id,
             "answer": answer,
             "tokens": int(generated.numel()),
         }
+        if fallback_reason:
+            response["fallback"] = fallback_reason
+        return response
+
+    @app.function(
+        image=train_image,
+        gpu=settings.modal_infer_gpu,
+        secrets=[runtime_secret],
+        volumes={REMOTE_CACHE: cache_volume},
+        timeout=settings.modal_infer_timeout,
+        max_containers=1,
+    )
+    def generate_answer(
+        question: str,
+        context: str = "",
+        max_new_tokens: int = 384,
+        profile: str | None = None,
+    ) -> dict[str, object]:
+        return _run_generate_answer(question, context, max_new_tokens, profile)
+
+    @app.function(
+        image=train_image,
+        gpu=quality_train_profile.modal_infer_gpu,
+        secrets=[runtime_secret],
+        volumes={REMOTE_CACHE: cache_volume},
+        timeout=quality_train_profile.modal_infer_timeout,
+        max_containers=1,
+    )
+    def generate_answer_quality(
+        question: str,
+        context: str = "",
+        max_new_tokens: int = 384,
+        profile: str | None = None,
+    ) -> dict[str, object]:
+        return _run_generate_answer(
+            question,
+            context,
+            max_new_tokens,
+            profile or quality_train_profile.key,
+        )
 else:
     app = None
 

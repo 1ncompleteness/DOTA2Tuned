@@ -1,3 +1,11 @@
+import inspect
+
+from dota2tuned.modal_backend import (
+    _evidence_fallback_answer,
+    _install_peft_weight_converter_compat,
+    _looks_malformed_answer,
+    modal_infer_function_name,
+)
 from dota2tuned.model_profiles import apply_profile_env_overrides, resolve_model_profile
 
 
@@ -24,3 +32,38 @@ def test_model_profile_env_overrides(monkeypatch):
     assert profile.base_model_id == "example/base"
     assert profile.hf_model_repo_id == "example/adapter"
     assert profile.lora_r == 12
+
+
+def test_modal_inference_routes_quality_to_h200_function():
+    assert modal_infer_function_name("qwen3_4b_2507") == "generate_answer"
+    assert modal_infer_function_name("minicpm4_1_8b") == "generate_answer"
+    assert modal_infer_function_name("qwen3_30b_a3b_2507") == "generate_answer_quality"
+
+
+def test_malformed_balanced_output_guard_returns_grounded_text():
+    assert _looks_malformed_answer('".  \\  \\  \\  \\  \\  \\  \\')
+    assert _looks_malformed_answer("c3 ×ontology**\n\ninter. ##")
+    assert _looks_malformed_answer(
+        "vestig vestig vestig vestib vestige vestig vestment vestig vestig"
+    )
+    assert not _looks_malformed_answer("Crystal Maiden is a support with control.")
+
+    fallback = _evidence_fallback_answer(
+        "Suggest one support against Phantom Assassin.",
+        "Crystal Maiden has control. Phantom Assassin is a carry.",
+    )
+
+    assert "Based on the retrieved evidence" in fallback
+    assert "Crystal Maiden has control" in fallback
+
+
+def test_peft_weight_converter_compat_accepts_new_peft_kwargs():
+    installed = _install_peft_weight_converter_compat()
+    if not installed:
+        return
+
+    from transformers.core_model_loading import WeightConverter
+
+    signature = inspect.signature(WeightConverter.__init__)
+    assert "distributed_operation" in signature.parameters
+    assert "quantization_operation" in signature.parameters

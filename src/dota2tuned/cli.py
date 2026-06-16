@@ -19,6 +19,7 @@ from dota2tuned.finetune import (
     write_train_script,
 )
 from dota2tuned.ingest import IngestCoordinator
+from dota2tuned.modal_backend import modal_infer_function_name
 from dota2tuned.model_profiles import resolve_model_profile
 from dota2tuned.normalize import SCHEMAS, build_hero_build_stats, normalize_all
 from dota2tuned.rag import build_index
@@ -414,7 +415,14 @@ def modal_ask(
         typer.echo("Install Modal dependencies with `uv sync --extra modal`.", err=True)
         raise typer.Exit(1) from exc
 
-    generate_fn = modal.Function.from_name(settings.modal_app_name, "generate_answer")
+    selected_profile = resolve_model_profile(profile or settings.model_profile)
+    generate_fn = modal.Function.from_name(
+        settings.modal_app_name,
+        modal_infer_function_name(selected_profile.key),
+    )
     typer.echo(
-        json.dumps(generate_fn.remote(question, context, max_new_tokens, profile), indent=2)
+        json.dumps(
+            generate_fn.remote(question, context, max_new_tokens, selected_profile.key),
+            indent=2,
+        )
     )
