@@ -12,7 +12,7 @@ Last checked: 2026-06-15 16:17 PDT.
 - Dataset artifacts: https://huggingface.co/datasets/build-small-hackathon/dota2tuned-data
 - Modal alternate UI: https://dracufeuer--dota2tuned-ui.modal.run
 - README validator: https://build-small-hackathon-field-guide.hf.space/submit
-- Demo video: TODO add final demo video URL.
+- Demo video: https://drive.google.com/file/d/12l0sKN-rJJ3RwKDEE-TGbXfiRMepN_zz/view?usp=drive_link
 - Social post: TODO add final social post URL and mirror it in `README.md`.
 
 ## Hackathon Fit
@@ -45,7 +45,7 @@ Do not claim the Nemotron, Off the Grid, Llama Champion, or Sharing is Caring ba
 - [x] Repository license is declared as Apache-2.0.
 - [x] GitHub `main` is pushed and clean.
 - [x] README lists selected tracks, sponsor prizes, and eligible badges for the validator.
-- [ ] Record short demo video.
+- [x] Record short demo video.
 - [ ] Publish social post and replace the README `Social post` TODO with its URL.
 - [ ] Submit Space link, demo video link, and social post link by June 15, 2026.
 

@@ -32,7 +32,7 @@ The implementation is designed around a simple rule: stats and predictors choose
 - Balanced fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-minicpm4-1-8b-lora
 - Quality fine-tuned adapter: https://huggingface.co/build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora
 - Dataset artifacts: https://huggingface.co/datasets/build-small-hackathon/dota2tuned-data
-- Demo video: TODO add final demo video URL before validation.
+- Demo video: https://drive.google.com/file/d/12l0sKN-rJJ3RwKDEE-TGbXfiRMepN_zz/view?usp=drive_link
 - Social post: TODO add final social post URL before validation.
 
 ## Hackathon Validation
