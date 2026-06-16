@@ -135,6 +135,14 @@ def test_tuned_model_is_first_nav_and_default_view():
     assert "width: 100%" in APP_CSS
     assert "justify-content: flex-start" in APP_CSS
     assert "padding: 0;" in APP_CSS
+    assert "tuned_thinking = gr.Checkbox" in source
+    assert 'label="Thinking"' in source
+    assert "tuned_max_tokens = gr.Slider" in source
+    assert 'label="Max Tokens"' in source
+    assert "thinking_controls" in source
+    assert "thinking_toggle_controls" in source
+    assert "selected_profile_supports_thinking" in source
+    assert "assistant-thinking-note" in APP_CSS
 
 
 def test_assistant_references_link_patch_and_hero_sources():

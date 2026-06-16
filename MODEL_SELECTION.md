@@ -106,6 +106,11 @@ Primary metrics:
 ## Implementation Notes
 
 - Keep temperature at `0.0-0.2` for explanation generation.
+- Thinking mode support is profile-gated. MiniCPM4.1 Balanced supports hybrid
+  reasoning via `enable_thinking` and uses `768` recommended max tokens when
+  enabled. The selected Qwen3 `*-Instruct-2507` Tiny and Quality profiles are
+  documented non-thinking variants, so the app disables Thinking for them rather
+  than sending ineffective `/think` hints.
 - Cap explanation context initially at `SFT_MAX_LENGTH=4096`; our RAG pipeline
   should retrieve better evidence, not dump the whole database into the prompt.
 - Enable `assistant_only_loss=True` only after verifying the selected model's chat

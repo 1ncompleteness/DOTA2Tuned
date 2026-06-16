@@ -4,6 +4,7 @@ from dota2tuned.modal_backend import (
     _evidence_fallback_answer,
     _install_peft_weight_converter_compat,
     _looks_malformed_answer,
+    _strip_reasoning_blocks,
     modal_infer_function_name,
 )
 from dota2tuned.model_profiles import apply_profile_env_overrides, resolve_model_profile
@@ -18,8 +19,11 @@ def test_model_profiles_include_quality_and_sponsor_paths():
     assert quality.modal_train_gpu == "H200"
     assert quality.lora_dropout == 0.0
     assert "q_proj" in quality.lora_target_modules
+    assert quality.supports_thinking is False
     assert sponsor.base_model_id == "openbmb/MiniCPM4.1-8B"
     assert sponsor.hf_model_repo_id.endswith("minicpm4-1-8b-lora")
+    assert sponsor.supports_thinking is True
+    assert sponsor.thinking_recommended_max_tokens == 768
 
 
 def test_model_profile_env_overrides(monkeypatch):
@@ -32,6 +36,16 @@ def test_model_profile_env_overrides(monkeypatch):
     assert profile.base_model_id == "example/base"
     assert profile.hf_model_repo_id == "example/adapter"
     assert profile.lora_r == 12
+
+
+def test_model_profile_thinking_env_overrides(monkeypatch):
+    monkeypatch.setenv("MODEL_SUPPORTS_THINKING", "1")
+    monkeypatch.setenv("THINKING_RECOMMENDED_MAX_TOKENS", "1024")
+
+    profile = apply_profile_env_overrides(resolve_model_profile("qwen3_4b_2507"))
+
+    assert profile.supports_thinking is True
+    assert profile.thinking_recommended_max_tokens == 1024
 
 
 def test_modal_inference_routes_quality_to_h200_function():
@@ -55,6 +69,15 @@ def test_malformed_balanced_output_guard_returns_grounded_text():
 
     assert "Based on the retrieved evidence" in fallback
     assert "Crystal Maiden has control" in fallback
+
+
+def test_reasoning_blocks_are_stripped_from_visible_answer():
+    assert _strip_reasoning_blocks("<think>private scratchpad</think>Final answer.") == (
+        "Final answer."
+    )
+    assert _strip_reasoning_blocks("private scratchpad</think>Final answer.") == (
+        "Final answer."
+    )
 
 
 def test_peft_weight_converter_compat_accepts_new_peft_kwargs():

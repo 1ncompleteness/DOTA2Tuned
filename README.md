@@ -93,11 +93,11 @@ The submitted Space includes compact serving artifacts under `data/parquet`, `da
 - `dota2tuned modal-smoke` validates the deployed Modal app can load artifacts.
 - `dota2tuned modal-train --profile qwen3_4b_2507` submits the Tiny Modal GPU QLoRA run. Other profiles include `minicpm4_1_8b` and `qwen3_30b_a3b_2507`; Quality routes to the H200-backed `train_sft_quality` function.
 - `uv run python scripts/watch_modal_training.py --call tiny=fc-... --interval 300` polls detached Modal training calls without blocking local development.
-- `dota2tuned modal-ask` calls the fine-tuned adapter through Modal GPU inference. Quality routes to H200-backed `generate_answer_quality`; Tiny and Balanced use `generate_answer`.
+- `dota2tuned modal-ask` calls the fine-tuned adapter through Modal GPU inference. Quality routes to H200-backed `generate_answer_quality`; Tiny and Balanced use `generate_answer`. Use `--thinking` only with the Balanced MiniCPM profile; Tiny and Quality use Qwen3 Instruct-2507 non-thinking bases, so the app disables the toggle for them.
 - `dota2tuned finetune --launch-job` remains available for Hugging Face Jobs if a token has `job.write`.
 - `dota2tuned serve` launches the Gradio app.
 
-The Gradio app includes searchable hero, item, role, scope, and ability dropdowns, alias-aware hero lookup (`PA`, `CM`, `AM`, `QOP`, `KOTL`, and curated initials), selected icon previews, and six sidebar modules: Ask, Draft, Meta, Builds, Predictor, and Data. Ask calls the profile-routed Modal inference function when Modal credentials are configured in the runtime environment; otherwise it degrades with a clear unavailable message.
+The Gradio app includes searchable hero, item, role, scope, and ability dropdowns, alias-aware hero lookup (`PA`, `CM`, `AM`, `QOP`, `KOTL`, and curated initials), selected icon previews, and six sidebar modules: Ask, Draft, Meta, Builds, Predictor, and Data. Ask calls the profile-routed Modal inference function when Modal credentials are configured in the runtime environment; otherwise it degrades with a clear unavailable message. Ask also exposes a Thinking toggle and Max Tokens slider; Thinking is enabled only for MiniCPM4.1 Balanced and recommends `768` tokens.
 
 See [PLAN.md](PLAN.md) for the full architecture and delivery plan.
 See [MODEL_SELECTION.md](MODEL_SELECTION.md) for the current LLM decision and eval protocol.

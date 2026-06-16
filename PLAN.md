@@ -79,6 +79,7 @@
    - `uv run dota2tuned modal-ask "Suggest one mid hero against Phantom Assassin and Witch Doctor. Include one caveat."`
    - Quality profile routes to the H200-backed `generate_answer_quality` function.
    - Balanced MiniCPM uses OpenBMB non-reasoning prompt mode and falls back to a grounded evidence response if the adapter returns malformed punctuation/empty text.
+   - Ask exposes a Thinking toggle and Max Tokens slider. Current support matrix: Balanced MiniCPM4.1 supports hybrid thinking and recommends `768` tokens; Tiny and Quality Qwen3 Instruct-2507 profiles are non-thinking variants, so the toggle is disabled for them.
    - Target behavior: concise grounded answer; caveat weak evidence; no invented heroes/items.
 9. Configure HF Space runtime variables/secrets for Modal-backed inference.
    - Variables: `MODAL_ENABLED=1`, `MODAL_APP_NAME=dota2tuned`.
@@ -216,6 +217,7 @@ All times are `America/Los_Angeles` / PDT unless noted.
 - 2026-06-15 16:47: added Draft-style `New here? How to use ...` guide cards to Ask, Meta, Builds, Predictor, and Data; kept Draft's existing guide; and documented the Build Small README validator/social-post requirement in `README.md` and `SUBMISSION.md`.
 - 2026-06-15 17:05: fixed adapter inference routing after live smoke showed Balanced MiniCPM returning malformed punctuation and Quality loading through the wrong A100-backed endpoint. Added profile-aware Modal inference selection, a dedicated H200 `generate_answer_quality` function, MiniCPM non-reasoning prompt mode, and a grounded malformed-output fallback for Balanced.
 - 2026-06-15 17:33: redeployed Modal and verified `modal-ask --profile minicpm4_1_8b` returns a grounded answer with `fallback=balanced_malformed_generation` instead of blank/garbled text; verified `modal-ask --profile qwen3_30b_a3b_2507` returns a real adapter answer from `build-small-hackathon/dota2tuned-qwen3-30b-a3b-2507-lora` through the H200 `generate_answer_quality` function.
+- 2026-06-15 17:52: researched reasoning support for the active bases. `openbmb/MiniCPM4.1-8B` supports hybrid thinking/non-thinking via `enable_thinking`; `Qwen/Qwen3-4B-Instruct-2507` and `Qwen/Qwen3-30B-A3B-Instruct-2507` are documented non-thinking Instruct variants. Added Ask-side Thinking and Max Tokens controls, enabling Thinking only for Balanced and auto-recommending `768` tokens when toggled on.
 
 ## Adapter Eval Notes
 

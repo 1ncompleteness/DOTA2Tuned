@@ -29,6 +29,8 @@ class ModelProfile:
     sft_grad_accum: int = 8
     model_load_in_4bit: bool = True
     model_torch_dtype: str = "bfloat16"
+    supports_thinking: bool = False
+    thinking_recommended_max_tokens: int = 768
 
 
 DEFAULT_MODEL_PROFILE = "qwen3_4b_2507"
@@ -69,6 +71,8 @@ DEFAULT_MODEL_PROFILES: dict[str, ModelProfile] = {
         lora_alpha=16,
         sft_learning_rate=1.5e-4,
         sft_grad_accum=8,
+        supports_thinking=True,
+        thinking_recommended_max_tokens=768,
     ),
 }
 
@@ -151,4 +155,13 @@ def apply_profile_env_overrides(profile: ModelProfile) -> ModelProfile:
             os.getenv("MODEL_LOAD_IN_4BIT"), profile.model_load_in_4bit
         ),
         model_torch_dtype=os.getenv("MODEL_TORCH_DTYPE", profile.model_torch_dtype),
+        supports_thinking=_bool(
+            os.getenv("MODEL_SUPPORTS_THINKING"), profile.supports_thinking
+        ),
+        thinking_recommended_max_tokens=int(
+            os.getenv(
+                "THINKING_RECOMMENDED_MAX_TOKENS",
+                str(profile.thinking_recommended_max_tokens),
+            )
+        ),
     )

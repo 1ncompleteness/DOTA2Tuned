@@ -977,6 +977,19 @@ __NAV_ICON_CSS__
   font-size: 15px !important;
   line-height: 22px !important;
 }
+.assistant-thinking-note-wrap,
+.assistant-thinking-note-wrap .block,
+.assistant-thinking-note-wrap .prose {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.assistant-thinking-note {
+  color: rgba(239, 229, 187, 0.86);
+  font-size: 11.5px;
+  line-height: 17px;
+  padding: 0 2px 2px;
+}
 .assistant-actions {
   align-items: center;
 }
@@ -4537,6 +4550,7 @@ def _call_tuned_model(
     context: str,
     max_new_tokens: int = 384,
     profile: str | None = None,
+    thinking: bool = False,
 ) -> str:
     if not question.strip():
         return "Enter a question."
@@ -4557,7 +4571,13 @@ def _call_tuned_model(
             settings.modal_app_name,
             modal_infer_function_name(selected_profile.key),
         )
-        result = generate_fn.remote(question, context, max_new_tokens, selected_profile.key)
+        result = generate_fn.remote(
+            question,
+            context,
+            max_new_tokens,
+            selected_profile.key,
+            thinking,
+        )
     except Exception as exc:
         return f"Tuned model call failed: {str(exc)[:500]}"
 
@@ -4567,7 +4587,14 @@ def _call_tuned_model(
     model = result.get("model") or settings.hf_model_repo_id
     profile_key = result.get("profile") or profile or settings.model_profile
     tokens = result.get("tokens")
-    return f"{answer}\n\n`profile: {profile_key}` `model: {model}` `tokens: {tokens}`"
+    thinking_label = "on" if result.get("thinking_enabled") else "off"
+    fallback = result.get("fallback")
+    fallback_text = f" `fallback: {fallback}`" if fallback else ""
+    return (
+        f"{answer}\n\n"
+        f"`profile: {profile_key}` `model: {model}` `tokens: {tokens}` "
+        f"`thinking: {thinking_label}`{fallback_text}"
+    )
 
 
 def build_app() -> gr.Blocks:
@@ -4689,10 +4716,72 @@ def build_app() -> gr.Blocks:
         )
         return _render_module_result_html(answer, docs, hero_metadata, item_metadata)
 
+    def thinking_note_html(model_profile: str | None, thinking: bool = False) -> str:
+        selected = resolve_model_profile(model_profile or settings.model_profile)
+        if selected.supports_thinking:
+            status = "enabled" if thinking else "available"
+            return (
+                "<div class='assistant-thinking-note d2-text-glitch'>"
+                f"Thinking {status} for {selected.label}. "
+                f"Recommended max tokens: {selected.thinking_recommended_max_tokens}."
+                "</div>"
+            )
+        return (
+            "<div class='assistant-thinking-note'>"
+            f"Thinking is disabled for {selected.label}; this profile uses a "
+            "non-thinking base model."
+            "</div>"
+        )
+
+    def thinking_controls(
+        model_profile: str | None,
+        thinking: bool | None = False,
+        max_tokens: int | float | None = 384,
+    ) -> tuple[dict, dict, str]:
+        selected = resolve_model_profile(model_profile or settings.model_profile)
+        if not selected.supports_thinking:
+            return (
+                gr.update(value=False, interactive=False),
+                gr.update(value=384, maximum=768),
+                thinking_note_html(selected.key, False),
+            )
+        enabled = bool(thinking)
+        recommended = int(selected.thinking_recommended_max_tokens)
+        current_tokens = int(max_tokens or 384)
+        token_value = recommended if enabled else min(current_tokens, 768)
+        return (
+            gr.update(value=enabled, interactive=True),
+            gr.update(value=token_value, maximum=1536),
+            thinking_note_html(selected.key, enabled),
+        )
+
+    def thinking_toggle_controls(
+        model_profile: str | None,
+        thinking: bool | None,
+        max_tokens: int | float | None = 384,
+    ) -> tuple[dict, str]:
+        selected = resolve_model_profile(model_profile or settings.model_profile)
+        if not selected.supports_thinking:
+            return gr.update(value=384, maximum=768), thinking_note_html(selected.key, False)
+        enabled = bool(thinking)
+        token_value = (
+            int(selected.thinking_recommended_max_tokens)
+            if enabled
+            else min(int(max_tokens or 384), 768)
+        )
+        return gr.update(value=token_value, maximum=1536), thinking_note_html(selected.key, enabled)
+
     def tuned_model(
-        question: str, model_profile: str | None, source_filter: str
+        question: str,
+        model_profile: str | None,
+        source_filter: str,
+        thinking: bool | None,
+        max_tokens: int | float | None,
     ) -> tuple[str, str]:
         question = (question or "").strip()
+        selected_profile = resolve_model_profile(model_profile or settings.model_profile)
+        thinking_enabled = bool(thinking) and bool(selected_profile.supports_thinking)
+        token_budget = int(max_tokens or 384)
         docs = retriever.search(question or "current meta", patch="current", limit=6)
         if source_filter and source_filter != "All sources":
             docs = [
@@ -4703,7 +4792,14 @@ def build_app() -> gr.Blocks:
         evidence = "\n\n".join(
             f"{doc['source']} score={doc['score']}\n{doc['text']}" for doc in docs
         )
-        answer = _call_tuned_model(settings, question, evidence, 384, model_profile)
+        answer = _call_tuned_model(
+            settings,
+            question,
+            evidence,
+            token_budget,
+            selected_profile.key,
+            thinking_enabled,
+        )
         html = _render_tuned_answer_html(answer, docs, hero_metadata, item_metadata)
         return html, json.dumps(docs, indent=2)
 
@@ -4932,6 +5028,26 @@ def build_app() -> gr.Blocks:
                                 label="Sources",
                                 elem_classes=["dota-dropdown"],
                             )
+                        selected_profile_supports_thinking = resolve_model_profile(
+                            selected_model_profile
+                        ).supports_thinking
+                        with gr.Row(elem_classes=["d2-selector-grid", "d2-selector-grid-2"]):
+                            tuned_thinking = gr.Checkbox(
+                                value=False,
+                                label="Thinking",
+                                interactive=selected_profile_supports_thinking,
+                            )
+                            tuned_max_tokens = gr.Slider(
+                                minimum=128,
+                                maximum=1536 if selected_profile_supports_thinking else 768,
+                                value=384,
+                                step=64,
+                                label="Max Tokens",
+                            )
+                        tuned_thinking_note = gr.HTML(
+                            thinking_note_html(selected_model_profile, False),
+                            elem_classes=["assistant-thinking-note-wrap"],
+                        )
                         with gr.Row(elem_classes=["assistant-actions"]):
                             tuned_button = gr.Button("Ask DOTA2Tuned", variant="primary")
                             tuned_clear = gr.Button("Clear")
@@ -4949,19 +5065,51 @@ def build_app() -> gr.Blocks:
                                     queue=False,
                                 )
                     tuned_evidence = gr.Code(label="Evidence", language="json", value="[]")
+                    tuned_profile.change(
+                        thinking_controls,
+                        inputs=[tuned_profile, tuned_thinking, tuned_max_tokens],
+                        outputs=[tuned_thinking, tuned_max_tokens, tuned_thinking_note],
+                        api_visibility="private",
+                        queue=False,
+                    )
+                    tuned_thinking.change(
+                        thinking_toggle_controls,
+                        inputs=[tuned_profile, tuned_thinking, tuned_max_tokens],
+                        outputs=[tuned_max_tokens, tuned_thinking_note],
+                        api_visibility="private",
+                        queue=False,
+                    )
                     tuned_button.click(
                         tuned_model,
-                        inputs=[tuned_question, tuned_profile, tuned_source_filter],
+                        inputs=[
+                            tuned_question,
+                            tuned_profile,
+                            tuned_source_filter,
+                            tuned_thinking,
+                            tuned_max_tokens,
+                        ],
                         outputs=[assistant_output, tuned_evidence],
                     )
                     tuned_question.submit(
                         tuned_model,
-                        inputs=[tuned_question, tuned_profile, tuned_source_filter],
+                        inputs=[
+                            tuned_question,
+                            tuned_profile,
+                            tuned_source_filter,
+                            tuned_thinking,
+                            tuned_max_tokens,
+                        ],
                         outputs=[assistant_output, tuned_evidence],
                     )
                     tuned_clear.click(
-                        lambda: ("", _assistant_empty_state_html(), "[]"),
-                        outputs=[tuned_question, assistant_output, tuned_evidence],
+                        lambda: ("", _assistant_empty_state_html(), "[]", False, 384),
+                        outputs=[
+                            tuned_question,
+                            assistant_output,
+                            tuned_evidence,
+                            tuned_thinking,
+                            tuned_max_tokens,
+                        ],
                         api_visibility="private",
                         queue=False,
                     )

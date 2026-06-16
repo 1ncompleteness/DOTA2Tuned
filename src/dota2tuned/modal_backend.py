@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -24,6 +25,9 @@ BALANCED_PROFILE_KEY = "minicpm4_1_8b"
 QUALITY_PROFILE_KEY = "qwen3_30b_a3b_2507"
 QUALITY_INFER_FUNCTION = "generate_answer_quality"
 DEFAULT_INFER_FUNCTION = "generate_answer"
+THINKING_TOKEN_LIMIT = 1536
+NON_THINKING_TOKEN_LIMIT = 768
+THINK_RE = re.compile(r"<think>.*?</think>", flags=re.DOTALL | re.IGNORECASE)
 
 CORE_DEPS = [
     "duckdb>=1.5.3",
@@ -160,6 +164,14 @@ def _evidence_fallback_answer(question: str, context: str) -> str:
         "role fit and current-patch evidence in the retrieved context. Caveat: treat "
         "this as evidence-grounded guidance, not a guaranteed match outcome."
     )
+
+
+def _strip_reasoning_blocks(answer: str) -> str:
+    text = str(answer or "")
+    text = THINK_RE.sub("", text)
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[-1]
+    return text.strip()
 
 
 def _install_peft_weight_converter_compat() -> bool:
@@ -354,6 +366,7 @@ if modal is not None and settings.modal_enabled:
         context: str = "",
         max_new_tokens: int = 384,
         profile: str | None = None,
+        thinking: bool = False,
     ) -> dict[str, object]:
         import torch
         from peft import AutoPeftModelForCausalLM
@@ -384,6 +397,7 @@ if modal is not None and settings.modal_enabled:
             raise RuntimeError("question is required.")
 
         selected = resolve_model_profile(profile)
+        thinking_enabled = bool(thinking) and bool(selected.supports_thinking)
         model_id = selected.hf_model_repo_id
         cache_key = f"{selected.key}:{model_id}"
         if cache_key not in _MODEL_CACHE:
@@ -421,10 +435,11 @@ if modal is not None and settings.modal_enabled:
         if context.strip():
             user = f"{user}\n\nEvidence:\n{context.strip()}"
         if selected.key == BALANCED_PROFILE_KEY:
+            thinking_tag = "/think" if thinking_enabled else "/no_think"
             messages = [
                 {
                     "role": "user",
-                    "content": f"{system}\n\n{user}\n\n/no_think",
+                    "content": f"{system}\n\n{user}\n\n{thinking_tag}",
                 }
             ]
         else:
@@ -438,13 +453,14 @@ if modal is not None and settings.modal_enabled:
                 "add_generation_prompt": True,
             }
             if selected.key == BALANCED_PROFILE_KEY:
-                template_kwargs["enable_thinking"] = False
+                template_kwargs["enable_thinking"] = thinking_enabled
             prompt = tokenizer.apply_chat_template(messages, **template_kwargs)
         except Exception:
             prompt = f"{system}\n\nUser: {user}\nAssistant:"
+        token_limit = THINKING_TOKEN_LIMIT if thinking_enabled else NON_THINKING_TOKEN_LIMIT
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         generation_kwargs = {
-            "max_new_tokens": max(32, min(max_new_tokens, 768)),
+            "max_new_tokens": max(32, min(max_new_tokens, token_limit)),
             "use_cache": False,
             "pad_token_id": tokenizer.pad_token_id,
             "eos_token_id": tokenizer.eos_token_id,
@@ -466,7 +482,8 @@ if modal is not None and settings.modal_enabled:
                 **generation_kwargs,
             )
         generated = outputs[0][inputs["input_ids"].shape[-1] :]
-        answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        raw_answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        answer = _strip_reasoning_blocks(raw_answer)
         fallback_reason = None
         if selected.key == BALANCED_PROFILE_KEY and _looks_malformed_answer(answer):
             answer = _evidence_fallback_answer(question, context)
@@ -477,6 +494,13 @@ if modal is not None and settings.modal_enabled:
             "model": model_id,
             "answer": answer,
             "tokens": int(generated.numel()),
+            "thinking_requested": bool(thinking),
+            "thinking_enabled": thinking_enabled,
+            "recommended_max_tokens": (
+                selected.thinking_recommended_max_tokens
+                if selected.supports_thinking
+                else NON_THINKING_TOKEN_LIMIT
+            ),
         }
         if fallback_reason:
             response["fallback"] = fallback_reason
@@ -495,8 +519,9 @@ if modal is not None and settings.modal_enabled:
         context: str = "",
         max_new_tokens: int = 384,
         profile: str | None = None,
+        thinking: bool = False,
     ) -> dict[str, object]:
-        return _run_generate_answer(question, context, max_new_tokens, profile)
+        return _run_generate_answer(question, context, max_new_tokens, profile, thinking)
 
     @app.function(
         image=train_image,
@@ -511,12 +536,14 @@ if modal is not None and settings.modal_enabled:
         context: str = "",
         max_new_tokens: int = 384,
         profile: str | None = None,
+        thinking: bool = False,
     ) -> dict[str, object]:
         return _run_generate_answer(
             question,
             context,
             max_new_tokens,
             profile or quality_train_profile.key,
+            thinking,
         )
 else:
     app = None

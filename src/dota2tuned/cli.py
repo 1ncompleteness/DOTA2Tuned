@@ -406,6 +406,10 @@ def modal_ask(
         str | None,
         typer.Option(help="Model profile key, e.g. qwen3_30b_a3b_2507."),
     ] = None,
+    thinking: Annotated[
+        bool,
+        typer.Option(help="Request reasoning mode when the selected profile supports it."),
+    ] = False,
 ) -> None:
     settings = get_settings()
     _require_modal(settings)
@@ -422,7 +426,13 @@ def modal_ask(
     )
     typer.echo(
         json.dumps(
-            generate_fn.remote(question, context, max_new_tokens, selected_profile.key),
+            generate_fn.remote(
+                question,
+                context,
+                max_new_tokens,
+                selected_profile.key,
+                thinking,
+            ),
             indent=2,
         )
     )
